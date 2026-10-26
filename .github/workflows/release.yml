@@ -1,0 +1,258 @@
+name: Release
+
+# Publishes a GitHub release with the desktop clients and server builds, and pushes the server image
+# to the GitHub Container Registry.
+#
+# Start a release either by pushing a version tag:
+#   git tag v0.2.0 && git push origin v0.2.0
+# or from the Actions tab ("Release" > "Run workflow"), entering the version; the tag is then created
+# on the selected branch's latest commit. Versions with a suffix (0.2.0-beta.1) become pre-releases.
+#
+# Pull requests that change this workflow or the Dockerfile run everything except the publishing steps.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, without the leading "v" (for example 0.2.0 or 0.2.0-beta.1)
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - deploy/Dockerfile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  version:
+    name: Determine version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          case "$EVENT" in
+            push) version="${REF_NAME#v}"; publish=true ;;
+            workflow_dispatch) version="${INPUT_VERSION#v}"; publish=true ;;
+            *) version="0.0.0-ci.${GITHUB_RUN_NUMBER}"; publish=false ;;
+          esac
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::\"$version\" is not a valid version (expected something like 1.2.3 or 1.2.3-beta.1)."
+            exit 1
+          fi
+          prerelease=false
+          if [[ "$version" == *-* ]]; then prerelease=true; fi
+          {
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "prerelease=$prerelease"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version $version (pre-release: $prerelease, publish: $publish)"
+
+  test:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    needs: version
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install libvpx
+        run: sudo apt-get update && sudo apt-get install -y libvpx9
+
+      - name: Build
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: dotnet build Discagem.slnx -c Release -p:Version="$VERSION"
+
+      - name: Test
+        run: dotnet test Discagem.slnx -c Release --no-build
+
+  package:
+    name: Package ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    needs: [version, test]
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Windows client
+            project: src/Discagem.Client
+            rid: win-x64
+            archive: Discagem-{0}-win-x64.zip
+            single-file: true
+          - name: Linux client
+            project: src/Discagem.Client
+            rid: linux-x64
+            archive: Discagem-{0}-linux-x64.tar.gz
+            single-file: true
+          - name: Linux server (x64)
+            project: src/Discagem.Server
+            rid: linux-x64
+            archive: discagem-server-{0}-linux-x64.tar.gz
+            single-file: false
+          - name: Linux server (arm64)
+            project: src/Discagem.Server
+            rid: linux-arm64
+            archive: discagem-server-{0}-linux-arm64.tar.gz
+            single-file: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        env:
+          PROJECT: ${{ matrix.project }}
+          RID: ${{ matrix.rid }}
+          VERSION: ${{ needs.version.outputs.version }}
+          SINGLE_FILE: ${{ matrix.single-file }}
+        run: |
+          args=(-c Release -r "$RID" --self-contained -p:DebugType=none -p:Version="$VERSION" -o out/app)
+          if [[ "$SINGLE_FILE" == true ]]; then
+            args+=(-p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true)
+          fi
+          dotnet publish "$PROJECT" "${args[@]}"
+          if [[ "$PROJECT" == src/Discagem.Server ]]; then
+            cp deploy/discagem.service deploy/Caddyfile out/app/
+          fi
+          ls -la out/app
+
+      - name: Archive
+        id: archive
+        env:
+          ARCHIVE: ${{ format(matrix.archive, needs.version.outputs.version) }}
+        run: |
+          mkdir -p dist
+          if [[ "$ARCHIVE" == *.zip ]]; then
+            (cd out/app && zip -9 -r "../../dist/$ARCHIVE" .)
+          else
+            tar -C out/app -czf "dist/$ARCHIVE" .
+          fi
+          echo "name=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.archive.outputs.name }}
+          path: dist/${{ steps.archive.outputs.name }}
+          if-no-files-found: error
+          retention-days: 7
+
+  image:
+    name: Server image
+    runs-on: ubuntu-24.04
+    needs: [version, test]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Dockerfile cross-compiles, so building the arm64 image needs no emulation.
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the GitHub Container Registry
+        if: needs.version.outputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/discagem-server
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}
+            type=raw,value=latest,enable=${{ needs.version.outputs.prerelease == 'false' }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ needs.version.outputs.version }}
+          push: ${{ needs.version.outputs.publish == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: Publish release
+    runs-on: ubuntu-24.04
+    needs: [version, package, image]
+    if: needs.version.outputs.publish == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/discagem-server
+        run: |
+          cat > notes.md <<EOF
+          ## Downloads
+
+          | File | Contents |
+          | --- | --- |
+          | \`Discagem-$VERSION-win-x64.zip\` | Desktop client for Windows 10/11 (x64). Keep \`Discagem.exe\` and \`vpxmd.dll\` together. |
+          | \`Discagem-$VERSION-linux-x64.tar.gz\` | Desktop client for Linux/X11 (x64). Needs libvpx and PulseAudio or PipeWire. |
+          | \`discagem-server-$VERSION-linux-x64.tar.gz\` | Self-contained server for x64 VPSes, with the systemd unit and Caddyfile. |
+          | \`discagem-server-$VERSION-linux-arm64.tar.gz\` | The same for ARM64 VPSes. |
+          | \`SHA256SUMS\` | Checksums of the files above. |
+
+          Server image (linux/amd64 and linux/arm64): \`docker pull $IMAGE:$VERSION\`
+
+          EOF
+          flags=()
+          if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --title "Discagem $VERSION" --notes-file notes.md --generate-notes \
+              --target "$GITHUB_SHA" "${flags[@]}"
+          fi

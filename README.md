@@ -104,6 +104,24 @@ The server never decodes or mixes audio, so it stays cheap; it simply skips mute
 Mouth-to-ear latency is roughly the network round trip to the server and back, plus 60-100 ms of
 framing, jitter buffering and device buffers.
 
+## Releases
+
+Every [release](https://github.com/rodriguesarrais/discagem/releases) contains the Windows and Linux
+desktop clients, self-contained server builds for x64 and ARM64 Linux, and a `SHA256SUMS` file; the
+server image is published as `ghcr.io/rodriguesarrais/discagem-server` (`latest` is the newest
+stable release).
+
+To publish a release, push a version tag, or run the *Release* workflow from the Actions tab and
+enter the version:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The workflow tests the code, builds everything, pushes the image and creates the release with
+generated notes. Versions with a suffix (`0.2.0-beta.1`) are marked as pre-releases and do not move
+`latest`.
+
 ## Running the server on a VPS
 
 Requirements: a Linux VPS with a public IP, Docker with the Compose plugin, and a DNS name pointing to
@@ -129,12 +147,19 @@ the server (for example `chat.example.com`).
    docker compose up -d --build
    docker compose logs -f discagem
    ```
+   To run a released image instead of building one, set `DISCAGEM_IMAGE` in `.env` (for example
+   `ghcr.io/rodriguesarrais/discagem-server:latest`) and use
+   `docker compose pull discagem && docker compose up -d --no-build`. If the repository is private,
+   log in first with `docker login ghcr.io` and a token that can read packages.
    Caddy obtains a Let's Encrypt certificate automatically. Data (SQLite database, uploads and the
    token signing key) lives in the `discagem-data` volume; back it up to keep your history.
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
    and your details. The first account is the administrator; share the invite code with your friends.
 
 ### Without Docker
+
+Extract `discagem-server-<version>-linux-x64.tar.gz` (or `-linux-arm64`) from a release into
+`/opt/discagem`, or build it yourself:
 
 ```bash
 dotnet publish src/Discagem.Server -c Release -r linux-x64 --self-contained -o /opt/discagem
@@ -172,7 +197,7 @@ variables (`Section__Key`, as in `.env.example`).
 
 ### Windows
 
-Download the `Discagem-win-x64` artifact from the latest CI run, or build it yourself with the
+Download `Discagem-<version>-win-x64.zip` from the latest release, or build it yourself with the
 .NET 10 SDK:
 
 ```powershell
@@ -191,8 +216,9 @@ Communications* and choose *Do nothing*.
 
 ### Linux
 
-Install libvpx (`sudo apt install libvpx9` on Ubuntu 24.04, `libvpx7` on older releases) and run
-`dotnet run --project src/Discagem.Client`. Screen sharing requires an X11 session; Wayland capture is
+Install libvpx (`sudo apt install libvpx9` on Ubuntu 24.04, `libvpx7` on older releases), then run
+`Discagem` from `Discagem-<version>-linux-x64.tar.gz` in the latest release, or
+`dotnet run --project src/Discagem.Client` from source. Screen sharing requires an X11 session; Wayland capture is
 not implemented yet. Voice uses PulseAudio, or PipeWire's PulseAudio service, which desktop
 distributions ship by default; there is no echo cancellation on Linux, so use headphones.
 
@@ -232,6 +258,7 @@ they are applied automatically on start-up.
 | `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
 | `deploy/` | Dockerfile, Compose file with Caddy, environment template and systemd unit. |
+| `.github/workflows/` | CI (build, tests, Windows client artifact, image build) and the release workflow. |
 
 ## Security notes
 
