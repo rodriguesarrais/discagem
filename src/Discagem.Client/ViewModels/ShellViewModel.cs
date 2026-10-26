@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Discagem.Client.Services;
 using Discagem.Media.Pipeline;
+using Discagem.Media.Vpx;
 using Discagem.Media.WebRtc;
 using Discagem.Shared;
 using Microsoft.AspNetCore.SignalR;
@@ -34,6 +35,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly Dictionary<long, MemberViewModel> _members = new();
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
     private readonly DispatcherTimer _typingTimer;
+    private readonly DispatcherTimer _tokenRefreshTimer;
     private DateTime _lastTypingSent = DateTime.MinValue;
     private bool _disposed;
 
@@ -48,6 +50,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _hub = new ChatConnection(session.Api.BaseAddress, () => _session.Api.Token);
         _media = new ScreenShareService(_hub, BuildIceServers(session));
         _typingTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateTypingText());
+        // Tokens last for weeks; refresh them so long-running sessions never reconnect with an expired one.
+        _tokenRefreshTimer = new DispatcherTimer(TimeSpan.FromHours(6), DispatcherPriority.Background, async (_, _) => await RefreshTokenAsync());
 
         WireHubEvents();
         _media.PublishStatsUpdated += stats => Dispatcher.UIThread.Post(() =>
@@ -204,9 +208,29 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         return servers;
     }
 
+    private async Task RefreshTokenAsync()
+    {
+        try
+        {
+            var auth = await _session.Api.RefreshTokenAsync();
+            _session.Api.Token = auth.Token;
+            _session.Settings.Token = auth.Token;
+            _session.Settings.Save();
+        }
+        catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            SignOut("Your session has expired. Please log in again.");
+        }
+        catch (ApiException)
+        {
+            // Offline for now; the next tick tries again.
+        }
+    }
+
     public async Task InitializeAsync()
     {
         _typingTimer.Start();
+        _tokenRefreshTimer.Start();
         Connection = ConnectionState.Connecting;
         while (!_disposed)
         {
@@ -820,6 +844,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
+    /// <summary>The window regained focus: the visible channel has now been read.</summary>
+    public void OnWindowActivated()
+    {
+        SelectedChannel?.MarkRead();
+        OnPropertyChanged(nameof(WindowTitle));
+    }
+
     [RelayCommand]
     private void ToggleMembers() => ShowMembers = !ShowMembers;
 
@@ -856,10 +887,23 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     // ---- Screen sharing -------------------------------------------------------------------
 
+    private bool EnsureCodecAvailable()
+    {
+        if (VpxLibrary.IsAvailable)
+        {
+            return true;
+        }
+
+        ShowBanner(OperatingSystem.IsWindows()
+            ? "Screen sharing needs the Microsoft Visual C++ Redistributable (x64): install it from https://aka.ms/vs/17/release/vc_redist.x64.exe and restart Discagem."
+            : "Screen sharing needs libvpx: install it with your package manager (for example: sudo apt install libvpx9) and restart Discagem.");
+        return false;
+    }
+
     [RelayCommand]
     private async Task GoLiveAsync()
     {
-        if (IsLive || IsStartingStream)
+        if (IsLive || IsStartingStream || !EnsureCodecAvailable())
         {
             return;
         }
@@ -901,7 +945,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     [RelayCommand]
     private async Task WatchAsync(LiveStreamViewModel stream)
     {
-        if (stream.IsMine)
+        if (stream.IsMine || !EnsureCodecAvailable())
         {
             return;
         }
@@ -1060,7 +1104,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         _disposed = true;
-        Dispatcher.UIThread.Post(() => _typingTimer.Stop());
+        Dispatcher.UIThread.Post(() =>
+        {
+            _typingTimer.Stop();
+            _tokenRefreshTimer.Stop();
+        });
         ActiveStream?.Dispose();
         await _media.DisposeAsync();
         try

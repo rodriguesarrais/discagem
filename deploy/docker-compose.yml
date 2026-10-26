@@ -1,0 +1,39 @@
+# Discagem on a single VPS: the server plus Caddy for automatic HTTPS.
+#
+#   cp .env.example .env    # then edit it
+#   docker compose up -d --build
+#
+# Host networking is used so WebRTC sees the real interface addresses and the
+# UDP media port range does not need a thousand port mappings.
+
+services:
+  discagem:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: discagem-server:latest
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    environment:
+      Urls: http://127.0.0.1:5080
+      Discagem__DataDirectory: /data
+    volumes:
+      - discagem-data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - discagem
+
+volumes:
+  discagem-data:
+  caddy-data:
+  caddy-config:

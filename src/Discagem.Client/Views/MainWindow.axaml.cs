@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Discagem.Client.Services;
+using Discagem.Client.ViewModels;
 
 namespace Discagem.Client.Views;
 
@@ -8,6 +9,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Activated += (_, _) => ((DataContext as MainWindowViewModel)?.CurrentView as ShellViewModel)?.OnWindowActivated();
     }
 
     public void RestoreSize(ClientSettings settings)

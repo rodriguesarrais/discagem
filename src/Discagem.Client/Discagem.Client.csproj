@@ -23,8 +23,18 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
-    <!-- Only used for the Windows build of libvpx (vpxmd.dll) it copies next to the executable. -->
-    <PackageReference Include="SIPSorceryMedia.Encoders" ExcludeAssets="compile;runtime" PrivateAssets="all" />
+    <!-- Only used for its Windows build of libvpx (vpxmd.dll); its managed code is not referenced. -->
+    <PackageReference Include="SIPSorceryMedia.Encoders" ExcludeAssets="all" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- libvpx for Windows ships next to the executable (Linux uses the system libvpx package). -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' or $(RuntimeIdentifier.StartsWith('win'))">
+    <None Include="$(PkgSIPSorceryMedia_Encoders)\build\x64\vpxmd.dll"
+          Link="vpxmd.dll"
+          Visible="false"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

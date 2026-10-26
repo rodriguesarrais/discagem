@@ -1,0 +1,8 @@
+# Caddy obtains and renews the TLS certificate automatically.
+# DISCAGEM_DOMAIN comes from .env (e.g. chat.example.com) and must point to this server.
+{$DISCAGEM_DOMAIN} {
+	encode zstd gzip
+
+	# SignalR uses WebSockets; Caddy proxies them transparently.
+	reverse_proxy 127.0.0.1:5080
+}
