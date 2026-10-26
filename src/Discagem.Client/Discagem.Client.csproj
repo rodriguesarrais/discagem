@@ -23,6 +23,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <!-- WASAPI audio devices for voice chat on Windows (Linux uses PulseAudio directly). -->
+    <PackageReference Include="NAudio.Wasapi" />
     <!-- Only used for its Windows build of libvpx (vpxmd.dll); its managed code is not referenced. -->
     <PackageReference Include="SIPSorceryMedia.Encoders" ExcludeAssets="all" PrivateAssets="all" GeneratePathProperty="true" />
   </ItemGroup>

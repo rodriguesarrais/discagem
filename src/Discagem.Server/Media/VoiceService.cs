@@ -58,10 +58,11 @@ public sealed class VoiceService(
             throw new MediaException("Missing session description.");
         }
 
-        // One voice connection per user: joining elsewhere (or from another device) moves them.
+        // One voice connection per user: joining elsewhere (or from another device) moves them, and the
+        // previous session is told so that another device can hang up.
         if (_byUser.TryGetValue(userId, out var existing))
         {
-            await LeaveAsync(existing, "moved");
+            await LeaveAsync(existing, "joined from elsewhere", notifyClient: true);
         }
 
         if (Room(channelId).Length >= Limits.MaxVoiceParticipants)
@@ -147,9 +148,10 @@ public sealed class VoiceService(
         }
     }
 
-    public async Task SetStateAsync(long userId, bool muted, bool deafened)
+    /// <summary>Updates the mute and deafen flags of the user's voice session, if it belongs to this connection.</summary>
+    public async Task SetStateAsync(long userId, string connectionId, bool muted, bool deafened)
     {
-        if (!_byUser.TryGetValue(userId, out var participant))
+        if (!_byUser.TryGetValue(userId, out var participant) || participant.Session.ConnectionId != connectionId)
         {
             return;
         }
@@ -160,9 +162,10 @@ public sealed class VoiceService(
         await hub.Clients.All.VoiceStateChanged(participant.ToDto());
     }
 
-    public async Task LeaveAsync(long userId)
+    /// <summary>Leaves voice, if the user's voice session belongs to this connection.</summary>
+    public async Task LeaveAsync(long userId, string connectionId)
     {
-        if (_byUser.TryGetValue(userId, out var participant))
+        if (_byUser.TryGetValue(userId, out var participant) && participant.Session.ConnectionId == connectionId)
         {
             await LeaveAsync(participant, "left");
         }

@@ -278,9 +278,9 @@ public sealed class ChatHub(
         }
     }
 
-    public Task LeaveVoice() => voice.LeaveAsync(UserId);
+    public Task LeaveVoice() => voice.LeaveAsync(UserId, Context.ConnectionId);
 
-    public Task SetVoiceState(bool muted, bool deafened) => voice.SetStateAsync(UserId, muted, deafened);
+    public Task SetVoiceState(bool muted, bool deafened) => voice.SetStateAsync(UserId, Context.ConnectionId, muted, deafened);
 
     private void RequireAdmin()
     {
