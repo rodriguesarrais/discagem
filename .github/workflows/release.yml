@@ -158,9 +158,10 @@ jobs:
           echo "name=$ARCHIVE" >> "$GITHUB_OUTPUT"
           ls -la dist
 
+      # The "release-" prefix keeps other artifacts of the run (such as Docker build records) out of the release.
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.archive.outputs.name }}
+          name: release-${{ steps.archive.outputs.name }}
           path: dist/${{ steps.archive.outputs.name }}
           if-no-files-found: error
           retention-days: 7
@@ -195,6 +196,8 @@ jobs:
             type=raw,value=latest,enable=${{ needs.version.outputs.prerelease == 'false' }}
 
       - uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           file: deploy/Dockerfile
@@ -216,6 +219,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: release-*
           path: dist
           merge-multiple: true
 

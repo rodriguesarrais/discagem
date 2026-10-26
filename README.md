@@ -149,8 +149,9 @@ the server (for example `chat.example.com`).
    ```
    To run a released image instead of building one, set `DISCAGEM_IMAGE` in `.env` (for example
    `ghcr.io/rodriguesarrais/discagem-server:latest`) and use
-   `docker compose pull discagem && docker compose up -d --no-build`. If the repository is private,
-   log in first with `docker login ghcr.io` and a token that can read packages.
+   `docker compose pull discagem && docker compose up -d --no-build`. GitHub creates the image as a
+   private package: either make it public (the package's *Package settings → Change visibility*) or
+   log in on the server first with `docker login ghcr.io` and a token that can read packages.
    Caddy obtains a Let's Encrypt certificate automatically. Data (SQLite database, uploads and the
    token signing key) lives in the `discagem-data` volume; back it up to keep your history.
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
