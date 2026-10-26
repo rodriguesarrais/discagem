@@ -37,6 +37,8 @@ public sealed class ChatConnection : IAsyncDisposable
         _hub.On<string>(nameof(IChatClient.StreamEnded), s => StreamEnded?.Invoke(s));
         _hub.On<IceCandidateDto>(nameof(IChatClient.IceCandidate), c => IceCandidate?.Invoke(c));
         _hub.On<string, string>(nameof(IChatClient.MediaSessionClosed), (s, r) => MediaSessionClosed?.Invoke(s, r));
+        _hub.On<VoiceParticipantDto>(nameof(IChatClient.VoiceStateChanged), p => VoiceStateChanged?.Invoke(p));
+        _hub.On<long, long>(nameof(IChatClient.VoiceLeft), (c, u) => VoiceLeft?.Invoke(c, u));
 
         _hub.Reconnecting += ex =>
         {
@@ -70,6 +72,8 @@ public sealed class ChatConnection : IAsyncDisposable
     public event Action<string>? StreamEnded;
     public event Action<IceCandidateDto>? IceCandidate;
     public event Action<string, string>? MediaSessionClosed;
+    public event Action<VoiceParticipantDto>? VoiceStateChanged;
+    public event Action<long, long>? VoiceLeft;
     public event Action<Exception?>? Reconnecting;
     public event Action? Reconnected;
     public event Action<Exception?>? Closed;
@@ -116,6 +120,13 @@ public sealed class ChatConnection : IAsyncDisposable
     public Task StopWatchingAsync(string sessionId) => _hub.InvokeAsync(nameof(IChatHub.StopWatching), sessionId);
 
     public Task AddIceCandidateAsync(IceCandidateDto candidate) => _hub.SendAsync(nameof(IChatHub.AddIceCandidate), candidate);
+
+    public Task<MediaSessionAnswer> JoinVoiceAsync(long channelId, string offerSdp) =>
+        _hub.InvokeAsync<MediaSessionAnswer>(nameof(IChatHub.JoinVoice), channelId, offerSdp);
+
+    public Task LeaveVoiceAsync() => _hub.InvokeAsync(nameof(IChatHub.LeaveVoice));
+
+    public Task SetVoiceStateAsync(bool muted, bool deafened) => _hub.InvokeAsync(nameof(IChatHub.SetVoiceState), muted, deafened);
 
     public ValueTask DisposeAsync() => _hub.DisposeAsync();
 

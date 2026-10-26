@@ -3,6 +3,7 @@
         xmlns:vm="using:Discagem.Client.ViewModels"
         xmlns:c="using:Discagem.Client.Controls"
         xmlns:media="using:Discagem.Media.Pipeline"
+        xmlns:audio="using:Discagem.Client.Services.Audio"
         xmlns:views="using:Discagem.Client.Views"
         x:Class="Discagem.Client.Views.Dialogs.SettingsDialog"
         x:DataType="vm:SettingsViewModel"
@@ -80,6 +81,66 @@
                 <Button Content="Change password" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding !IsBusy}" />
                 <TextBlock Text="{Binding PasswordMessage}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"
                            Foreground="{Binding PasswordError, Converter={x:Static views:Converters.StatusForeground}}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Voice -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Voice &amp; audio" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="*,12,*">
+                <StackPanel>
+                  <TextBlock Text="INPUT DEVICE" Classes="label" />
+                  <ComboBox ItemsSource="{Binding InputDevices}" SelectedItem="{Binding InputDevice}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="audio:AudioDeviceInfo">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="OUTPUT DEVICE" Classes="label" />
+                  <ComboBox ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding OutputDevice}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="audio:AudioDeviceInfo">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="INPUT SENSITIVITY" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{Binding ThresholdText}" Classes="caption" />
+                </Grid>
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding InputLevelPercent}" Height="6" MinHeight="6"
+                             CornerRadius="3" Margin="6,0" Classes="meter" Classes.active="{Binding IsAboveThreshold}" />
+                <Slider Minimum="-80" Maximum="0" Value="{Binding ThresholdDb}" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                             Text="Speak normally: the bar turns green when others would hear you. Move the slider right if background noise turns it green." />
+                  <Button Grid.Column="1" Content="{Binding MicrophoneTestText}" Command="{Binding ToggleMicrophoneTestCommand}"
+                          IsVisible="{Binding CanTestMicrophone}" />
+                </Grid>
+              </StackPanel>
+
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="OUTPUT VOLUME" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{Binding OutputVolumeText}" Classes="caption" />
+                </Grid>
+                <Slider Minimum="0" Maximum="200" Value="{Binding OutputVolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
+              </StackPanel>
+
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding EchoAdvice}" Classes="caption" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding AudioSystem}" Classes="caption" />
               </StackPanel>
             </StackPanel>
           </Border>

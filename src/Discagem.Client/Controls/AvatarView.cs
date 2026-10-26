@@ -28,14 +28,18 @@ public sealed class AvatarView : Control
     public static readonly StyledProperty<IBrush?> RingBrushProperty =
         AvaloniaProperty.Register<AvatarView, IBrush?>(nameof(RingBrush));
 
+    public static readonly StyledProperty<bool> IsSpeakingProperty =
+        AvaloniaProperty.Register<AvatarView, bool>(nameof(IsSpeaking));
+
     private static readonly IBrush OnlineBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#3DBE73"));
     private static readonly IBrush OfflineBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#80848E"));
     private static readonly IBrush LiveBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#F04452"));
+    private static readonly IPen SpeakingPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.Parse("#3DBE73")), 2);
     private static readonly Typeface InitialsTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
 
     static AvatarView()
     {
-        AffectsRender<AvatarView>(DisplayNameProperty, ColorProperty, StatusProperty, RingBrushProperty);
+        AffectsRender<AvatarView>(DisplayNameProperty, ColorProperty, StatusProperty, RingBrushProperty, IsSpeakingProperty);
     }
 
     public string? DisplayName
@@ -61,6 +65,13 @@ public sealed class AvatarView : Control
     {
         get => GetValue(RingBrushProperty);
         set => SetValue(RingBrushProperty, value);
+    }
+
+    /// <summary>Draws a green ring around the avatar while the person is heard in voice.</summary>
+    public bool IsSpeaking
+    {
+        get => GetValue(IsSpeakingProperty);
+        set => SetValue(IsSpeakingProperty, value);
     }
 
     protected override Size MeasureOverride(Size availableSize) => new(40, 40);
@@ -103,14 +114,20 @@ public sealed class AvatarView : Control
             fill = new SolidColorBrush(Colors.SlateBlue);
         }
 
-        context.DrawEllipse(fill, null, center, radius, radius);
+        // While speaking, shrink the avatar a little and draw the ring in the freed space.
+        var avatarRadius = IsSpeaking ? radius - 3 : radius;
+        context.DrawEllipse(fill, null, center, avatarRadius, avatarRadius);
+        if (IsSpeaking)
+        {
+            context.DrawEllipse(null, SpeakingPen, center, radius - 1, radius - 1);
+        }
 
         var text = new FormattedText(
             Initials(DisplayName),
             CultureInfo.CurrentUICulture,
             FlowDirection.LeftToRight,
             InitialsTypeface,
-            Math.Max(8, size * (Initials(DisplayName).Length > 1 ? 0.36 : 0.42)),
+            Math.Max(8, avatarRadius * 2 * (Initials(DisplayName).Length > 1 ? 0.36 : 0.42)),
             Brushes.White);
         context.DrawText(text, new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
 

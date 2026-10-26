@@ -87,7 +87,7 @@
                   Command="{Binding SubmitCommand}" IsDefault="True" IsEnabled="{Binding !IsBusy}" Margin="0,4,0,0">
             <Panel>
               <TextBlock Text="{Binding SubmitText}" IsVisible="{Binding !IsBusy}" FontSize="15" />
-              <ProgressBar IsIndeterminate="True" Width="60" Height="4" MinHeight="4" Foreground="White" Background="#33FFFFFF"
+              <ProgressBar IsIndeterminate="{Binding IsBusy}" Width="60" Height="4" MinHeight="4" Foreground="White" Background="#33FFFFFF"
                            IsVisible="{Binding IsBusy}" />
             </Panel>
           </Button>

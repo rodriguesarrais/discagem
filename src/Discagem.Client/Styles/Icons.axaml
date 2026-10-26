@@ -27,6 +27,13 @@
   <StreamGeometry x:Key="IconWifiOff">M1 1 L23 23 M16.72 11.06 A10.94 10.94 0 0 1 19 12.55 M5 12.55 A10.94 10.94 0 0 1 10.58 10.06 M10.71 5.05 A16 16 0 0 1 22.58 9 M1.42 9 A15.91 15.91 0 0 1 5.12 6.71 M8.53 16.11 A6 6 0 0 1 15.47 16.11 M12 20 H12.01</StreamGeometry>
   <StreamGeometry x:Key="IconAlert">M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 Z M12 8 V12 M12 16 H12.01</StreamGeometry>
   <StreamGeometry x:Key="IconCheck">M20 6 L9 17 L4 12</StreamGeometry>
+  <StreamGeometry x:Key="IconVolume">M11 5 L6 9 H2 V15 H6 L11 19 Z M19.07 4.93 A10 10 0 0 1 19.07 19.07 M15.54 8.46 A5 5 0 0 1 15.54 15.54</StreamGeometry>
+  <StreamGeometry x:Key="IconMic">M12 2 A3 3 0 0 0 9 5 V12 A3 3 0 0 0 15 12 V5 A3 3 0 0 0 12 2 Z M19 10 V12 A7 7 0 0 1 5 12 V10 M12 19 V22 M8 22 H16</StreamGeometry>
+  <StreamGeometry x:Key="IconMicOff">M2 2 L22 22 M9 9 V12 A3 3 0 0 0 14.12 14.12 M15 9.34 V5 A3 3 0 0 0 9.06 4.4 M17 16.95 A7 7 0 0 1 5 12 V10 M19 10 V12 A7 7 0 0 1 18.89 13.23 M12 19 V22 M8 22 H16</StreamGeometry>
+  <StreamGeometry x:Key="IconHeadphones">M3 18 V12 A9 9 0 0 1 21 12 V18 M21 19 A2 2 0 0 1 19 21 H18 A2 2 0 0 1 16 19 V16 A2 2 0 0 1 18 14 H21 Z M3 19 A2 2 0 0 0 5 21 H6 A2 2 0 0 0 8 19 V16 A2 2 0 0 0 6 14 H3 Z</StreamGeometry>
+  <StreamGeometry x:Key="IconHeadphonesOff">M2 2 L22 22 M3 18 V12 A9 9 0 0 1 5.6 5.6 M8.2 3.7 A9 9 0 0 1 21 12 V16 M21 19 A2 2 0 0 1 19 21 H18 A2 2 0 0 1 16 19 V16 M3 19 A2 2 0 0 0 5 21 H6 A2 2 0 0 0 8 19 V16 A2 2 0 0 0 6 14 H3 Z</StreamGeometry>
+  <StreamGeometry x:Key="IconPhoneOff">M10.68 13.31 A16 16 0 0 0 14.09 15.91 L15.36 14.64 A2 2 0 0 1 17.47 14.19 A12.84 12.84 0 0 0 20.28 14.89 A2 2 0 0 1 22 16.89 V19.89 A2 2 0 0 1 19.82 21.89 A19.79 19.79 0 0 1 11.19 18.82 A19.42 19.42 0 0 1 7.86 16.15 M5.19 12.81 A19.79 19.79 0 0 1 2.12 4.18 A2 2 0 0 1 4.11 2 H7.11 A2 2 0 0 1 9.11 3.72 A12.84 12.84 0 0 0 9.81 6.53 A2 2 0 0 1 9.36 8.64 L8.09 9.91 M22 2 L2 22</StreamGeometry>
+  <StreamGeometry x:Key="IconSignal">M2 20 H2.01 M7 20 V16 M12 20 V12 M17 20 V8 M22 20 V4</StreamGeometry>
 
   <!-- Brand mark: a chat bubble with a play button. Filled geometry. -->
   <StreamGeometry x:Key="LogoBubble">M5.5 7.5 A2.5 2.5 0 0 1 8 5 H16 A2.5 2.5 0 0 1 18.5 7.5 V13.5 A2.5 2.5 0 0 1 16 16 H11 L7.5 19 V16 A2.5 2.5 0 0 1 5.5 13.5 Z</StreamGeometry>

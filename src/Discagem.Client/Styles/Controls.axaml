@@ -247,6 +247,60 @@
     <Setter Property="RenderTransform" Value="none" />
   </Style>
 
+  <!-- Voice channels -->
+  <Style Selector="Button.voice-channel">
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+    <Setter Property="Padding" Value="8,6" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.voice-channel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.voice-channel.connected">
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.voice-channel.connected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+  </Style>
+  <Style Selector="Border.voice-participant">
+    <Setter Property="Padding" Value="6,3" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.voice-participant:pointerover">
+    <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+  </Style>
+  <Style Selector="TextBlock.voice-name">
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.voice-name.speaking">
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.icon.panel">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="6" />
+  </Style>
+  <Style Selector="RadioButton.choice">
+    <Setter Property="Background" Value="{StaticResource SidebarBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="RadioButton.choice:checked">
+    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+  </Style>
+
+  <Style Selector="ProgressBar.meter">
+    <Setter Property="Background" Value="{StaticResource ElevatedBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+  </Style>
+  <Style Selector="ProgressBar.meter.active">
+    <Setter Property="Foreground" Value="{StaticResource OnlineBrush}" />
+  </Style>
+
   <!-- Cards and badges -->
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{StaticResource SidebarBrush}" />
@@ -308,10 +362,14 @@
   </Style>
 
   <!-- Typing indicator dots -->
+  <!-- Infinite animations only run under the "animated" class, which views bind to the same condition
+       as visibility: a hidden control keeps animating, and every frame triggers a redraw. -->
   <Style Selector="Ellipse.typing-dot">
     <Setter Property="Width" Value="5" />
     <Setter Property="Height" Value="5" />
     <Setter Property="Fill" Value="{StaticResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Ellipse.typing-dot.animated">
     <Style.Animations>
       <Animation Duration="0:0:1.2" IterationCount="Infinite">
         <KeyFrame Cue="0%">
@@ -327,7 +385,7 @@
     </Style.Animations>
   </Style>
 
-  <Style Selector="Ellipse.typing-dot.second">
+  <Style Selector="Ellipse.typing-dot.second.animated">
     <Style.Animations>
       <Animation Duration="0:0:1.2" IterationCount="Infinite" Delay="0:0:0.2">
         <KeyFrame Cue="0%">
@@ -342,7 +400,7 @@
       </Animation>
     </Style.Animations>
   </Style>
-  <Style Selector="Ellipse.typing-dot.third">
+  <Style Selector="Ellipse.typing-dot.third.animated">
     <Style.Animations>
       <Animation Duration="0:0:1.2" IterationCount="Infinite" Delay="0:0:0.4">
         <KeyFrame Cue="0%">
@@ -375,7 +433,7 @@
   </Style>
 
   <!-- Live indicator pulse -->
-  <Style Selector="Ellipse.pulse">
+  <Style Selector="Ellipse.pulse.animated">
     <Style.Animations>
       <Animation Duration="0:0:1.6" IterationCount="Infinite">
         <KeyFrame Cue="0%">

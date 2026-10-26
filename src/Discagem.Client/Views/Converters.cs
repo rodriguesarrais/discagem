@@ -18,6 +18,12 @@ public static class Converters
     public static readonly IValueConverter WatchTooltip =
         new FuncValueConverter<bool, string>(isMine => isMine ? "This is your stream" : "Watch stream");
 
+    public static readonly IValueConverter MuteTooltip =
+        new FuncValueConverter<bool, string>(off => off ? "Unmute" : "Mute");
+
+    public static readonly IValueConverter DeafenTooltip =
+        new FuncValueConverter<bool, string>(deafened => deafened ? "Undeafen" : "Deafen");
+
     public static readonly IValueConverter ColorToBrush =
         new FuncValueConverter<string, IBrush>(value =>
         {

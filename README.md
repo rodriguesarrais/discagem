@@ -1,14 +1,16 @@
 # Discagem
 
-A self-hosted, Discord-style chat with screen sharing, written entirely in C#.
+A self-hosted, Discord-style chat with voice channels and screen sharing, written entirely in C#.
 The server is ASP.NET Core and runs on a single private VPS; the desktop client is a
 native Avalonia application for Windows (and Linux/X11).
 
 ![Chat](docs/screenshots/chat.png)
 
-| Watching a screen share | Choosing what to share |
+| In a voice channel | Watching a screen share |
 | --- | --- |
-| ![Stream](docs/screenshots/stream.png) | ![Screen picker](docs/screenshots/screen-picker.png) |
+| ![Voice](docs/screenshots/voice.png) | ![Stream](docs/screenshots/stream.png) |
+| **Choosing what to share** | **Signing in** |
+| ![Screen picker](docs/screenshots/screen-picker.png) | ![Login](docs/screenshots/login.png) |
 
 ## Features
 
@@ -19,6 +21,16 @@ native Avalonia application for Windows (and Linux/X11).
 - Edit (`↑` edits your last message) and delete; administrators can delete any message.
 - Image previews and file attachments (button or drag and drop), up to 25 MB by default.
 - Typing indicators, online/offline presence, history paging and automatic reconnection.
+
+**Voice chat**
+- Voice channels alongside text channels: click one to join, see who is in it and who is speaking.
+- Opus at 48 kHz with forward error correction, an adaptive jitter buffer and packet loss concealment.
+- Mute and deafen (remembered between sessions), input sensitivity with a live level meter, output
+  volume and per-person volume (right-click someone in the channel).
+- Choice of microphone and speakers; unplugged devices fall back to the system default.
+- On Windows the microphone uses the system's communications processing (echo cancellation, noise
+  suppression, automatic gain) where the device supports it.
+- Rejoins automatically after a dropped connection.
 
 **Screen sharing**
 - Share a whole monitor or a single application window, with live thumbnails in the picker.
@@ -39,8 +51,9 @@ native Avalonia application for Windows (and Linux/X11).
 │ SignalR client           │  (TLS, :443)     │ (:443)  │ (:5080) │  • REST: auth, uploads       │
 │                          │                  └─────────┘         │  • SignalR hub: chat,        │
 │ WebRTC peer (SIPSorcery) │                                      │    presence, signalling      │
-│  capture → VP8 → RTP     │ ◄──────────── UDP 50000-50999 ─────► │  • SFU (SIPSorcery WebRTC)   │
-│  RTP → VP8 → display     │      ICE · DTLS-SRTP · RTP/RTCP      │  • STUN responder (UDP 3478) │
+│  screen → VP8 → RTP      │ ◄──────────── UDP 50000-50999 ─────► │  • SFU (SIPSorcery WebRTC)   │
+│  RTP → VP8 → display     │      ICE · DTLS-SRTP · RTP/RTCP      │    for video and voice       │
+│  mic ⇄ Opus ⇄ speakers   │                                      │  • STUN responder (UDP 3478) │
 └──────────────────────────┘                                      │  • SQLite + file storage     │
                                                                   └──────────────────────────────┘
 ```
@@ -48,9 +61,10 @@ native Avalonia application for Windows (and Linux/X11).
 | Concern | Protocol |
 | --- | --- |
 | Sign-in, profile, file upload/download | HTTPS (REST + JWT bearer tokens) |
-| Messages, typing, presence, stream lifecycle | SignalR over WebSocket |
-| Screen-share signalling | SDP offer/answer and trickled ICE candidates over the SignalR hub |
+| Messages, typing, presence, stream and voice state | SignalR over WebSocket |
+| Media signalling | SDP offer/answer and trickled ICE candidates over the SignalR hub |
 | Screen-share media | WebRTC: ICE, DTLS-SRTP, RTP/RTCP with NACK and PLI feedback |
+| Voice media | WebRTC: ICE, DTLS-SRTP, Opus over RTP |
 
 ### How screen sharing works
 
@@ -70,6 +84,25 @@ The RTP payload starts with a standard one-byte VP8 descriptor followed by a 16-
 number* that is preserved end to end. Retransmissions therefore travel with fresh RTP sequence numbers,
 which keeps them clear of the SRTP replay window (see `src/Discagem.Media/Rtp/VideoPayload.cs`).
 A simple loss-based controller lowers the bitrate when the streamer's uplink drops packets.
+
+### How voice works
+
+Voice goes through the same SFU. Each participant sends a single Opus stream (48 kHz mono, 20 ms
+frames, about 40 kbit/s, in-band FEC) and the server forwards every packet to the other people in
+the channel, prefixed with the speaker's id and sequence number (`src/Discagem.Media/Audio/VoicePayload.cs`).
+The server never decodes or mixes audio, so it stays cheap; it simply skips muted and deafened people.
+
+1. The client filters the microphone signal (DC blocking), measures its level and only encodes and
+   sends while it is above the input sensitivity threshold, plus a short hangover and one frame of
+   pre-roll. Silence costs no bandwidth, and this is what drives the speaking indicators.
+2. Every remote speaker gets an adaptive jitter buffer (about twice the measured jitter, 40 ms
+   minimum) in front of an Opus decoder. Lost frames are rebuilt from the next packet's FEC data or
+   concealed; if latency builds up, frames are dropped to catch up.
+3. The speakers are mixed (with per-person volume and the join/leave sounds) and played through
+   WASAPI on Windows or PulseAudio/PipeWire on Linux.
+
+Mouth-to-ear latency is roughly the network round trip to the server and back, plus 60-100 ms of
+framing, jitter buffering and device buffers.
 
 ## Running the server on a VPS
 
@@ -130,7 +163,7 @@ variables (`Section__Key`, as in `.env.example`).
 | `Discagem:Jwt:LifetimeDays` | `30` | Session lifetime; clients refresh their token on start-up. |
 | `Discagem:Media:PublicIpAddress` | *(empty)* | Public IP to announce when behind 1:1 NAT. |
 | `Discagem:Media:BindAddress` | *(empty)* | Local address for media sockets. |
-| `Discagem:Media:RtpPortStart` / `RtpPortEnd` | `50000` / `50999` | UDP range for media; each stream or viewer uses one port. |
+| `Discagem:Media:RtpPortStart` / `RtpPortEnd` | `50000` / `50999` | UDP range for media; each stream, viewer and voice participant uses one port. |
 | `Discagem:Media:StunPort` | `3478` | Built-in STUN responder (`0` disables it). |
 | `Discagem:Media:IceServers` | `[]` | Extra ICE servers handed to clients (e.g. a TURN server). |
 | `Discagem:Media:MaxViewersPerStream` | `25` | Viewer limit per stream. |
@@ -152,11 +185,16 @@ Keep `Discagem.exe` and `vpxmd.dll` (the VP8 codec) together. Screen sharing nee
 [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe), which most
 machines already have; the client tells you if it is missing.
 
+While you are in a voice channel, Windows may lower the volume of other applications (its default
+"communications activity" setting). To turn that off, open *Sound settings → More sound settings →
+Communications* and choose *Do nothing*.
+
 ### Linux
 
 Install libvpx (`sudo apt install libvpx9` on Ubuntu 24.04, `libvpx7` on older releases) and run
 `dotnet run --project src/Discagem.Client`. Screen sharing requires an X11 session; Wayland capture is
-not implemented yet.
+not implemented yet. Voice uses PulseAudio, or PipeWire's PulseAudio service, which desktop
+distributions ship by default; there is no echo cancellation on Linux, so use headphones.
 
 Settings and the saved session are stored in `%APPDATA%\Discagem` (Windows, with the session token
 encrypted by DPAPI) or `~/.config/Discagem` (Linux). Set `DISCAGEM_PROFILE=name` to run several
@@ -173,9 +211,12 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Discagem.Server
 # Client
 dotnet run --project src/Discagem.Client
 
-# Tests: unit tests plus integration tests that stream video through the SFU over real UDP sockets
+# Tests: unit tests plus integration tests that stream video and voice through the SFU over real UDP sockets
 dotnet test
 ```
+
+Without audio hardware, `DISCAGEM_TEST_TONE=440` replaces the microphone with a tone and
+`DISCAGEM_TEST_RECORD=/tmp/out.f32` writes what would be played to a raw 48 kHz mono float file.
 
 Database schema changes use EF Core migrations
 (`dotnet ef migrations add <Name> --project src/Discagem.Server --output-dir Data/Migrations`);
@@ -186,24 +227,27 @@ they are applied automatically on start-up.
 | Path | Contents |
 | --- | --- |
 | `src/Discagem.Shared` | DTOs, hub contracts and the chat markup parser shared by server and client. |
-| `src/Discagem.Media` | libvpx VP8 binding, colour conversion and scaling, RTP payload format, pacer, jitter buffer, NACK tracking, WebRTC publisher/viewer and the capture/encode/decode pipelines. |
+| `src/Discagem.Media` | libvpx VP8 binding, colour conversion and scaling, RTP payload format, pacer, jitter buffer, NACK tracking, WebRTC publisher/viewer and the capture/encode/decode pipelines; the voice engine (Opus, voice activity detection, per-speaker jitter buffers, mixer). |
 | `src/Discagem.Server` | ASP.NET Core host: auth, attachments, SignalR hub, SFU, STUN responder, EF Core (SQLite). |
-| `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11. |
-| `tests/Discagem.Tests` | xUnit tests for media, markup, REST, hub and end-to-end streaming. |
+| `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
+| `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
 | `deploy/` | Dockerfile, Compose file with Caddy, environment template and systemd unit. |
 
 ## Security notes
 
 - Registration requires the invite code; login and registration are rate limited per IP.
 - Passwords are hashed with ASP.NET Core Identity's PBKDF2 hasher. Changing the password revokes
-  existing sessions.
+  existing sessions and closes their open connections.
 - Run the server behind HTTPS (the Compose setup does this with Caddy). Media is always encrypted with
   DTLS-SRTP.
-- Attachments are only served to signed-in users; only common image types are served inline.
+- Attachments are only served to signed-in users (and, until posted, only to the uploader); only
+  common image types are served inline.
 
 ## Limitations and ideas
 
-- No voice chat yet; the SFU and signalling are designed so audio tracks can be added later.
+- Voice has no push-to-talk yet, and no noise suppression or echo cancellation on Linux.
+- Voice packets are forwarded unmixed, so each listener receives one stream per person speaking at
+  that moment; this is fine for the 25-person channel limit.
 - Screen sharing does not include system audio.
 - Capture uses GDI on Windows; DXGI Desktop Duplication and hardware H.264 encoding would lower CPU usage.
 - Networks that block all outbound UDP cannot receive streams (there is no TCP/TURN fallback).

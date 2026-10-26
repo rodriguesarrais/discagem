@@ -236,7 +236,15 @@ public sealed class VoiceService(
 
         _byUser.TryRemove(new KeyValuePair<long, VoiceParticipant>(participant.UserId, participant));
         _bySession.TryRemove(participant.Session.Id, out _);
-        var closed = participant.Session.Close(reason);
+
+        // Tell the client why before tearing the connection down, so it does not mistake the hang-up for
+        // a network failure and try to rejoin.
+        if (notifyClient && !participant.Session.IsClosed)
+        {
+            await hub.Clients.Client(participant.Session.ConnectionId).MediaSessionClosed(participant.Session.Id, reason);
+        }
+
+        participant.Session.Close(reason);
         if (!removed)
         {
             return;
@@ -244,9 +252,5 @@ public sealed class VoiceService(
 
         logger.LogInformation("User {UserId} left voice channel {ChannelId}: {Reason}", participant.UserId, participant.ChannelId, reason);
         await hub.Clients.All.VoiceLeft(participant.ChannelId, participant.UserId);
-        if (closed && notifyClient)
-        {
-            await hub.Clients.Client(participant.Session.ConnectionId).MediaSessionClosed(participant.Session.Id, reason);
-        }
     }
 }

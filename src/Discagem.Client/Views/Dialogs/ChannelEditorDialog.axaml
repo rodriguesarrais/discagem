@@ -10,11 +10,41 @@
   <StackPanel>
     <StackPanel Margin="20,20,20,24" Spacing="18">
       <TextBlock Text="{Binding Heading}" Classes="h2" />
+
+      <StackPanel IsVisible="{Binding CanChooseKind}">
+        <TextBlock Text="CHANNEL TYPE" Classes="label" />
+        <StackPanel Spacing="8">
+          <RadioButton Classes="choice" GroupName="kind" IsChecked="{Binding IsText}">
+            <Grid ColumnDefinitions="Auto,*">
+              <c:Icon Data="{StaticResource IconHash}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Text" FontWeight="SemiBold" />
+                <TextBlock Text="Send messages, images, files and links" Classes="caption" />
+              </StackPanel>
+            </Grid>
+          </RadioButton>
+          <RadioButton Classes="choice" GroupName="kind" IsChecked="{Binding IsVoice}">
+            <Grid ColumnDefinitions="Auto,*">
+              <c:Icon Data="{StaticResource IconVolume}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Voice" FontWeight="SemiBold" />
+                <TextBlock Text="Hang out together with voice" Classes="caption" />
+              </StackPanel>
+            </Grid>
+          </RadioButton>
+        </StackPanel>
+      </StackPanel>
+
       <StackPanel>
         <TextBlock Text="CHANNEL NAME" Classes="label" />
-        <TextBox Text="{Binding Name}" x:Name="NameBox" MaxLength="48" Watermark="new-channel">
+        <TextBox Text="{Binding Name}" x:Name="NameBox" MaxLength="48" Watermark="{Binding Watermark}">
           <TextBox.InnerLeftContent>
-            <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Margin="12,0,0,0" Foreground="{StaticResource TextMutedBrush}" />
+            <Panel Margin="12,0,0,0">
+              <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Foreground="{StaticResource TextMutedBrush}"
+                      IsVisible="{Binding IsText}" />
+              <c:Icon Data="{StaticResource IconVolume}" Width="18" Height="18" Foreground="{StaticResource TextMutedBrush}"
+                      IsVisible="{Binding IsVoice}" />
+            </Panel>
           </TextBox.InnerLeftContent>
         </TextBox>
         <TextBlock Text="{Binding Preview}" Classes="caption" Margin="2,6,0,0" />

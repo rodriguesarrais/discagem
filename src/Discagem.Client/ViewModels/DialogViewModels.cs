@@ -1,26 +1,77 @@
 using System.Reflection;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Discagem.Client.Services;
+using Discagem.Client.Services.Audio;
 using Discagem.Media.Pipeline;
 using Discagem.Media.Vpx;
 using Discagem.Shared;
 
 namespace Discagem.Client.ViewModels;
 
-/// <summary>Create or rename a channel.</summary>
-public sealed partial class ChannelEditorViewModel(string heading, string confirmText, string name = "", string topic = "") : ObservableObject
+/// <summary>Create or rename a text or voice channel.</summary>
+public sealed partial class ChannelEditorViewModel : ObservableObject
 {
-    public string Heading { get; } = heading;
+    private ChannelEditorViewModel(string heading, string confirmText, bool canChooseKind, ChannelKind kind, string name, string topic)
+    {
+        Heading = heading;
+        ConfirmText = confirmText;
+        CanChooseKind = canChooseKind;
+        _kind = kind;
+        _name = name;
+        _topic = topic;
+    }
 
-    public string ConfirmText { get; } = confirmText;
+    public static ChannelEditorViewModel ForCreate(ChannelKind kind) =>
+        new("Create channel", "Create channel", canChooseKind: true, kind, "", "");
+
+    public static ChannelEditorViewModel ForEdit(ChannelKind kind, string name, string topic) =>
+        new("Edit channel", "Save changes", canChooseKind: false, kind, name, topic);
+
+    public string Heading { get; }
+
+    public string ConfirmText { get; }
+
+    /// <summary>The kind can only be chosen when creating a channel.</summary>
+    public bool CanChooseKind { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsText), nameof(IsVoice), nameof(Preview), nameof(Watermark))]
+    private ChannelKind _kind;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConfirm), nameof(Preview))]
-    private string _name = name;
+    private string _name;
 
     [ObservableProperty]
-    private string _topic = topic;
+    private string _topic;
+
+    public bool IsText
+    {
+        get => Kind == ChannelKind.Text;
+        set
+        {
+            if (value)
+            {
+                Kind = ChannelKind.Text;
+            }
+        }
+    }
+
+    public bool IsVoice
+    {
+        get => Kind == ChannelKind.Voice;
+        set
+        {
+            if (value)
+            {
+                Kind = ChannelKind.Voice;
+            }
+        }
+    }
+
+    public string Watermark => IsVoice ? "Hangout" : "new-channel";
 
     public bool CanConfirm => !string.IsNullOrWhiteSpace(Name);
 
@@ -29,6 +80,11 @@ public sealed partial class ChannelEditorViewModel(string heading, string confir
     {
         get
         {
+            if (IsVoice)
+            {
+                return string.Join(' ', Name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
             var chars = Name.Trim().ToLowerInvariant()
                 .Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : char.IsWhiteSpace(c) || c == '-' ? '-' : '\0')
                 .Where(c => c != '\0')
@@ -40,12 +96,17 @@ public sealed partial class ChannelEditorViewModel(string heading, string confir
 }
 
 /// <summary>Account and app settings.</summary>
-public sealed partial class SettingsViewModel : ObservableObject
+public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 {
+    /// <summary>Lowest level shown on the input meter and sensitivity slider, in dBFS.</summary>
+    public const double MeterFloorDb = -80;
+
     private readonly ApiClient _api;
     private readonly ClientSettings _settings;
     private readonly Action<AuthResponse> _tokenChanged;
     private readonly Func<string?> _hubConnectionId;
+    private readonly VoiceService _voice;
+    private readonly DispatcherTimer _meterTimer;
 
     public SettingsViewModel(
         ApiClient api,
@@ -53,17 +114,128 @@ public sealed partial class SettingsViewModel : ObservableObject
         MemberViewModel me,
         string serverName,
         Action<AuthResponse> tokenChanged,
-        Func<string?> hubConnectionId)
+        Func<string?> hubConnectionId,
+        VoiceService voice)
     {
         _api = api;
         _settings = settings;
         _tokenChanged = tokenChanged;
         _hubConnectionId = hubConnectionId;
+        _voice = voice;
         Me = me;
         ServerName = serverName;
         _displayName = me.DisplayName;
         _avatarColor = me.AvatarColor;
         _defaultQuality = StreamQuality.Presets[Math.Clamp(settings.StreamQualityIndex, 0, StreamQuality.Presets.Length - 1)];
+
+        InputDevices = voice.Audio.InputDevices();
+        OutputDevices = voice.Audio.OutputDevices();
+        _inputDevice = InputDevices.FirstOrDefault(d => d.Id == settings.VoiceInputDevice) ?? InputDevices[0];
+        _outputDevice = OutputDevices.FirstOrDefault(d => d.Id == settings.VoiceOutputDevice) ?? OutputDevices[0];
+        _thresholdDb = settings.VoiceThresholdDb;
+        _outputVolumePercent = settings.VoiceOutputVolume * 100;
+
+        // Show the microphone level live (in a call, or while testing), as a guide for the sensitivity slider.
+        _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) =>
+        {
+            var level = _voice.InputLevelDb;
+            InputLevelPercent = Math.Clamp((level - MeterFloorDb) / -MeterFloorDb * 100, 0, 100);
+            IsAboveThreshold = level >= ThresholdDb;
+        });
+        _meterTimer.Start();
+    }
+
+    public IReadOnlyList<AudioDeviceInfo> InputDevices { get; }
+
+    public IReadOnlyList<AudioDeviceInfo> OutputDevices { get; }
+
+    public string AudioSystem => $"Audio: {_voice.Audio.Name}";
+
+    public string EchoAdvice => OperatingSystem.IsWindows()
+        ? "Windows echo cancellation and noise suppression are used where your microphone supports them."
+        : "Use headphones to keep others from hearing themselves through your microphone.";
+
+    [ObservableProperty]
+    private AudioDeviceInfo _inputDevice;
+
+    [ObservableProperty]
+    private AudioDeviceInfo _outputDevice;
+
+    /// <summary>Input sensitivity in dBFS: the microphone transmits above this level.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThresholdText))]
+    private double _thresholdDb;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OutputVolumeText))]
+    private double _outputVolumePercent;
+
+    [ObservableProperty]
+    private double _inputLevelPercent;
+
+    [ObservableProperty]
+    private bool _isAboveThreshold;
+
+    public string ThresholdText => $"{ThresholdDb:0} dB";
+
+    /// <summary>In a call the meter shows the live microphone; otherwise it can be tested here.</summary>
+    public bool CanTestMicrophone => !_voice.IsInCall;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MicrophoneTestText))]
+    private bool _isTestingMicrophone;
+
+    public string MicrophoneTestText => IsTestingMicrophone ? "Stop test" : "Test microphone";
+
+    [RelayCommand]
+    private void ToggleMicrophoneTest()
+    {
+        if (IsTestingMicrophone)
+        {
+            _voice.StopMicrophoneTest();
+        }
+        else
+        {
+            _voice.StartMicrophoneTest();
+        }
+
+        IsTestingMicrophone = !IsTestingMicrophone;
+    }
+
+    public string OutputVolumeText => $"{OutputVolumePercent:0} %";
+
+    partial void OnInputDeviceChanged(AudioDeviceInfo value)
+    {
+        _settings.VoiceInputDevice = value.Id;
+        _settings.Save();
+        _voice.ApplyAudioSettings(devicesChanged: true);
+    }
+
+    partial void OnOutputDeviceChanged(AudioDeviceInfo value)
+    {
+        _settings.VoiceOutputDevice = value.Id;
+        _settings.Save();
+        _voice.ApplyAudioSettings(devicesChanged: true);
+    }
+
+    // Slider values are applied live and saved when the dialog closes.
+    partial void OnThresholdDbChanged(double value)
+    {
+        _settings.VoiceThresholdDb = (float)value;
+        _voice.ApplyAudioSettings(devicesChanged: false);
+    }
+
+    partial void OnOutputVolumePercentChanged(double value)
+    {
+        _settings.VoiceOutputVolume = (float)(value / 100);
+        _voice.ApplyAudioSettings(devicesChanged: false);
+    }
+
+    public void Dispose()
+    {
+        _meterTimer.Stop();
+        _voice.StopMicrophoneTest();
+        _settings.Save();
     }
 
     public MemberViewModel Me { get; }

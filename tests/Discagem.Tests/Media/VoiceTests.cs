@@ -319,6 +319,70 @@ public sealed class VoiceTests
         Assert.Equal(input, copy.Take(3));
     }
 
+    [Theory]
+    [InlineData(PcmSampleType.Float32)]
+    [InlineData(PcmSampleType.Int16)]
+    [InlineData(PcmSampleType.Int24)]
+    [InlineData(PcmSampleType.Int32)]
+    public void PcmConversion_RoundTripsThroughDeviceFormats(PcmSampleType type)
+    {
+        var format = new PcmFormat(48_000, 2, type);
+        float[] mono = [0f, 0.5f, -0.5f, 0.999f, -1f, 0.123f];
+        var bytes = new byte[mono.Length * format.BlockAlign];
+        PcmConversion.FromMono(mono, format, bytes);
+
+        var back = new float[mono.Length];
+        Assert.Equal(mono.Length, PcmConversion.ToMono(bytes, format, back));
+        var tolerance = type == PcmSampleType.Int16 ? 1e-4 : 1e-6;
+        for (var i = 0; i < mono.Length; i++)
+        {
+            Assert.InRange(back[i], mono[i] - tolerance, mono[i] + tolerance);
+        }
+    }
+
+    [Fact]
+    public void PcmConversion_AveragesChannels()
+    {
+        var format = new PcmFormat(48_000, 2, PcmSampleType.Float32);
+        var bytes = new byte[2 * format.BlockAlign];
+        var floats = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan());
+        floats[0] = 1f;
+        floats[1] = 0f;
+        floats[2] = -0.5f;
+        floats[3] = -0.5f;
+
+        var mono = new float[2];
+        PcmConversion.ToMono(bytes, format, mono);
+        Assert.Equal(new[] { 0.5f, -0.5f }, mono);
+    }
+
+    [Fact]
+    public void DeviceResamplers_ConvertBetween44100And48000()
+    {
+        // Capture: 44.1 kHz in, 48 kHz out.
+        var captured = new List<float>();
+        var capture = new CaptureResampler(44_100, samples => captured.AddRange(samples.ToArray()));
+        var tone = new Tone(500, 0.4f, 44_100);
+        for (var i = 0; i < 50; i++)
+        {
+            capture.Write(tone.Next(441));
+        }
+
+        Assert.InRange(captured.Count, 23_998, 24_001);
+        Assert.InRange(Amplitude(captured.ToArray().AsSpan(4800), 500), 0.38, 0.42);
+
+        // Playback: a 48 kHz source pulled in 44.1 kHz blocks of odd sizes.
+        var source = new Tone(500, 0.4f);
+        var playback = new PlaybackResampler(44_100, buffer => source.Fill(buffer));
+        var output = new float[44_100];
+        for (var offset = 0; offset < output.Length; offset += 367)
+        {
+            playback.Read(output.AsSpan(offset, Math.Min(367, output.Length - offset)));
+        }
+
+        Assert.InRange(Amplitude(output.AsSpan(4410), 500, 44_100), 0.38, 0.42);
+    }
+
     [Fact]
     public void VoiceActivityDetector_MeasuresLevel()
     {

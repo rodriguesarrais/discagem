@@ -56,8 +56,10 @@
     <Grid Grid.Row="4" RowDefinitions="*,Auto,Auto">
       <ScrollViewer x:Name="MessageScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,16">
-          <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Margin="16,8" Foreground="{StaticResource AccentBrush}"
-                       IsVisible="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}" />
+          <!-- IsIndeterminate follows visibility: a hidden indeterminate bar keeps animating (and redrawing). -->
+          <ProgressBar Height="3" MinHeight="3" Margin="16,8" Foreground="{StaticResource AccentBrush}"
+                       IsVisible="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}"
+                       IsIndeterminate="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}" />
 
           <StackPanel Margin="16,24,16,8" Spacing="8" IsVisible="{Binding !SelectedChannel.HasMoreHistory, FallbackValue=False}">
             <Border Width="68" Height="68" CornerRadius="34" Background="{StaticResource ElevatedBrush}" HorizontalAlignment="Left">
@@ -134,7 +136,7 @@
                                       <Panel>
                                         <Image Source="{Binding Image}" Stretch="Uniform" MaxWidth="440" MaxHeight="320"
                                                RenderOptions.BitmapInterpolationMode="HighQuality" />
-                                        <ProgressBar IsIndeterminate="True" Width="60" Height="3" MinHeight="3" IsVisible="{Binding IsLoading}"
+                                        <ProgressBar IsIndeterminate="{Binding IsLoading}" Width="60" Height="3" MinHeight="3" IsVisible="{Binding IsLoading}"
                                                      Foreground="{StaticResource AccentBrush}" />
                                         <TextBlock Text="{Binding Error}" Classes="caption" Margin="12" TextWrapping="Wrap"
                                                    VerticalAlignment="Center" HorizontalAlignment="Center" />
@@ -205,7 +207,7 @@
                             Command="{Binding #Root.((vm:ShellViewModel)DataContext).RemoveAttachmentCommand}" CommandParameter="{Binding}">
                       <c:Icon Data="{StaticResource IconClose}" />
                     </Button>
-                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="True" Height="2" MinHeight="2"
+                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="{Binding IsUploading}" Height="2" MinHeight="2"
                                  VerticalAlignment="Bottom" Margin="0,4,0,-4" IsVisible="{Binding IsUploading}"
                                  Foreground="{StaticResource AccentBrush}" />
                   </Grid>
@@ -234,9 +236,9 @@
       <Panel Grid.Row="2" Height="24" Margin="20,0,16,2">
         <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasTyping}" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-            <Ellipse Classes="typing-dot" />
-            <Ellipse Classes="typing-dot second" />
-            <Ellipse Classes="typing-dot third" />
+            <Ellipse Classes="typing-dot" Classes.animated="{Binding HasTyping}" />
+            <Ellipse Classes="typing-dot second" Classes.animated="{Binding HasTyping}" />
+            <Ellipse Classes="typing-dot third" Classes.animated="{Binding HasTyping}" />
           </StackPanel>
           <TextBlock Text="{Binding TypingText}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
         </StackPanel>

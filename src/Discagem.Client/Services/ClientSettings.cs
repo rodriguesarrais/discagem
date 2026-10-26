@@ -23,6 +23,25 @@ public sealed class ClientSettings
 
     public bool ShowMembers { get; set; } = true;
 
+    /// <summary>Microphone device id ("" for the system default).</summary>
+    public string VoiceInputDevice { get; set; } = "";
+
+    /// <summary>Speaker device id ("" for the system default).</summary>
+    public string VoiceOutputDevice { get; set; } = "";
+
+    /// <summary>Input sensitivity: the microphone transmits above this level (dBFS).</summary>
+    public float VoiceThresholdDb { get; set; } = -50f;
+
+    /// <summary>Playback volume, 1 = 100 %.</summary>
+    public float VoiceOutputVolume { get; set; } = 1f;
+
+    public bool VoiceMuted { get; set; }
+
+    public bool VoiceDeafened { get; set; }
+
+    /// <summary>Per-user playback volume (user id to gain; 1 = 100 %).</summary>
+    public Dictionary<long, float> UserVolumes { get; set; } = [];
+
     public double WindowWidth { get; set; } = 1280;
 
     public double WindowHeight { get; set; } = 800;

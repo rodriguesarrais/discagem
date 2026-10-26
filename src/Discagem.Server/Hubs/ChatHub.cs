@@ -215,6 +215,7 @@ public sealed class ChatHub(
         {
             await voice.CloseChannelAsync(channelId);
         }
+
         var files = await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).Select(a => a.StorageName).ToListAsync();
         await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).ExecuteDeleteAsync();
         db.Channels.Remove(channel);

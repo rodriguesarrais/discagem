@@ -56,7 +56,7 @@
         </TabItem>
       </TabControl>
 
-      <ProgressBar IsIndeterminate="True" Width="160" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}"
+      <ProgressBar IsIndeterminate="{Binding IsLoading}" Width="160" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}"
                    IsVisible="{Binding IsLoading}" VerticalAlignment="Center" />
 
       <StackPanel IsVisible="{Binding !IsSupported}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="420">

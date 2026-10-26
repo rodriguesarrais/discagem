@@ -10,7 +10,7 @@
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" IsVisible="{Binding !HasFrame}" MaxWidth="420">
       <c:AvatarView Width="72" Height="72" DisplayName="{Binding Stream.Streamer.DisplayName}" Color="{Binding Stream.Streamer.AvatarColor}"
                     HorizontalAlignment="Center" />
-      <ProgressBar IsIndeterminate="True" Width="120" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}" />
+      <ProgressBar IsIndeterminate="{Binding !HasFrame}" Width="120" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}" />
       <TextBlock Text="{Binding Status}" Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
     </StackPanel>
 

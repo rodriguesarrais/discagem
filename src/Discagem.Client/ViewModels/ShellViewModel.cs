@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Discagem.Client.Services;
+using Discagem.Client.Services.Audio;
 using Discagem.Media.Pipeline;
 using Discagem.Media.Vpx;
 using Discagem.Media.WebRtc;
@@ -31,12 +32,15 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly IDialogService _dialogs;
     private readonly ChatConnection _hub;
     private readonly ScreenShareService _media;
+    private readonly VoiceService _voice;
     private readonly ImageCache _images;
     private readonly Dictionary<long, MemberViewModel> _members = new();
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
     private readonly DispatcherTimer _typingTimer;
     private readonly DispatcherTimer _tokenRefreshTimer;
     private DateTime _lastTypingSent = DateTime.MinValue;
+    private bool _recoveringVoice;
+    private TaskCompletionSource _voiceRecoveryWake = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _disposed;
 
     public ShellViewModel(ClientSession session, IDialogService dialogs)
@@ -48,7 +52,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _showMembers = session.Settings.ShowMembers;
 
         _hub = new ChatConnection(session.Api.BaseAddress, () => _session.Api.Token);
-        _media = new ScreenShareService(_hub, BuildIceServers(session));
+        var iceServers = BuildIceServers(session);
+        _media = new ScreenShareService(_hub, iceServers);
+        _voice = new VoiceService(_hub, iceServers, session.Settings, AudioBackends.Create(), session.User.Id);
+        _isMuted = session.Settings.VoiceMuted;
+        _isDeafened = session.Settings.VoiceDeafened;
         _typingTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateTypingText());
         // Tokens last for weeks; refresh them so long-running sessions never reconnect with an expired one.
         _tokenRefreshTimer = new DispatcherTimer(TimeSpan.FromHours(6), DispatcherPriority.Background, async (_, _) => await RefreshTokenAsync());
@@ -61,12 +69,28 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             IsLive = false;
             ShowBanner(reason);
         });
+        _voice.SpeakingChanged += (userId, speaking) => Dispatcher.UIThread.Post(() => OnSpeakingChanged(userId, speaking));
+        _voice.Disconnected += (reason, canRejoin) => Dispatcher.UIThread.Post(() =>
+        {
+            if (canRejoin && ConnectedVoiceChannel is not null)
+            {
+                // Usually the server went away and the chat connection is about to notice too.
+                _ = RecoverVoiceAsync();
+                return;
+            }
+
+            SetConnectedVoice(null);
+            ShowBanner(reason, isError: false);
+        });
+        _voice.AudioProblem += message => Dispatcher.UIThread.Post(() => ShowBanner(message));
     }
 
     /// <summary>Raised when the user signs out or the session becomes invalid (with an optional message).</summary>
     public event Action<string?>? LoggedOut;
 
     public ObservableCollection<ChannelViewModel> Channels { get; } = [];
+
+    public ObservableCollection<VoiceChannelViewModel> VoiceChannels { get; } = [];
 
     public ObservableCollection<MemberViewModel> OnlineMembers { get; } = [];
 
@@ -157,6 +181,32 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     [ObservableProperty]
     private bool _isSending;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInVoice))]
+    private VoiceChannelViewModel? _connectedVoiceChannel;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsVoiceConnected))]
+    private bool _isJoiningVoice;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMicrophoneOff))]
+    private bool _isMuted;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMicrophoneOff))]
+    private bool _isDeafened;
+
+    [ObservableProperty]
+    private bool _isMeSpeaking;
+
+    public bool IsInVoice => ConnectedVoiceChannel is not null;
+
+    public bool IsVoiceConnected => !IsJoiningVoice;
+
+    /// <summary>Deafening also turns the microphone off.</summary>
+    public bool IsMicrophoneOff => IsMuted || IsDeafened;
 
     partial void OnShowMembersChanged(bool value)
     {
@@ -282,6 +332,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _hub.StreamStarted += s => Dispatcher.UIThread.Post(() => AddOrUpdateStream(s));
         _hub.StreamUpdated += s => Dispatcher.UIThread.Post(() => AddOrUpdateStream(s));
         _hub.StreamEnded += id => Dispatcher.UIThread.Post(() => OnStreamEnded(id));
+        _hub.VoiceStateChanged += p => Dispatcher.UIThread.Post(() => OnVoiceStateChanged(p, announce: true));
+        _hub.VoiceLeft += (c, u) => Dispatcher.UIThread.Post(() => OnVoiceLeft(c, u));
         _hub.Reconnecting += error => Dispatcher.UIThread.Post(() =>
         {
             Connection = ConnectionState.Reconnecting;
@@ -296,11 +348,19 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             {
                 CloseStreamViewer(ActiveStream, null);
             }
+
+            // The server ends the call when the connection drops; rejoin once it is back.
+            if (IsInVoice)
+            {
+                _ = _voice.SuspendAsync();
+                _ = RecoverVoiceAsync();
+            }
         });
         _hub.Reconnected += () => Dispatcher.UIThread.Post(async () =>
         {
             Connection = ConnectionState.Connected;
             await SafeAsync(SyncAsync);
+            _voiceRecoveryWake.TrySetResult();
         });
         _hub.Closed += ex => Dispatcher.UIThread.Post(async () =>
         {
@@ -347,6 +407,21 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         foreach (var stale in Channels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
         {
             Channels.Remove(stale);
+        }
+
+        foreach (var stale in VoiceChannels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
+        {
+            VoiceChannels.Remove(stale);
+        }
+
+        foreach (var channel in VoiceChannels)
+        {
+            channel.Participants.Clear();
+        }
+
+        foreach (var participant in state.VoiceParticipants)
+        {
+            OnVoiceStateChanged(participant, announce: false);
         }
 
         // Anything may have changed while disconnected: reload history lazily.
@@ -508,6 +583,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void AddOrUpdateChannel(ChannelDto dto)
     {
+        if (dto.Kind == ChannelKind.Voice)
+        {
+            AddOrUpdateVoiceChannel(dto);
+            return;
+        }
+
         var existing = FindChannel(dto.Id);
         if (existing is not null)
         {
@@ -532,8 +613,38 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         OnPropertyChanged(nameof(WindowTitle));
     }
 
+    private void AddOrUpdateVoiceChannel(ChannelDto dto)
+    {
+        var existing = VoiceChannels.FirstOrDefault(c => c.Id == dto.Id);
+        if (existing is not null)
+        {
+            existing.Update(dto);
+        }
+        else
+        {
+            VoiceChannels.Add(new VoiceChannelViewModel(dto) { IsConnected = ConnectedVoiceChannel?.Id == dto.Id });
+        }
+
+        var ordered = VoiceChannels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToList();
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            var current = VoiceChannels.IndexOf(ordered[i]);
+            if (current != i)
+            {
+                VoiceChannels.Move(current, i);
+            }
+        }
+    }
+
     private void OnChannelDeleted(long id)
     {
+        var voiceChannel = VoiceChannels.FirstOrDefault(c => c.Id == id);
+        if (voiceChannel is not null)
+        {
+            VoiceChannels.Remove(voiceChannel);
+            return;
+        }
+
         var channel = FindChannel(id);
         if (channel is null)
         {
@@ -800,9 +911,14 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     }
 
     [RelayCommand]
-    private async Task CreateChannelAsync()
+    private Task CreateChannelAsync() => CreateChannelOfKindAsync(ChannelKind.Text);
+
+    [RelayCommand]
+    private Task CreateVoiceChannelAsync() => CreateChannelOfKindAsync(ChannelKind.Voice);
+
+    private async Task CreateChannelOfKindAsync(ChannelKind kind)
     {
-        var result = await _dialogs.EditChannelAsync(new ChannelEditorViewModel("Create channel", "Create channel"));
+        var result = await _dialogs.EditChannelAsync(ChannelEditorViewModel.ForCreate(kind));
         if (result is null)
         {
             return;
@@ -810,9 +926,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         try
         {
-            var channel = await _hub.CreateChannelAsync(result.Name, result.Topic, ChannelKind.Text);
+            var channel = await _hub.CreateChannelAsync(result.Name, result.Topic, result.Kind);
             AddOrUpdateChannel(channel);
-            SelectedChannel = FindChannel(channel.Id);
+            if (channel.Kind == ChannelKind.Text)
+            {
+                SelectedChannel = FindChannel(channel.Id);
+            }
         }
         catch (Exception ex)
         {
@@ -823,7 +942,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     [RelayCommand]
     private async Task EditChannelAsync(ChannelViewModel channel)
     {
-        var result = await _dialogs.EditChannelAsync(new ChannelEditorViewModel("Edit channel", "Save changes", channel.Name, channel.Topic));
+        var result = await _dialogs.EditChannelAsync(ChannelEditorViewModel.ForEdit(ChannelKind.Text, channel.Name, channel.Topic));
         if (result is not null)
         {
             await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), "Could not update the channel");
@@ -836,6 +955,30 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         var confirmed = await _dialogs.ConfirmAsync(
             "Delete channel",
             $"Delete #{channel.Name} and all of its messages? This cannot be undone.",
+            "Delete channel",
+            danger: true);
+        if (confirmed)
+        {
+            await SafeAsync(() => _hub.DeleteChannelAsync(channel.Id), "Could not delete the channel");
+        }
+    }
+
+    [RelayCommand]
+    private async Task EditVoiceChannelAsync(VoiceChannelViewModel channel)
+    {
+        var result = await _dialogs.EditChannelAsync(ChannelEditorViewModel.ForEdit(ChannelKind.Voice, channel.Name, channel.Topic));
+        if (result is not null)
+        {
+            await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), "Could not update the channel");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteVoiceChannelAsync(VoiceChannelViewModel channel)
+    {
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Delete channel",
+            $"Delete the voice channel {channel.Name}? Everyone in it will be disconnected.",
             "Delete channel",
             danger: true);
         if (confirmed)
@@ -865,10 +1008,18 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _session.Api.Token = auth.Token;
             _session.Settings.Token = auth.Token;
             _session.Settings.Save();
-        }, () => _hub.ConnectionId);
+        }, () => _hub.ConnectionId, _voice);
         var logout = false;
         settings.LogoutRequested += () => logout = true;
-        await _dialogs.ShowSettingsAsync(settings);
+        try
+        {
+            await _dialogs.ShowSettingsAsync(settings);
+        }
+        finally
+        {
+            settings.Dispose();
+        }
+
         if (logout)
         {
             SignOut(null);
@@ -1054,6 +1205,224 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
+    // ---- Voice ----------------------------------------------------------------------------
+
+    [RelayCommand]
+    private async Task JoinVoiceAsync(VoiceChannelViewModel channel)
+    {
+        if (IsJoiningVoice || ConnectedVoiceChannel == channel)
+        {
+            return;
+        }
+
+        await JoinVoiceCoreAsync(channel);
+    }
+
+    private async Task JoinVoiceCoreAsync(VoiceChannelViewModel channel)
+    {
+        SetConnectedVoice(channel);
+        IsJoiningVoice = true;
+        try
+        {
+            await _voice.JoinAsync(channel.Id);
+        }
+        catch (Exception ex)
+        {
+            if (ConnectedVoiceChannel == channel)
+            {
+                SetConnectedVoice(null);
+            }
+
+            ShowBanner($"Could not join {channel.Name}: {Describe(ex)}");
+        }
+        finally
+        {
+            IsJoiningVoice = false;
+        }
+    }
+
+    /// <summary>
+    /// The voice connection was lost: keep the channel selected and rejoin as soon as the chat
+    /// connection is up, retrying for about a minute. Reconnecting the chat connection wakes it up.
+    /// </summary>
+    private async Task RecoverVoiceAsync()
+    {
+        if (_recoveringVoice)
+        {
+            return;
+        }
+
+        _recoveringVoice = true;
+        IsJoiningVoice = true;
+        try
+        {
+            for (var attempt = 0; attempt < 8 && ConnectedVoiceChannel is { } target; attempt++)
+            {
+                if (Connection == ConnectionState.Connected)
+                {
+                    if (VoiceChannels.FirstOrDefault(c => c.Id == target.Id) is not { } channel)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        await _voice.JoinAsync(channel.Id);
+                        if (ConnectedVoiceChannel?.Id != channel.Id)
+                        {
+                            // The user hung up while we were reconnecting.
+                            await SafeAsync(_voice.LeaveAsync);
+                        }
+                        else if (ConnectedVoiceChannel != channel)
+                        {
+                            SetConnectedVoice(channel);
+                        }
+
+                        return;
+                    }
+                    catch (HubException ex)
+                    {
+                        // The server refused (the channel is gone or full): retrying will not help.
+                        SetConnectedVoice(null);
+                        ShowBanner($"Could not rejoin {channel.Name}: {Describe(ex)}");
+                        return;
+                    }
+                    catch (Exception)
+                    {
+                        // Try again below.
+                    }
+                }
+
+                _voiceRecoveryWake = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                await Task.WhenAny(Task.Delay(TimeSpan.FromSeconds(Math.Min(2 << attempt, 15))), _voiceRecoveryWake.Task);
+            }
+
+            if (ConnectedVoiceChannel is { } lost)
+            {
+                SetConnectedVoice(null);
+                ShowBanner($"Could not reconnect to {lost.Name}.");
+            }
+        }
+        finally
+        {
+            _recoveringVoice = false;
+            IsJoiningVoice = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LeaveVoiceAsync()
+    {
+        SetConnectedVoice(null);
+        IsJoiningVoice = false;
+        await SafeAsync(_voice.LeaveAsync);
+    }
+
+    [RelayCommand]
+    private async Task ToggleMuteAsync()
+    {
+        // As in Discord, unmuting while deafened also undeafens.
+        if (IsDeafened)
+        {
+            IsDeafened = false;
+            IsMuted = false;
+            await _voice.SetMutedAsync(false);
+            await _voice.SetDeafenedAsync(false);
+            return;
+        }
+
+        IsMuted = !IsMuted;
+        await _voice.SetMutedAsync(IsMuted);
+    }
+
+    [RelayCommand]
+    private async Task ToggleDeafenAsync()
+    {
+        IsDeafened = !IsDeafened;
+        await _voice.SetDeafenedAsync(IsDeafened);
+    }
+
+    private void SetConnectedVoice(VoiceChannelViewModel? channel)
+    {
+        ConnectedVoiceChannel = channel;
+        foreach (var voiceChannel in VoiceChannels)
+        {
+            voiceChannel.IsConnected = voiceChannel == channel;
+            foreach (var participant in voiceChannel.Participants)
+            {
+                participant.IsSpeaking = false;
+            }
+        }
+
+        IsMeSpeaking = false;
+    }
+
+    private void OnVoiceStateChanged(VoiceParticipantDto dto, bool announce)
+    {
+        var target = VoiceChannels.FirstOrDefault(c => c.Id == dto.ChannelId);
+        if (target is null || !_members.TryGetValue(dto.UserId, out var member))
+        {
+            return;
+        }
+
+        // A user is in one voice channel at a time.
+        foreach (var other in VoiceChannels.Where(c => c != target))
+        {
+            if (other.Find(dto.UserId) is { } moved)
+            {
+                other.Participants.Remove(moved);
+            }
+        }
+
+        var participant = target.Find(dto.UserId);
+        if (participant is null)
+        {
+            participant = new VoiceParticipantViewModel(
+                member,
+                target,
+                _voice.GetUserVolume(member.Id) * 100,
+                (userId, percent) => _voice.SetUserVolume(userId, (float)(percent / 100)));
+            var index = 0;
+            while (index < target.Participants.Count &&
+                   string.CompareOrdinal(target.Participants[index].Member.SortKey, member.SortKey) < 0)
+            {
+                index++;
+            }
+
+            target.Participants.Insert(index, participant);
+            if (announce)
+            {
+                _voice.OnParticipantJoined(dto.ChannelId, dto.UserId);
+            }
+        }
+
+        participant.Apply(dto);
+    }
+
+    private void OnVoiceLeft(long channelId, long userId)
+    {
+        var channel = VoiceChannels.FirstOrDefault(c => c.Id == channelId);
+        if (channel?.Find(userId) is { } participant)
+        {
+            channel.Participants.Remove(participant);
+        }
+
+        _voice.OnParticipantLeft(channelId, userId);
+    }
+
+    private void OnSpeakingChanged(long userId, bool speaking)
+    {
+        if (userId == Me.Id)
+        {
+            IsMeSpeaking = speaking && IsInVoice;
+        }
+
+        if (ConnectedVoiceChannel?.Find(userId) is { } participant)
+        {
+            participant.IsSpeaking = speaking;
+        }
+    }
+
     // ---- Helpers ---------------------------------------------------------------------------
 
     public void ShowBanner(string message, bool isError = true)
@@ -1110,6 +1479,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _tokenRefreshTimer.Stop();
         });
         ActiveStream?.Dispose();
+        await _voice.DisposeAsync();
         await _media.DisposeAsync();
         try
         {
