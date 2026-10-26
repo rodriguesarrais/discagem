@@ -1,0 +1,11 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Discagem.Client.Views.Dialogs.ImageViewerWindow"
+        Width="1000" Height="720" MinWidth="320" MinHeight="240"
+        WindowStartupLocation="CenterOwner" Background="#E6101114"
+        Icon="avares://Discagem/Assets/discagem.ico">
+  <Grid PointerPressed="OnBackgroundPressed" Background="Transparent">
+    <Image x:Name="ImageView" Stretch="Uniform" StretchDirection="DownOnly" Margin="24"
+           RenderOptions.BitmapInterpolationMode="HighQuality" />
+  </Grid>
+</Window>

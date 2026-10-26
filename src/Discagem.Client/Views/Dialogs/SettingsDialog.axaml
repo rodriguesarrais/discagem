@@ -1,0 +1,193 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:c="using:Discagem.Client.Controls"
+        xmlns:media="using:Discagem.Media.Pipeline"
+        xmlns:audio="using:Discagem.Client.Services.Audio"
+        xmlns:views="using:Discagem.Client.Views"
+        x:Class="Discagem.Client.Views.Dialogs.SettingsDialog"
+        x:DataType="vm:SettingsViewModel"
+        Width="620" Height="680" MinWidth="520" MinHeight="480" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        Title="User settings">
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer>
+      <StackPanel Margin="28,24,28,24" Spacing="28">
+
+        <!-- Profile -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="My account" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="Auto,*">
+                <c:AvatarView Width="72" Height="72" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" />
+                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding DisplayName}" Classes="h2" />
+                  <TextBlock Text="{Binding Me.Username, StringFormat='@{0}'}" Classes="muted" />
+                </StackPanel>
+              </Grid>
+              <StackPanel>
+                <TextBlock Text="DISPLAY NAME" Classes="label" />
+                <TextBox Text="{Binding DisplayName}" MaxLength="32" />
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Text="AVATAR COLOUR" Classes="label" />
+                <ItemsControl ItemsSource="{Binding Palette}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                              Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).PickColorCommand}"
+                              CommandParameter="{Binding}">
+                        <Ellipse Width="30" Height="30" Fill="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Classes="primary" Content="Save profile" Command="{Binding SaveProfileCommand}" IsEnabled="{Binding !IsBusy}" />
+                <TextBlock Text="{Binding ProfileMessage}" VerticalAlignment="Center"
+                           Foreground="{Binding ProfileError, Converter={x:Static views:Converters.StatusForeground}}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Password -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Password" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="12">
+              <StackPanel>
+                <TextBlock Text="CURRENT PASSWORD" Classes="label" />
+                <TextBox Text="{Binding CurrentPassword}" PasswordChar="•" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,12,*">
+                <StackPanel>
+                  <TextBlock Text="NEW PASSWORD" Classes="label" />
+                  <TextBox Text="{Binding NewPassword}" PasswordChar="•" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="CONFIRM NEW PASSWORD" Classes="label" />
+                  <TextBox Text="{Binding ConfirmPassword}" PasswordChar="•" />
+                </StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="Change password" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding !IsBusy}" />
+                <TextBlock Text="{Binding PasswordMessage}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"
+                           Foreground="{Binding PasswordError, Converter={x:Static views:Converters.StatusForeground}}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Voice -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Voice &amp; audio" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="*,12,*">
+                <StackPanel>
+                  <TextBlock Text="INPUT DEVICE" Classes="label" />
+                  <ComboBox ItemsSource="{Binding InputDevices}" SelectedItem="{Binding InputDevice}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="audio:AudioDeviceInfo">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="OUTPUT DEVICE" Classes="label" />
+                  <ComboBox ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding OutputDevice}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="audio:AudioDeviceInfo">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="INPUT SENSITIVITY" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{Binding ThresholdText}" Classes="caption" />
+                </Grid>
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding InputLevelPercent}" Height="6" MinHeight="6"
+                             CornerRadius="3" Margin="6,0" Classes="meter" Classes.active="{Binding IsAboveThreshold}" />
+                <Slider Minimum="-80" Maximum="0" Value="{Binding ThresholdDb}" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                             Text="Speak normally: the bar turns green when others would hear you. Move the slider right if background noise turns it green." />
+                  <Button Grid.Column="1" Content="{Binding MicrophoneTestText}" Command="{Binding ToggleMicrophoneTestCommand}"
+                          IsVisible="{Binding CanTestMicrophone}" />
+                </Grid>
+              </StackPanel>
+
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="OUTPUT VOLUME" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{Binding OutputVolumeText}" Classes="caption" />
+                </Grid>
+                <Slider Minimum="0" Maximum="200" Value="{Binding OutputVolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
+              </StackPanel>
+
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding EchoAdvice}" Classes="caption" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding AudioSystem}" Classes="caption" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Streaming -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Screen sharing" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="12">
+              <StackPanel>
+                <TextBlock Text="DEFAULT QUALITY" Classes="label" />
+                <ComboBox ItemsSource="{Binding Qualities}" SelectedItem="{Binding DefaultQuality}" Width="240">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="media:StreamQuality">
+                      <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <TextBlock Text="{Binding CodecInfo}" Classes="caption" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- About -->
+        <StackPanel Spacing="6">
+          <TextBlock Text="About" Classes="h2" Margin="0,0,0,8" />
+          <TextBlock Classes="secondary">
+            <Run Text="Server: " /><Run Text="{Binding ServerName}" FontWeight="SemiBold" />
+          </TextBlock>
+          <TextBlock Text="{Binding ServerAddress}" Classes="caption" />
+          <TextBlock Text="{Binding AppVersion, StringFormat='Discagem desktop {0}'}" Classes="caption" />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="1" Background="{StaticResource SidebarBrush}" Padding="20,14">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Classes="danger" Command="{Binding LogoutCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Data="{StaticResource IconLogout}" Width="16" Height="16" />
+            <TextBlock Text="Log out" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2" Classes="ghost" Content="Close" Click="OnClose" IsCancel="True" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

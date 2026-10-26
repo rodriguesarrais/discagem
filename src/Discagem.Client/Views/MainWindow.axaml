@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:views="using:Discagem.Client.Views"
+        x:Class="Discagem.Client.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="avares://Discagem/Assets/discagem.ico"
+        MinWidth="940"
+        MinHeight="560"
+        Width="1280"
+        Height="800"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:SplashViewModel">
+      <views:SplashView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:LoginViewModel">
+      <views:LoginView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ShellViewModel">
+      <views:ShellView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <ContentControl Content="{Binding CurrentView}" />
+</Window>

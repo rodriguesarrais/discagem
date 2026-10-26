@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Discagem.Client</RootNamespace>
+    <AssemblyName>Discagem</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\discagem.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Diagnostics" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <!-- WASAPI audio devices for voice chat on Windows (Linux uses PulseAudio directly). -->
+    <PackageReference Include="NAudio.Wasapi" />
+    <!-- Only used for its Windows build of libvpx (vpxmd.dll); its managed code is not referenced. -->
+    <PackageReference Include="SIPSorceryMedia.Encoders" ExcludeAssets="all" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- libvpx for Windows ships next to the executable (Linux uses the system libvpx package). -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' or $(RuntimeIdentifier.StartsWith('win'))">
+    <None Include="$(PkgSIPSorceryMedia_Encoders)\build\x64\vpxmd.dll"
+          Link="vpxmd.dll"
+          Visible="false"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Discagem.Shared\Discagem.Shared.csproj" />
+    <ProjectReference Include="..\Discagem.Media\Discagem.Media.csproj" />
+  </ItemGroup>
+
+</Project>

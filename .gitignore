@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+TestResults/
+
+# Runtime data (server)
+src/Discagem.Server/data/
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Deployment secrets
+deploy/.env

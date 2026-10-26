@@ -1,0 +1,110 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Surfaces, from darkest to lightest -->
+  <Color x:Key="RailColor">#17181C</Color>
+  <Color x:Key="SidebarColor">#1F2025</Color>
+  <Color x:Key="ChatColor">#26272D</Color>
+  <Color x:Key="ElevatedColor">#30323A</Color>
+  <Color x:Key="HoverColor">#2D2F36</Color>
+  <Color x:Key="SelectedColor">#383A43</Color>
+  <Color x:Key="DividerColor">#34363E</Color>
+  <Color x:Key="InputColor">#30323A</Color>
+
+  <!-- Text -->
+  <Color x:Key="TextPrimaryColor">#ECEDF1</Color>
+  <Color x:Key="TextSecondaryColor">#B7BAC4</Color>
+  <Color x:Key="TextMutedColor">#868A96</Color>
+
+  <!-- Accents -->
+  <Color x:Key="AccentColor">#7C6CFF</Color>
+  <Color x:Key="AccentHoverColor">#6B5BF0</Color>
+  <Color x:Key="AccentPressedColor">#5B4CD9</Color>
+  <Color x:Key="AccentSoftColor">#2C7C6CFF</Color>
+  <Color x:Key="OnlineColor">#3DBE73</Color>
+  <Color x:Key="LiveColor">#F04452</Color>
+  <Color x:Key="WarningColor">#F5A524</Color>
+  <Color x:Key="DangerColor">#E5484D</Color>
+  <Color x:Key="LinkColor">#7FB4FF</Color>
+  <Color x:Key="MentionColor">#337C6CFF</Color>
+
+  <SolidColorBrush x:Key="RailBrush" Color="{StaticResource RailColor}" />
+  <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}" />
+  <SolidColorBrush x:Key="ChatBrush" Color="{StaticResource ChatColor}" />
+  <SolidColorBrush x:Key="ElevatedBrush" Color="{StaticResource ElevatedColor}" />
+  <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}" />
+  <SolidColorBrush x:Key="SelectedBrush" Color="{StaticResource SelectedColor}" />
+  <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerColor}" />
+  <SolidColorBrush x:Key="InputBrush" Color="{StaticResource InputColor}" />
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+  <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+  <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
+  <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
+  <SolidColorBrush x:Key="OnlineBrush" Color="{StaticResource OnlineColor}" />
+  <SolidColorBrush x:Key="LiveBrush" Color="{StaticResource LiveColor}" />
+  <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+  <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+  <SolidColorBrush x:Key="LinkBrush" Color="{StaticResource LinkColor}" />
+  <SolidColorBrush x:Key="MentionBrush" Color="{StaticResource MentionColor}" />
+
+  <LinearGradientBrush x:Key="BrandGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+    <GradientStop Offset="0" Color="#6C63FF" />
+    <GradientStop Offset="1" Color="#B455F7" />
+  </LinearGradientBrush>
+
+  <RadialGradientBrush x:Key="LoginBackground" Center="30%,20%" GradientOrigin="30%,20%" RadiusX="90%" RadiusY="90%">
+    <GradientStop Offset="0" Color="#2E2667" />
+    <GradientStop Offset="0.55" Color="#1B1B24" />
+    <GradientStop Offset="1" Color="#121216" />
+  </RadialGradientBrush>
+
+  <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, DejaVu Sans Mono, Menlo, monospace</FontFamily>
+
+  <!-- Fluent theme overrides so built-in controls match the palette -->
+  <SolidColorBrush x:Key="TextControlBackground" Color="#30323A" />
+  <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#33353D" />
+  <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#30323A" />
+  <SolidColorBrush x:Key="TextControlBorderBrush" Color="#30323A" />
+  <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#41434C" />
+  <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#7C6CFF" />
+  <SolidColorBrush x:Key="TextControlForeground" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7C808C" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#7C808C" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#7C808C" />
+  <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#7C6CFF" />
+  <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+  <Thickness x:Key="TextControlThemePadding">12,9,12,9</Thickness>
+
+  <SolidColorBrush x:Key="ButtonBackground" Color="#383A43" />
+  <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#41434D" />
+  <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#33353D" />
+  <SolidColorBrush x:Key="ButtonForeground" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+  <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+  <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#2C2E35" />
+  <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#6F7380" />
+  <SolidColorBrush x:Key="AccentButtonBackground" Color="#7C6CFF" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#6B5BF0" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#5B4CD9" />
+  <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="#4A4580" />
+  <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#B8B3E6" />
+  <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+  <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+
+  <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="{StaticResource AccentColor}" />
+  <Color x:Key="SystemAccentColor">#7C6CFF</Color>
+  <Color x:Key="SystemAccentColorLight1">#9285FF</Color>
+  <Color x:Key="SystemAccentColorLight2">#A79EFF</Color>
+  <Color x:Key="SystemAccentColorDark1">#6B5BF0</Color>
+</ResourceDictionary>

@@ -1,0 +1,119 @@
+namespace Discagem.Shared;
+
+/// <summary>Public representation of a user account.</summary>
+public sealed record UserDto(
+    long Id,
+    string Username,
+    string DisplayName,
+    string AvatarColor,
+    bool IsAdmin,
+    DateTimeOffset CreatedAt);
+
+public enum ChannelKind
+{
+    Text = 0,
+    Voice = 1,
+}
+
+/// <summary>A text or voice channel.</summary>
+public sealed record ChannelDto(
+    long Id,
+    string Name,
+    string Topic,
+    int Position,
+    DateTimeOffset CreatedAt,
+    ChannelKind Kind = ChannelKind.Text);
+
+/// <summary>A user connected to a voice channel.</summary>
+public sealed record VoiceParticipantDto(
+    long ChannelId,
+    long UserId,
+    bool IsMuted,
+    bool IsDeafened);
+
+/// <summary>A file uploaded to the server and (optionally) linked to a message.</summary>
+public sealed record AttachmentDto(
+    long Id,
+    string FileName,
+    string ContentType,
+    long Size)
+{
+    public bool IsImage => ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>A chat message.</summary>
+public sealed record MessageDto(
+    long Id,
+    long ChannelId,
+    long AuthorId,
+    string Content,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? EditedAt,
+    IReadOnlyList<AttachmentDto> Attachments);
+
+/// <summary>An active screen share.</summary>
+public sealed record StreamInfoDto(
+    string StreamId,
+    long UserId,
+    string Title,
+    int Width,
+    int Height,
+    int FrameRate,
+    DateTimeOffset StartedAt,
+    IReadOnlyList<long> ViewerIds);
+
+/// <summary>Snapshot of the server state sent to a client right after it connects.</summary>
+public sealed record SyncStateDto(
+    UserDto Me,
+    IReadOnlyList<UserDto> Users,
+    IReadOnlyList<ChannelDto> Channels,
+    IReadOnlyList<long> OnlineUserIds,
+    IReadOnlyList<StreamInfoDto> Streams,
+    IReadOnlyList<VoiceParticipantDto> VoiceParticipants);
+
+/// <summary>A trickled ICE candidate for a media session.</summary>
+public sealed record IceCandidateDto(
+    string SessionId,
+    string Candidate,
+    string? SdpMid,
+    int? SdpMLineIndex);
+
+/// <summary>Request sent by a client that wants to go live.</summary>
+public sealed record StartStreamRequest(
+    string OfferSdp,
+    string Title,
+    int Width,
+    int Height,
+    int FrameRate);
+
+/// <summary>Server answer for a publish or watch request.</summary>
+public sealed record MediaSessionAnswer(
+    string StreamId,
+    string SessionId,
+    string AnswerSdp);
+
+/// <summary>Public, unauthenticated information about the server.</summary>
+public sealed record ServerInfoDto(
+    string Name,
+    string Version,
+    bool RegistrationRequiresInvite,
+    bool RegistrationOpen,
+    int StunPort,
+    IReadOnlyList<IceServerDto> IceServers);
+
+/// <summary>An ICE server the client should use when establishing media sessions.</summary>
+public sealed record IceServerDto(string Urls, string? Username, string? Credential);
+
+public sealed record LoginRequest(string Username, string Password);
+
+public sealed record RegisterRequest(string Username, string DisplayName, string Password, string? InviteCode);
+
+public sealed record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
+
+public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarColor);
+
+/// <param name="KeepConnectionId">The caller's own hub connection, which stays open; all other connections of the user are closed.</param>
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword, string? KeepConnectionId = null);
+
+/// <summary>RFC 7807-style error body returned by the REST API.</summary>
+public sealed record ApiError(string Error);

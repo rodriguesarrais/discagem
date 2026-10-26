@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Discagem.Client.ViewModels"
+             xmlns:c="using:Discagem.Client.Controls"
+             x:Class="Discagem.Client.Views.LoginView"
+             x:DataType="vm:LoginViewModel"
+             Background="{StaticResource LoginBackground}">
+
+  <Grid>
+    <!-- Soft decorative glows -->
+    <Ellipse Width="520" Height="520" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-180,-200" Opacity="0.35">
+      <Ellipse.Fill>
+        <RadialGradientBrush>
+          <GradientStop Offset="0" Color="#B455F7" />
+          <GradientStop Offset="1" Color="#00B455F7" />
+        </RadialGradientBrush>
+      </Ellipse.Fill>
+    </Ellipse>
+    <Ellipse Width="420" Height="420" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-160,-140,0,0" Opacity="0.30">
+      <Ellipse.Fill>
+        <RadialGradientBrush>
+          <GradientStop Offset="0" Color="#6C63FF" />
+          <GradientStop Offset="1" Color="#006C63FF" />
+        </RadialGradientBrush>
+      </Ellipse.Fill>
+    </Ellipse>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <Border Classes="card" Width="460" Padding="32,32,32,28" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Spacing="6" HorizontalAlignment="Center">
+            <Border Width="64" Height="64" CornerRadius="18" Background="{StaticResource BrandGradient}" HorizontalAlignment="Center"
+                    BoxShadow="0 8 30 0 #667C6CFF" Margin="0,0,0,10">
+              <Viewbox Margin="8">
+                <Canvas Width="24" Height="24">
+                  <Path Data="{StaticResource LogoBubble}" Fill="White" />
+                  <Path Data="{StaticResource LogoPlay}" Fill="#7B5CFA" />
+                </Canvas>
+              </Viewbox>
+            </Border>
+            <TextBlock Text="{Binding Heading}" Classes="h1" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Subheading}" Classes="secondary" HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="SERVER ADDRESS" Classes="label" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasServerStatus}" Margin="0,0,0,8">
+                <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                         Fill="{StaticResource OnlineBrush}" IsVisible="{Binding ServerReachable}" />
+                <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                         Fill="{StaticResource DangerBrush}" IsVisible="{Binding !ServerReachable}" />
+                <TextBlock Text="{Binding ServerStatus}" Classes="caption" />
+              </StackPanel>
+            </Grid>
+            <TextBox Text="{Binding ServerAddress}" Watermark="chat.example.com" x:Name="ServerBox" />
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock Text="USERNAME" Classes="label" />
+            <TextBox Text="{Binding Username}" x:Name="UsernameBox" />
+          </StackPanel>
+
+          <StackPanel IsVisible="{Binding IsRegisterMode}">
+            <TextBlock Text="DISPLAY NAME" Classes="label" />
+            <TextBox Text="{Binding DisplayName}" Watermark="How others see you (optional)" />
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock Text="PASSWORD" Classes="label" />
+            <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton" x:Name="PasswordBox" />
+          </StackPanel>
+
+          <StackPanel IsVisible="{Binding ShowInviteCode}">
+            <TextBlock Text="INVITE CODE" Classes="label" />
+            <TextBox Text="{Binding InviteCode}" Watermark="Ask the server owner" />
+          </StackPanel>
+
+          <Border Background="#33E5484D" CornerRadius="6" Padding="12,10" IsVisible="{Binding HasError}">
+            <Grid ColumnDefinitions="Auto,*">
+              <c:Icon Data="{StaticResource IconAlert}" Foreground="#FF8A8F" Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,10,0" />
+              <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Classes="error" />
+            </Grid>
+          </Border>
+
+          <Button Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44"
+                  Command="{Binding SubmitCommand}" IsDefault="True" IsEnabled="{Binding !IsBusy}" Margin="0,4,0,0">
+            <Panel>
+              <TextBlock Text="{Binding SubmitText}" IsVisible="{Binding !IsBusy}" FontSize="15" />
+              <ProgressBar IsIndeterminate="{Binding IsBusy}" Width="60" Height="4" MinHeight="4" Foreground="White" Background="#33FFFFFF"
+                           IsVisible="{Binding IsBusy}" />
+            </Panel>
+          </Button>
+
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding TogglePrompt}" Classes="muted" VerticalAlignment="Center" />
+            <Button Classes="link" Command="{Binding ToggleModeCommand}">
+              <TextBlock Text="{Binding ToggleText}" />
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

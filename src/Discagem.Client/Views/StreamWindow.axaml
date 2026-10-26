@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:views="using:Discagem.Client.Views"
+        x:Class="Discagem.Client.Views.StreamWindow"
+        x:DataType="vm:StreamViewerViewModel"
+        Title="{Binding Stream.Streamer.DisplayName, StringFormat='{}{0} — Discagem'}"
+        Icon="avares://Discagem/Assets/discagem.ico"
+        Width="1280" Height="760" MinWidth="480" MinHeight="300"
+        Background="#0B0B0E"
+        WindowStartupLocation="CenterOwner">
+  <views:StreamView />
+</Window>
