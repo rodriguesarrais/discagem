@@ -68,6 +68,30 @@ public sealed class DiscagemFactory : WebApplicationFactory<Program>
         return connection;
     }
 
+    /// <summary>
+    /// Connects over WebSockets, where (as with the real client) the token is only checked when the
+    /// connection opens, so server-side revocation can be observed.
+    /// </summary>
+    public async Task<HubConnection> ConnectHubOverWebSocketsAsync(string token)
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(new Uri(Server.BaseAddress, HubPaths.Chat.TrimStart('/')), options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+                options.HttpMessageHandlerFactory = _ => Server.CreateHandler();
+                options.Transports = HttpTransportType.WebSockets;
+                options.WebSocketFactory = async (context, cancellationToken) =>
+                {
+                    var uri = new UriBuilder(context.Uri) { Scheme = "ws" };
+                    uri.Query = uri.Query.TrimStart('?') + "&access_token=" + Uri.EscapeDataString(token);
+                    return await Server.CreateWebSocketClient().ConnectAsync(uri.Uri, cancellationToken);
+                };
+            })
+            .Build();
+        await connection.StartAsync();
+        return connection;
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);

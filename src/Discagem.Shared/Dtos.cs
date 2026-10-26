@@ -9,13 +9,27 @@ public sealed record UserDto(
     bool IsAdmin,
     DateTimeOffset CreatedAt);
 
-/// <summary>A text channel.</summary>
+public enum ChannelKind
+{
+    Text = 0,
+    Voice = 1,
+}
+
+/// <summary>A text or voice channel.</summary>
 public sealed record ChannelDto(
     long Id,
     string Name,
     string Topic,
     int Position,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    ChannelKind Kind = ChannelKind.Text);
+
+/// <summary>A user connected to a voice channel.</summary>
+public sealed record VoiceParticipantDto(
+    long ChannelId,
+    long UserId,
+    bool IsMuted,
+    bool IsDeafened);
 
 /// <summary>A file uploaded to the server and (optionally) linked to a message.</summary>
 public sealed record AttachmentDto(
@@ -54,7 +68,8 @@ public sealed record SyncStateDto(
     IReadOnlyList<UserDto> Users,
     IReadOnlyList<ChannelDto> Channels,
     IReadOnlyList<long> OnlineUserIds,
-    IReadOnlyList<StreamInfoDto> Streams);
+    IReadOnlyList<StreamInfoDto> Streams,
+    IReadOnlyList<VoiceParticipantDto> VoiceParticipants);
 
 /// <summary>A trickled ICE candidate for a media session.</summary>
 public sealed record IceCandidateDto(
@@ -97,7 +112,8 @@ public sealed record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDt
 
 public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarColor);
 
-public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+/// <param name="KeepConnectionId">The caller's own hub connection, which stays open; all other connections of the user are closed.</param>
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword, string? KeepConnectionId = null);
 
 /// <summary>RFC 7807-style error body returned by the REST API.</summary>
 public sealed record ApiError(string Error);

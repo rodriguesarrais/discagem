@@ -8,6 +8,8 @@
     <!-- Media / WebRTC -->
     <PackageVersion Include="SIPSorcery" Version="10.0.17" />
     <PackageVersion Include="SIPSorceryMedia.Encoders" Version="10.0.4" />
+    <PackageVersion Include="Concentus" Version="2.2.2" />
+    <PackageVersion Include="NAudio.Wasapi" Version="3.3.0" />
     <!-- Client -->
     <PackageVersion Include="Avalonia" Version="11.3.22" />
     <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />

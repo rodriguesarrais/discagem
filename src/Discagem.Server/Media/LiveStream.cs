@@ -50,7 +50,7 @@ public sealed class LiveStream
 
     public PacketHistory History { get; } = new(8192);
 
-    public NackTracker UpstreamNacks { get; } = new() { RetryIntervalMs = 40, InitialDelayMs = 5 };
+    public NackTracker UpstreamNacks { get; } = new() { InitialDelayMs = 5 };
 
     public ImmutableArray<MediaSession> Viewers => _viewers;
 
@@ -60,13 +60,27 @@ public sealed class LiveStream
 
     private long NowMs => _clock.ElapsedMilliseconds;
 
-    public bool MarkEnded() => Interlocked.Exchange(ref _ended, 1) == 0;
-
-    public void AddViewer(MediaSession viewer)
+    /// <summary>Marks the stream ended. Returns false if it already was.</summary>
+    public bool MarkEnded()
     {
         lock (_sync)
         {
+            return Interlocked.Exchange(ref _ended, 1) == 0;
+        }
+    }
+
+    /// <summary>Adds a viewer unless the stream has ended (checked under the same lock as <see cref="MarkEnded"/>).</summary>
+    public bool AddViewer(MediaSession viewer)
+    {
+        lock (_sync)
+        {
+            if (HasEnded)
+            {
+                return false;
+            }
+
             _viewers = _viewers.Add(viewer);
+            return true;
         }
     }
 

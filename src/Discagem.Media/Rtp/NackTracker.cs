@@ -9,6 +9,7 @@ public sealed class NackTracker
     private sealed class Entry
     {
         public long DetectedAtMs;
+        public long FirstSentMs;
         public long LastSentMs = long.MinValue;
         public int Retries;
     }
@@ -17,12 +18,48 @@ public sealed class NackTracker
     private readonly SequenceUnwrapper _unwrapper = new();
     private readonly SortedDictionary<long, Entry> _missing = new();
     private long _highest = -1;
+    private double _smoothedRttMs = double.NaN;
 
     /// <summary>Delay before the first NACK, to tolerate mild reordering.</summary>
     public int InitialDelayMs { get; init; } = 5;
 
-    /// <summary>Interval between repeated NACKs for the same packet (roughly one round trip).</summary>
-    public int RetryIntervalMs { get; set; } = 60;
+    /// <summary>
+    /// Interval between repeated NACKs for the same packet until a round trip has been measured.
+    /// Afterwards the interval follows the measured round trip (see <see cref="CurrentRetryIntervalMs"/>),
+    /// so that a packet is not requested again while its retransmission is still in flight.
+    /// </summary>
+    public int RetryIntervalMs { get; set; } = 100;
+
+    public int MinRetryIntervalMs { get; init; } = 40;
+
+    public int MaxRetryIntervalMs { get; init; } = 600;
+
+    /// <summary>Smoothed time between the first NACK for a packet and its arrival, if measured yet.</summary>
+    public double? RoundTripMs
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return double.IsNaN(_smoothedRttMs) ? null : _smoothedRttMs;
+            }
+        }
+    }
+
+    public int CurrentRetryIntervalMs
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return RetryInterval();
+            }
+        }
+    }
+
+    private int RetryInterval() => double.IsNaN(_smoothedRttMs)
+        ? RetryIntervalMs
+        : Math.Clamp((int)(_smoothedRttMs * 1.5) + 10, MinRetryIntervalMs, MaxRetryIntervalMs);
 
     public int MaxRetries { get; init; } = 6;
 
@@ -75,9 +112,12 @@ public sealed class NackTracker
 
                 _highest = ext;
             }
-            else
+            else if (_missing.Remove(ext, out var entry) && entry.Retries > 0)
             {
-                _missing.Remove(ext);
+                // A retransmission. Measuring from the first request errs on the long side when that
+                // request was lost, which only makes repeats rarer.
+                var sample = Math.Clamp(nowMs - entry.FirstSentMs, 1, 5000);
+                _smoothedRttMs = double.IsNaN(_smoothedRttMs) ? sample : _smoothedRttMs * 0.875 + sample * 0.125;
             }
         }
     }
@@ -94,6 +134,7 @@ public sealed class NackTracker
             }
 
             List<long>? expired = null;
+            var retryInterval = RetryInterval();
             foreach (var (ext, entry) in _missing)
             {
                 if (entry.Retries >= MaxRetries || ext < _highest - MaxGap * 2)
@@ -104,10 +145,15 @@ public sealed class NackTracker
 
                 var due = entry.Retries == 0
                     ? nowMs - entry.DetectedAtMs >= InitialDelayMs
-                    : nowMs - entry.LastSentMs >= RetryIntervalMs;
+                    : nowMs - entry.LastSentMs >= retryInterval;
                 if (!due)
                 {
                     continue;
+                }
+
+                if (entry.Retries == 0)
+                {
+                    entry.FirstSentMs = nowMs;
                 }
 
                 entry.Retries++;
@@ -134,6 +180,7 @@ public sealed class NackTracker
             _missing.Clear();
             _unwrapper.Reset();
             _highest = -1;
+            _smoothedRttMs = double.NaN;
         }
     }
 }

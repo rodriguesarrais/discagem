@@ -47,6 +47,7 @@ public sealed class ScreenShareService : IAsyncDisposable
         var frameSource = source.Create();
         ScreenSharePublisher? publisher = null;
         CaptureEncodePipeline? pipeline = null;
+        MediaSessionAnswer? answer = null;
         try
         {
             var firstSize = await Task.Run(() => frameSource.TryCapture(out var first) ? (first.Width, first.Height) : (0, 0));
@@ -61,21 +62,20 @@ public sealed class ScreenShareService : IAsyncDisposable
             publisher.LocalCandidate += relay.OnLocalCandidate;
 
             var offer = await publisher.CreateOfferAsync();
-            var answer = await _hub.StartStreamAsync(new StartStreamRequest(offer, title, width, height, quality.FrameRate));
+            answer = await _hub.StartStreamAsync(new StartStreamRequest(offer, title, width, height, quality.FrameRate));
             _peers[answer.SessionId] = publisher;
             relay.SetSession(answer.SessionId);
             publisher.ApplyAnswer(answer.AnswerSdp);
 
             if (!await publisher.WaitForConnectionAsync(ConnectTimeout))
             {
-                _peers.TryRemove(answer.SessionId, out _);
-                await SafeStopStreamAsync();
                 throw new InvalidOperationException(
                     "Could not establish the media connection to the server. Make sure the server's UDP media ports are reachable.");
             }
 
+            // From here on the pipeline owns the frame source.
             pipeline = new CaptureEncodePipeline(frameSource, publisher, quality);
-            var session = new PublishSession(answer.StreamId, answer.SessionId, frameSource, publisher, pipeline);
+            var session = new PublishSession(answer.StreamId, answer.SessionId, publisher, pipeline);
             pipeline.StatsUpdated += stats => PublishStatsUpdated?.Invoke(stats);
             pipeline.Failed += reason => _ = StopWithReasonAsync(session, $"Screen sharing stopped: {reason}");
             publisher.StateChanged += state =>
@@ -91,9 +91,23 @@ public sealed class ScreenShareService : IAsyncDisposable
         }
         catch
         {
-            pipeline?.Dispose();
+            if (pipeline is null)
+            {
+                frameSource.Dispose();
+            }
+            else
+            {
+                pipeline.Dispose();
+            }
+
             publisher?.Dispose();
-            frameSource.Dispose();
+            if (answer is not null)
+            {
+                // The server already announced the stream; take it down instead of leaving a ghost behind.
+                _peers.TryRemove(answer.SessionId, out _);
+                await SafeStopStreamAsync();
+            }
+
             throw;
         }
     }
@@ -220,7 +234,6 @@ public sealed class ScreenShareService : IAsyncDisposable
     private sealed class PublishSession(
         string streamId,
         string sessionId,
-        IFrameSource source,
         ScreenSharePublisher publisher,
         CaptureEncodePipeline pipeline) : IDisposable
     {
@@ -237,9 +250,9 @@ public sealed class ScreenShareService : IAsyncDisposable
                 return;
             }
 
+            // The pipeline disposes the frame source once its capture thread has exited.
             pipeline.Dispose();
             publisher.Dispose();
-            source.Dispose();
         }
     }
 

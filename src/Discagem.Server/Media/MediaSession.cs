@@ -11,7 +11,7 @@ public sealed class MediaSession
     private readonly object _sendLock = new();
     private int _closed;
 
-    public MediaSession(string connectionId, long userId, RTCPeerConnection peerConnection, bool isPublisher)
+    public MediaSession(string connectionId, long userId, RTCPeerConnection peerConnection, bool isPublisher = false)
     {
         ConnectionId = connectionId;
         UserId = userId;
@@ -55,6 +55,21 @@ public sealed class MediaSession
             {
                 PacketsRetransmitted++;
             }
+        }
+    }
+
+    /// <summary>Sends a voice packet to this session. Safe to call from multiple threads.</summary>
+    public void SendAudio(byte[] payload, uint timestamp)
+    {
+        if (IsClosed || !IsConnected)
+        {
+            return;
+        }
+
+        lock (_sendLock)
+        {
+            PeerConnection.SendRtpRaw(SDPMediaTypesEnum.audio, payload, timestamp, 0, DiscagemAudio.PayloadType);
+            PacketsSent++;
         }
     }
 

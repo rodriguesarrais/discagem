@@ -810,7 +810,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         try
         {
-            var channel = await _hub.CreateChannelAsync(result.Name, result.Topic);
+            var channel = await _hub.CreateChannelAsync(result.Name, result.Topic, ChannelKind.Text);
             AddOrUpdateChannel(channel);
             SelectedChannel = FindChannel(channel.Id);
         }
@@ -865,7 +865,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _session.Api.Token = auth.Token;
             _session.Settings.Token = auth.Token;
             _session.Settings.Save();
-        });
+        }, () => _hub.ConnectionId);
         var logout = false;
         settings.LogoutRequested += () => logout = true;
         await _dialogs.ShowSettingsAsync(settings);

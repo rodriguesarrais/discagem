@@ -72,7 +72,9 @@ public static class AttachmentEndpoints
     private static async Task<IResult> Download(long id, HttpContext context, AppDbContext db, IOptions<DiscagemOptions> options)
     {
         var attachment = await db.Attachments.FindAsync(id);
-        if (attachment is null)
+
+        // Uploads that have not been posted yet are only visible to their uploader.
+        if (attachment is null || (attachment.MessageId is null && attachment.UploaderId != context.User.GetUserId()))
         {
             return Results.NotFound();
         }

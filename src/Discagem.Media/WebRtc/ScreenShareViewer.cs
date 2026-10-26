@@ -12,7 +12,7 @@ public sealed class ScreenShareViewer : MediaPeer
 {
     private readonly object _sync = new();
     private readonly FrameAssembler _assembler = new();
-    private readonly NackTracker _nacks = new() { RetryIntervalMs = 60 };
+    private readonly NackTracker _nacks = new();
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly Thread _maintenance;
     private readonly List<AssembledFrame> _scratch = [];
@@ -23,7 +23,7 @@ public sealed class ScreenShareViewer : MediaPeer
     private long _framesReceived;
 
     public ScreenShareViewer(IEnumerable<IceServerConfig> iceServers)
-        : base(iceServers, MediaStreamStatusEnum.RecvOnly)
+        : base(iceServers, DiscagemVideo.CreateTrack(MediaStreamStatusEnum.RecvOnly))
     {
         PeerConnection.OnRtpPacketReceived += OnRtpPacket;
         _maintenance = new Thread(MaintenanceLoop) { IsBackground = true, Name = "Discagem viewer" };

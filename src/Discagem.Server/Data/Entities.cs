@@ -1,3 +1,5 @@
+using Discagem.Shared;
+
 namespace Discagem.Server.Data;
 
 public sealed class User
@@ -32,6 +34,8 @@ public sealed class Channel
     public string Topic { get; set; } = "";
 
     public int Position { get; set; }
+
+    public ChannelKind Kind { get; set; } = ChannelKind.Text;
 
     public DateTime CreatedAt { get; set; }
 

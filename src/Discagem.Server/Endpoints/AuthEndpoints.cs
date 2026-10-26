@@ -4,6 +4,7 @@ using Discagem.Server.Auth;
 using Discagem.Server.Data;
 using Discagem.Server.Hubs;
 using Discagem.Server.Options;
+using Discagem.Server.Services;
 using Discagem.Shared;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
@@ -208,7 +209,8 @@ public static class AuthEndpoints
         HttpContext context,
         AppDbContext db,
         IPasswordHasher<User> hasher,
-        TokenService tokens)
+        TokenService tokens,
+        PresenceTracker presence)
     {
         var user = await db.Users.FindAsync(context.User.GetUserId());
         if (user is null)
@@ -230,6 +232,9 @@ public static class AuthEndpoints
         user.PasswordHash = hasher.HashPassword(user, request.NewPassword);
         user.TokenVersion++;
         await db.SaveChangesAsync();
+
+        // Old tokens are rejected from now on, but connections opened with them would stay alive.
+        presence.AbortConnections(user.Id, request.KeepConnectionId);
         return Results.Ok(tokens.Issue(user));
     }
 

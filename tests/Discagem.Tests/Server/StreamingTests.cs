@@ -103,9 +103,9 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
 
         public void Dispose()
         {
+            // The pipeline owns (and disposes) the source.
             Pipeline.Dispose();
             Publisher.Dispose();
-            Source.Dispose();
         }
     }
 

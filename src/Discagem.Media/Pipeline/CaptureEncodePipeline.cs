@@ -12,6 +12,7 @@ public sealed record PublishStats(int Width, int Height, double FramesPerSecond,
 /// <summary>
 /// Captures frames at a fixed rate, scales and converts them to I420, encodes them with VP8 and hands
 /// them to the <see cref="ScreenSharePublisher"/>. Also adapts the bitrate to the observed loss.
+/// The pipeline owns the frame source and disposes it once the capture thread has exited.
 /// </summary>
 public sealed unsafe class CaptureEncodePipeline : IDisposable
 {
@@ -27,6 +28,7 @@ public sealed unsafe class CaptureEncodePipeline : IDisposable
     private nuint _scaledSize;
     private int _targetKbps;
     private int _currentKbps;
+    private int _released;
 
     public CaptureEncodePipeline(IFrameSource source, ScreenSharePublisher publisher, StreamQuality quality)
     {
@@ -65,6 +67,7 @@ public sealed unsafe class CaptureEncodePipeline : IDisposable
         {
             _encoder?.Dispose();
             _encoder = null;
+            ReleaseResources();
         }
     }
 
@@ -239,12 +242,12 @@ public sealed unsafe class CaptureEncodePipeline : IDisposable
         }
     }
 
-    public void Dispose()
+    /// <summary>Frees the scaling buffers and the frame source. Only called once nothing can touch them any more.</summary>
+    private void ReleaseResources()
     {
-        _stopped = true;
-        if (_thread.IsAlive && Thread.CurrentThread != _thread)
+        if (Interlocked.Exchange(ref _released, 1) != 0)
         {
-            _thread.Join(TimeSpan.FromSeconds(2));
+            return;
         }
 
         _scaler.Dispose();
@@ -252,6 +255,26 @@ public sealed unsafe class CaptureEncodePipeline : IDisposable
         {
             NativeMemory.Free(_scaled);
             _scaled = null;
+            _scaledSize = 0;
+        }
+
+        _source.Dispose();
+    }
+
+    public void Dispose()
+    {
+        _stopped = true;
+        if ((_thread.ThreadState & System.Threading.ThreadState.Unstarted) != 0)
+        {
+            ReleaseResources();
+            return;
+        }
+
+        // A capture or encode call can block for a while (a hung window, a stalled X server). If the
+        // thread does not stop in time it releases the resources itself when that call returns.
+        if (Thread.CurrentThread != _thread)
+        {
+            _thread.Join(TimeSpan.FromSeconds(2));
         }
     }
 }

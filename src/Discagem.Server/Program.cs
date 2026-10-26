@@ -31,6 +31,7 @@ builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<PeerConnectionFactory>();
 builder.Services.AddSingleton<SfuService>();
+builder.Services.AddSingleton<VoiceService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SfuService>());
 builder.Services.AddHostedService<StunResponder>();
 builder.Services.AddHostedService<AttachmentCleanupService>();
@@ -115,7 +116,13 @@ builder.Services.AddOptions<FormOptions>()
 
 var app = builder.Build();
 
-SIPSorcery.LogFactory.Set(app.Services.GetRequiredService<ILoggerFactory>());
+// The media library's logger is process-wide. In-memory test hosts come and go (and dispose their
+// logger factories), so they leave it alone.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    SIPSorcery.LogFactory.Set(app.Services.GetRequiredService<ILoggerFactory>());
+}
+
 await DatabaseInitializer.InitializeAsync(app.Services);
 
 app.UseForwardedHeaders();
@@ -141,7 +148,7 @@ app.MapGet("/api/server", async (IOptions<DiscagemOptions> options, AppDbContext
 
 app.MapAuthEndpoints();
 app.MapAttachmentEndpoints();
-app.MapHub<ChatHub>(HubPaths.Chat);
+app.MapHub<ChatHub>(HubPaths.Chat, o => o.CloseOnAuthenticationExpiration = true);
 
 app.Run();
 

@@ -45,9 +45,11 @@ public sealed class ChatHubTests : IAsyncLifetime
         var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
         Assert.Equal(_aliceAuth.User.Id, state.Me.Id);
         Assert.Equal(2, state.Users.Count);
-        Assert.Contains(state.Channels, c => c.Name == "general");
+        Assert.Contains(state.Channels, c => c.Name == "general" && c.Kind == ChannelKind.Text);
+        Assert.Contains(state.Channels, c => c.Name == "Lounge" && c.Kind == ChannelKind.Voice);
         Assert.Contains(_bobAuth.User.Id, state.OnlineUserIds);
         Assert.Empty(state.Streams);
+        Assert.Empty(state.VoiceParticipants);
     }
 
     [Fact]
@@ -115,20 +117,30 @@ public sealed class ChatHubTests : IAsyncLifetime
         var created = new TaskCompletionSource<ChannelDto>();
         _bob.On<ChannelDto>(nameof(IChatClient.ChannelCreated), c => created.TrySetResult(c));
 
-        await Assert.ThrowsAsync<HubException>(() => _bob.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "bob's channel", ""));
+        await Assert.ThrowsAsync<HubException>(() => _bob.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "bob's channel", "", ChannelKind.Text));
 
-        var channel = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "  Game Night!! ", "Fridays");
+        var channel = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "  Game Night!! ", "Fridays", ChannelKind.Text);
         Assert.Equal("game-night", channel.Name);
         Assert.Equal("Fridays", channel.Topic);
+        Assert.Equal(ChannelKind.Text, channel.Kind);
         Assert.Equal(channel.Id, (await WithTimeout(created.Task)).Id);
+
+        // Voice channel names keep their spelling.
+        var voice = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "  Squad   Room ", "", ChannelKind.Voice);
+        Assert.Equal("Squad Room", voice.Name);
+        Assert.Equal(ChannelKind.Voice, voice.Kind);
+        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<MessageDto>(nameof(IChatHub.SendMessage), voice.Id, "hello?", Array.Empty<long>()));
+        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "odd", "", (ChannelKind)7));
 
         await _alice.InvokeAsync(nameof(IChatHub.UpdateChannel), channel.Id, "movies", "Sundays");
         await _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), channel.Id);
+        await _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), voice.Id);
         var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
-        Assert.DoesNotContain(state.Channels, c => c.Id == channel.Id);
+        Assert.DoesNotContain(state.Channels, c => c.Id == channel.Id || c.Id == voice.Id);
 
-        // The last channel cannot be removed.
-        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), state.Channels.Single().Id));
+        // The last text channel cannot be removed; voice channels can all go.
+        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), state.Channels.Single(c => c.Kind == ChannelKind.Text).Id));
+        await _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), state.Channels.Single(c => c.Kind == ChannelKind.Voice).Id);
     }
 
     [Fact]
@@ -160,8 +172,12 @@ public sealed class ChatHubTests : IAsyncLifetime
         Assert.Equal("evil name.png", attachment.FileName);
         Assert.True(attachment.IsImage);
 
+        // Until it is posted, only the uploader can fetch it.
+        Assert.Equal(HttpStatusCode.NotFound, (await _bobHttp.GetAsync($"/api/attachments/{attachment.Id}/x")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _aliceHttp.GetAsync($"/api/attachments/{attachment.Id}/x")).StatusCode);
+
         var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
-        var channelId = state.Channels[0].Id;
+        var channelId = state.Channels.First(c => c.Kind == ChannelKind.Text).Id;
 
         // Bob cannot attach Alice's upload.
         await Assert.ThrowsAsync<HubException>(() => _bob.InvokeAsync<MessageDto>(nameof(IChatHub.SendMessage), channelId, "mine", new[] { attachment.Id }));

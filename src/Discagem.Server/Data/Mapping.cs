@@ -10,7 +10,7 @@ public static class Mapping
         new(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.IsAdmin, user.CreatedAt.ToOffset());
 
     public static ChannelDto ToDto(this Channel channel) =>
-        new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset());
+        new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset(), channel.Kind);
 
     public static AttachmentDto ToDto(this Attachment attachment) =>
         new(attachment.Id, attachment.FileName, attachment.ContentType, attachment.Size);

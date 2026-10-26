@@ -237,6 +237,51 @@ public sealed class RtpTests
     }
 
     [Fact]
+    public void NackTracker_RetryIntervalFollowsMeasuredRoundTrip()
+    {
+        var tracker = new NackTracker { InitialDelayMs = 0, RetryIntervalMs = 100, MaxRetries = 10 };
+        Assert.Equal(100, tracker.CurrentRetryIntervalMs);
+
+        // Packets 1 and 2 are lost; each retransmission arrives 200 ms after the first NACK.
+        tracker.OnPacket(0, 0);
+        tracker.OnPacket(3, 0);
+        Assert.Equal(new ushort[] { 1, 2 }, tracker.CollectNacks(0));
+        tracker.OnPacket(1, 200);
+        Assert.Equal(200, tracker.RoundTripMs);
+        Assert.Equal(310, tracker.CurrentRetryIntervalMs);
+
+        // Packet 2 is not requested again while its retransmission may still be in flight.
+        Assert.Empty(tracker.CollectNacks(250));
+        Assert.Empty(tracker.CollectNacks(300));
+        Assert.Equal(new ushort[] { 2 }, tracker.CollectNacks(310));
+
+        // Packets that merely arrive out of order are not round-trip samples.
+        tracker.OnPacket(5, 400);
+        tracker.OnPacket(4, 401);
+        Assert.Equal(200, tracker.RoundTripMs);
+    }
+
+    [Fact]
+    public void PacketHistory_SuppressesDuplicateResends()
+    {
+        var history = new PacketHistory(8);
+        var packet = new VideoPacketizer(0).Packetize(MakeFrame(100, 1), 0, true)[0];
+        history.Add(packet);
+
+        Assert.True(history.TryGetForResend(packet.MediaSeq, 0, 40, out _, out var first));
+        Assert.True(first);
+        Assert.False(history.TryGetForResend(packet.MediaSeq, 30, 40, out _, out _));
+        Assert.True(history.TryGetForResend(packet.MediaSeq, 45, 40, out _, out first));
+        Assert.False(first);
+        Assert.False(history.TryGetForResend((ushort)(packet.MediaSeq + 1), 100, 40, out _, out _));
+
+        // Re-adding the slot resets its state.
+        history.Add(packet);
+        Assert.True(history.TryGetForResend(packet.MediaSeq, 46, 40, out _, out first));
+        Assert.True(first);
+    }
+
+    [Fact]
     public void SequenceUnwrapper_HandlesWrapAndReorder()
     {
         var unwrapper = new SequenceUnwrapper();

@@ -13,7 +13,7 @@ public abstract class MediaPeer : IDisposable
 {
     private int _disposed;
 
-    protected MediaPeer(IEnumerable<IceServerConfig> iceServers, MediaStreamStatusEnum direction)
+    protected MediaPeer(IEnumerable<IceServerConfig> iceServers, MediaStreamTrack track)
     {
         var configuration = new RTCConfiguration
         {
@@ -24,7 +24,7 @@ public abstract class MediaPeer : IDisposable
         };
 
         PeerConnection = new RTCPeerConnection(configuration);
-        PeerConnection.addTrack(DiscagemVideo.CreateTrack(direction));
+        PeerConnection.addTrack(track);
         PeerConnection.onicecandidate += candidate =>
         {
             if (candidate is not null)

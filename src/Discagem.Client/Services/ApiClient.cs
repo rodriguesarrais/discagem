@@ -86,8 +86,8 @@ public sealed class ApiClient : IDisposable
     public Task<UserDto> UpdateProfileAsync(string? displayName, string? avatarColor) =>
         SendAsync<UserDto>(HttpMethod.Patch, "api/me", new UpdateProfileRequest(displayName, avatarColor));
 
-    public Task<AuthResponse> ChangePasswordAsync(string currentPassword, string newPassword) =>
-        SendAsync<AuthResponse>(HttpMethod.Post, "api/me/password", new ChangePasswordRequest(currentPassword, newPassword));
+    public Task<AuthResponse> ChangePasswordAsync(string currentPassword, string newPassword, string? keepConnectionId) =>
+        SendAsync<AuthResponse>(HttpMethod.Post, "api/me/password", new ChangePasswordRequest(currentPassword, newPassword, keepConnectionId));
 
     public async Task<AttachmentDto> UploadAsync(Stream content, string fileName, string? contentType, CancellationToken cancellationToken = default)
     {

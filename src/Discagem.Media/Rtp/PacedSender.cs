@@ -13,10 +13,10 @@ public sealed class PacedSender : IDisposable
     private readonly Queue<VideoPacket> _media = new();
     private readonly Queue<VideoPacket> _retransmissions = new();
     private readonly object _sync = new();
-    private readonly AutoResetEvent _signal = new(false);
     private readonly Thread _thread;
     private volatile bool _stopped;
     private long _queuedBytes;
+    private long _retransmissionBytes;
 
     public PacedSender(Action<VideoPacket> send, int rateKbps)
     {
@@ -29,10 +29,12 @@ public sealed class PacedSender : IDisposable
     /// <summary>Pacing rate. Should be comfortably above the encoder bitrate.</summary>
     public int RateKbps { get; set; }
 
-    /// <summary>Raised (on the pacer thread) when the queue overflowed and was flushed.</summary>
+    /// <summary>Raised (on the thread that queued the frame) when the queue overflowed and was flushed.</summary>
     public event Action? Overflowed;
 
     public long QueuedBytes => Interlocked.Read(ref _queuedBytes);
+
+    private long BytesPerSecond => (long)Math.Max(RateKbps, 500) * 1000 / 8;
 
     public void Enqueue(IEnumerable<VideoPacket> packets)
     {
@@ -45,31 +47,45 @@ public sealed class PacedSender : IDisposable
                 _queuedBytes += packet.Payload.Length;
             }
 
-            // More than ~1.5 s of backlog: the link cannot keep up. Flush and let the caller send a key frame.
-            if (_queuedBytes > (long)RateKbps * 1000 / 8 * 3 / 2 && _media.Count > 0)
+            // More than ~1.5 s of backlog: the link cannot keep up. Flush everything (pending
+            // retransmissions belong to frames that are now useless too) and let the caller send a key frame.
+            if (_queuedBytes > BytesPerSecond * 3 / 2)
             {
                 _media.Clear();
-                _queuedBytes = _retransmissions.Sum(p => (long)p.Payload.Length);
+                _retransmissions.Clear();
+                _queuedBytes = 0;
+                _retransmissionBytes = 0;
                 overflow = true;
             }
+
+            Monitor.Pulse(_sync);
         }
 
-        _signal.Set();
         if (overflow)
         {
             Overflowed?.Invoke();
         }
     }
 
-    public void EnqueueRetransmission(VideoPacket packet)
+    /// <summary>Queues a retransmission ahead of new media. Returns false when the retransmission backlog is full.</summary>
+    public bool EnqueueRetransmission(VideoPacket packet)
     {
         lock (_sync)
         {
+            // Retransmissions older than ~300 ms of backlog would arrive too late to be useful and only
+            // delay live media.
+            if (_retransmissionBytes + packet.Payload.Length > BytesPerSecond * 3 / 10)
+            {
+                return false;
+            }
+
             _retransmissions.Enqueue(packet);
             _queuedBytes += packet.Payload.Length;
+            _retransmissionBytes += packet.Payload.Length;
+            Monitor.Pulse(_sync);
         }
 
-        _signal.Set();
+        return true;
     }
 
     private void Run()
@@ -90,7 +106,11 @@ public sealed class PacedSender : IDisposable
                 VideoPacket? packet;
                 lock (_sync)
                 {
-                    if (!_retransmissions.TryDequeue(out packet) && !_media.TryDequeue(out packet))
+                    if (_retransmissions.TryDequeue(out packet))
+                    {
+                        _retransmissionBytes -= packet.Payload.Length;
+                    }
+                    else if (!_media.TryDequeue(out packet))
                     {
                         break;
                     }
@@ -109,16 +129,19 @@ public sealed class PacedSender : IDisposable
                 }
             }
 
-            bool empty;
+            var empty = false;
             lock (_sync)
             {
-                empty = _media.Count == 0 && _retransmissions.Count == 0;
+                if (_media.Count == 0 && _retransmissions.Count == 0 && !_stopped)
+                {
+                    empty = true;
+                    Monitor.Wait(_sync, 20);
+                }
             }
 
             if (empty)
             {
                 tokens = Math.Max(tokens, 0);
-                _signal.WaitOne(20);
             }
             else
             {
@@ -129,9 +152,17 @@ public sealed class PacedSender : IDisposable
 
     public void Dispose()
     {
-        _stopped = true;
-        _signal.Set();
-        _thread.Join(TimeSpan.FromSeconds(1));
-        _signal.Dispose();
+        lock (_sync)
+        {
+            _stopped = true;
+            _media.Clear();
+            _retransmissions.Clear();
+            Monitor.Pulse(_sync);
+        }
+
+        if (Thread.CurrentThread != _thread)
+        {
+            _thread.Join(TimeSpan.FromSeconds(1));
+        }
     }
 }

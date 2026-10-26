@@ -181,14 +181,15 @@ public sealed class SfuService : IHostedService
             throw;
         }
 
-        if (stream.HasEnded)
+        // Registered before joining the stream so that an EndStreamAsync racing with this call either
+        // sees the viewer (and removes it) or makes AddViewer fail.
+        _sessions[session.Id] = session;
+        if (!stream.AddViewer(session))
         {
+            _sessions.TryRemove(session.Id, out _);
             session.Close("stream ended");
             throw new MediaException("That stream is no longer live.");
         }
-
-        _sessions[session.Id] = session;
-        stream.AddViewer(session);
         _logger.LogInformation("User {UserId} is watching stream {StreamId}", userId, stream.Id);
         await _hub.Clients.All.StreamUpdated(stream.ToDto());
         return new MediaSessionAnswer(stream.Id, session.Id, answer);

@@ -9,6 +9,13 @@ namespace Discagem.Media.WebRtc;
 /// </summary>
 public sealed class ScreenSharePublisher : MediaPeer
 {
+    /// <summary>
+    /// A packet is retransmitted at most once per this interval. The server spaces its NACKs by at least
+    /// one round trip, so a repeat inside this window is a duplicate that crossed the retransmission.
+    /// </summary>
+    private const int MinResendIntervalMs = 40;
+
+    private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
     private readonly VideoPacketizer _packetizer = new();
     private readonly PacketHistory _history = new(8192);
     private readonly PacedSender _pacer;
@@ -18,10 +25,15 @@ public sealed class ScreenSharePublisher : MediaPeer
     private long _nackedPackets;
 
     public ScreenSharePublisher(IEnumerable<IceServerConfig> iceServers, int bitrateKbps)
-        : base(iceServers, MediaStreamStatusEnum.SendOnly)
+        : base(iceServers, DiscagemVideo.CreateTrack(MediaStreamStatusEnum.SendOnly))
     {
         _pacer = new PacedSender(SendNow, PacingRateFor(bitrateKbps));
-        _pacer.Overflowed += () => KeyFrameRequested?.Invoke();
+        _pacer.Overflowed += () =>
+        {
+            // The flushed packets are not worth retransmitting: a key frame replaces them.
+            _history.Clear();
+            KeyFrameRequested?.Invoke();
+        };
         PeerConnection.OnReceiveReport += OnReceiveReport;
     }
 
@@ -34,7 +46,7 @@ public sealed class ScreenSharePublisher : MediaPeer
 
     public long PacketsRetransmitted => Interlocked.Read(ref _packetsRetransmitted);
 
-    /// <summary>Number of packets the server reported as lost (NACKed).</summary>
+    /// <summary>Number of distinct packets the server reported as lost (NACKed).</summary>
     public long NackedPackets => Interlocked.Read(ref _nackedPackets);
 
     public long QueuedBytes => _pacer.QueuedBytes;
@@ -91,13 +103,24 @@ public sealed class ScreenSharePublisher : MediaPeer
         var feedback = report.Feedback;
         if (RtcpFeedback.IsNack(feedback))
         {
+            var now = _clock.ElapsedMilliseconds;
             foreach (var seq in RtcpFeedback.ExpandNack(feedback!.PID, feedback.BLP))
             {
-                Interlocked.Increment(ref _nackedPackets);
-                if (_history.TryGet(seq, out var packet))
+                if (!_history.TryGetForResend(seq, now, MinResendIntervalMs, out var packet, out var isFirstRequest))
+                {
+                    continue;
+                }
+
+                // Count each lost packet once, however often it is requested, so that the loss estimate
+                // driving the bitrate does not scale with the round-trip time.
+                if (isFirstRequest)
+                {
+                    Interlocked.Increment(ref _nackedPackets);
+                }
+
+                if (_pacer.EnqueueRetransmission(packet))
                 {
                     Interlocked.Increment(ref _packetsRetransmitted);
-                    _pacer.EnqueueRetransmission(packet);
                 }
             }
         }

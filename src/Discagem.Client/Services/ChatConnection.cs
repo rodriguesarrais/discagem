@@ -76,6 +76,8 @@ public sealed class ChatConnection : IAsyncDisposable
 
     public HubConnectionState State => _hub.State;
 
+    public string? ConnectionId => _hub.ConnectionId;
+
     public Task StartAsync(CancellationToken cancellationToken = default) => _hub.StartAsync(cancellationToken);
 
     public Task StopAsync() => _hub.StopAsync();
@@ -95,8 +97,8 @@ public sealed class ChatConnection : IAsyncDisposable
 
     public Task TypingAsync(long channelId) => _hub.SendAsync(nameof(IChatHub.Typing), channelId);
 
-    public Task<ChannelDto> CreateChannelAsync(string name, string topic) =>
-        _hub.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), name, topic);
+    public Task<ChannelDto> CreateChannelAsync(string name, string topic, ChannelKind kind) =>
+        _hub.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), name, topic, kind);
 
     public Task UpdateChannelAsync(long channelId, string name, string topic) =>
         _hub.InvokeAsync(nameof(IChatHub.UpdateChannel), channelId, name, topic);

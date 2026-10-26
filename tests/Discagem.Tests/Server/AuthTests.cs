@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Discagem.Shared;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Discagem.Tests.Server;
 
@@ -87,6 +88,27 @@ public sealed class AuthTests : IDisposable
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.Token);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/me")).StatusCode);
         Assert.NotEqual(auth.Token, refreshed.Token);
+    }
+
+    [Fact]
+    public async Task PasswordChange_ClosesOtherOpenConnections()
+    {
+        var (client, auth) = await _factory.RegisterAsync("ivan");
+        await using var own = await _factory.ConnectHubOverWebSocketsAsync(auth.Token);
+        await using var stolen = await _factory.ConnectHubOverWebSocketsAsync(auth.Token);
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        stolen.Closed += _ =>
+        {
+            closed.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var response = await client.PostAsJsonAsync("/api/me/password", new ChangePasswordRequest("password123", "newpassword456", own.ConnectionId));
+        response.EnsureSuccessStatusCode();
+
+        Assert.Same(closed.Task, await Task.WhenAny(closed.Task, Task.Delay(TimeSpan.FromSeconds(10))));
+        var state = await own.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
+        Assert.Equal(auth.User.Id, state.Me.Id);
     }
 
     [Fact]

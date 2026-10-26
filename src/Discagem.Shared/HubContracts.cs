@@ -23,6 +23,12 @@ public interface IChatClient
     Task StreamUpdated(StreamInfoDto stream);
     Task StreamEnded(string streamId);
 
+    /// <summary>A user joined a voice channel or changed their mute/deafen state.</summary>
+    Task VoiceStateChanged(VoiceParticipantDto participant);
+
+    /// <summary>A user left a voice channel.</summary>
+    Task VoiceLeft(long channelId, long userId);
+
     /// <summary>A server-side ICE candidate for one of the client's media sessions.</summary>
     Task IceCandidate(IceCandidateDto candidate);
 
@@ -44,7 +50,7 @@ public interface IChatHub
     Task DeleteMessage(long messageId);
     Task Typing(long channelId);
 
-    Task<ChannelDto> CreateChannel(string name, string topic);
+    Task<ChannelDto> CreateChannel(string name, string topic, ChannelKind kind);
     Task UpdateChannel(long channelId, string name, string topic);
     Task DeleteChannel(long channelId);
 
@@ -53,6 +59,11 @@ public interface IChatHub
     Task<MediaSessionAnswer> WatchStream(string streamId, string offerSdp);
     Task StopWatching(string sessionId);
     Task AddIceCandidate(IceCandidateDto candidate);
+
+    /// <summary>Joins a voice channel (leaving any other one) with the client's WebRTC audio offer.</summary>
+    Task<MediaSessionAnswer> JoinVoice(long channelId, string offerSdp);
+    Task LeaveVoice();
+    Task SetVoiceState(bool muted, bool deafened);
 }
 
 public static class HubPaths
@@ -72,4 +83,5 @@ public static class Limits
     public const int MaxAttachmentsPerMessage = 10;
     public const int MaxStreamTitleLength = 64;
     public const int MessagePageSize = 50;
+    public const int MaxVoiceParticipants = 25;
 }

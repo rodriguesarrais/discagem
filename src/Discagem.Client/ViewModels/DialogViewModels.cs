@@ -45,12 +45,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ApiClient _api;
     private readonly ClientSettings _settings;
     private readonly Action<AuthResponse> _tokenChanged;
+    private readonly Func<string?> _hubConnectionId;
 
-    public SettingsViewModel(ApiClient api, ClientSettings settings, MemberViewModel me, string serverName, Action<AuthResponse> tokenChanged)
+    public SettingsViewModel(
+        ApiClient api,
+        ClientSettings settings,
+        MemberViewModel me,
+        string serverName,
+        Action<AuthResponse> tokenChanged,
+        Func<string?> hubConnectionId)
     {
         _api = api;
         _settings = settings;
         _tokenChanged = tokenChanged;
+        _hubConnectionId = hubConnectionId;
         Me = me;
         ServerName = serverName;
         _displayName = me.DisplayName;
@@ -166,7 +174,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var auth = await _api.ChangePasswordAsync(CurrentPassword, NewPassword);
+            var auth = await _api.ChangePasswordAsync(CurrentPassword, NewPassword, _hubConnectionId());
             _tokenChanged(auth);
             CurrentPassword = NewPassword = ConfirmPassword = "";
             PasswordError = false;

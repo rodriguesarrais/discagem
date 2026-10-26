@@ -20,6 +20,7 @@ public sealed class ChatHub(
     AppDbContext db,
     PresenceTracker presence,
     SfuService sfu,
+    VoiceService voice,
     IOptions<DiscagemOptions> options,
     TimeProvider time) : Hub<IChatClient>, IChatHub
 {
@@ -29,7 +30,7 @@ public sealed class ChatHub(
 
     public override async Task OnConnectedAsync()
     {
-        if (presence.Connect(UserId, Context.ConnectionId))
+        if (presence.Connect(UserId, Context))
         {
             await Clients.Others.PresenceChanged(UserId, true);
         }
@@ -40,6 +41,7 @@ public sealed class ChatHub(
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await sfu.OnConnectionClosedAsync(Context.ConnectionId);
+        await voice.OnConnectionClosedAsync(Context.ConnectionId);
         if (presence.Disconnect(UserId, Context.ConnectionId))
         {
             await Clients.Others.PresenceChanged(UserId, false);
@@ -58,7 +60,8 @@ public sealed class ChatHub(
             users.Select(u => u.ToDto()).ToList(),
             channels.Select(c => c.ToDto()).ToList(),
             presence.OnlineUserIds(),
-            sfu.GetStreams());
+            sfu.GetStreams(),
+            voice.GetParticipants());
     }
 
     public async Task<IReadOnlyList<MessageDto>> GetMessages(long channelId, long? before, int limit)
@@ -89,9 +92,9 @@ public sealed class ChatHub(
             throw new HubException("Messages cannot be empty.");
         }
 
-        if (!await db.Channels.AnyAsync(c => c.Id == channelId))
+        if (!await db.Channels.AnyAsync(c => c.Id == channelId && c.Kind == ChannelKind.Text))
         {
-            throw new HubException("That channel does not exist.");
+            throw new HubException("That text channel does not exist.");
         }
 
         var attachments = attachmentIds.Length == 0
@@ -166,13 +169,19 @@ public sealed class ChatHub(
         await Clients.Others.UserTyping(channelId, UserId);
     }
 
-    public async Task<ChannelDto> CreateChannel(string name, string topic)
+    public async Task<ChannelDto> CreateChannel(string name, string topic, ChannelKind kind)
     {
         RequireAdmin();
+        if (!Enum.IsDefined(kind))
+        {
+            throw new HubException("Unknown channel type.");
+        }
+
         var channel = new Channel
         {
-            Name = NormalizeChannelName(name),
+            Name = NormalizeChannelName(name, kind),
             Topic = NormalizeTopic(topic),
+            Kind = kind,
             Position = (await db.Channels.MaxAsync(c => (int?)c.Position) ?? -1) + 1,
             CreatedAt = time.GetUtcNow().UtcDateTime,
         };
@@ -187,7 +196,7 @@ public sealed class ChatHub(
     {
         RequireAdmin();
         var channel = await db.Channels.FindAsync(channelId) ?? throw new HubException("That channel does not exist.");
-        channel.Name = NormalizeChannelName(name);
+        channel.Name = NormalizeChannelName(name, channel.Kind);
         channel.Topic = NormalizeTopic(topic);
         await db.SaveChangesAsync();
         await Clients.All.ChannelUpdated(channel.ToDto());
@@ -196,12 +205,16 @@ public sealed class ChatHub(
     public async Task DeleteChannel(long channelId)
     {
         RequireAdmin();
-        if (await db.Channels.CountAsync() <= 1)
+        var channel = await db.Channels.FindAsync(channelId) ?? throw new HubException("That channel does not exist.");
+        if (channel.Kind == ChannelKind.Text && await db.Channels.CountAsync(c => c.Kind == ChannelKind.Text) <= 1)
         {
-            throw new HubException("The last channel cannot be deleted.");
+            throw new HubException("The last text channel cannot be deleted.");
         }
 
-        var channel = await db.Channels.FindAsync(channelId) ?? throw new HubException("That channel does not exist.");
+        if (channel.Kind == ChannelKind.Voice)
+        {
+            await voice.CloseChannelAsync(channelId);
+        }
         var files = await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).Select(a => a.StorageName).ToListAsync();
         await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).ExecuteDeleteAsync();
         db.Channels.Remove(channel);
@@ -240,9 +253,34 @@ public sealed class ChatHub(
 
     public Task AddIceCandidate(IceCandidateDto candidate)
     {
-        sfu.AddRemoteCandidate(Context.ConnectionId, candidate);
+        if (!voice.AddRemoteCandidate(Context.ConnectionId, candidate))
+        {
+            sfu.AddRemoteCandidate(Context.ConnectionId, candidate);
+        }
+
         return Task.CompletedTask;
     }
+
+    public async Task<MediaSessionAnswer> JoinVoice(long channelId, string offerSdp)
+    {
+        if (!await db.Channels.AnyAsync(c => c.Id == channelId && c.Kind == ChannelKind.Voice))
+        {
+            throw new HubException("That voice channel does not exist.");
+        }
+
+        try
+        {
+            return await voice.JoinAsync(UserId, Context.ConnectionId, channelId, offerSdp);
+        }
+        catch (MediaException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+    }
+
+    public Task LeaveVoice() => voice.LeaveAsync(UserId);
+
+    public Task SetVoiceState(bool muted, bool deafened) => voice.SetStateAsync(UserId, muted, deafened);
 
     private void RequireAdmin()
     {
@@ -272,9 +310,24 @@ public sealed class ChatHub(
         return content;
     }
 
-    /// <summary>Discord-style channel names: lowercase, words separated by dashes.</summary>
-    internal static string NormalizeChannelName(string? name)
+    /// <summary>
+    /// Discord-style channel names: text channels are lowercase words separated by dashes,
+    /// voice channels keep their spelling.
+    /// </summary>
+    internal static string NormalizeChannelName(string? name, ChannelKind kind = ChannelKind.Text)
     {
+        if (kind == ChannelKind.Voice)
+        {
+            var display = string.Join(' ', new string((name ?? "").Where(c => !char.IsControl(c)).ToArray())
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            if (display.Length == 0)
+            {
+                throw new HubException("Channel names cannot be empty.");
+            }
+
+            return display.Length > Limits.MaxChannelNameLength ? display[..Limits.MaxChannelNameLength].TrimEnd() : display;
+        }
+
         var builder = new StringBuilder();
         foreach (var c in (name ?? "").Trim().ToLowerInvariant())
         {

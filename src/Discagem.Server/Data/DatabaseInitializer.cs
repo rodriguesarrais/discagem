@@ -1,10 +1,11 @@
+using Discagem.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Discagem.Server.Data;
 
 public static class DatabaseInitializer
 {
-    /// <summary>Applies pending migrations and seeds the default channel.</summary>
+    /// <summary>Applies pending migrations and seeds the default text channel (the voice channel is seeded by a migration).</summary>
     public static async Task InitializeAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();
@@ -14,7 +15,7 @@ public static class DatabaseInitializer
         await db.Database.MigrateAsync();
         await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
 
-        if (!await db.Channels.AnyAsync())
+        if (!await db.Channels.AnyAsync(c => c.Kind == ChannelKind.Text))
         {
             db.Channels.Add(new Channel
             {

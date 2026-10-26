@@ -12,6 +12,14 @@ public sealed record ViewStats(int Width, int Height, double FramesPerSecond, do
 /// <summary>Decodes incoming frames on a dedicated thread.</summary>
 public sealed class DecodePipeline : IDisposable
 {
+    /// <summary>
+    /// Largest picture accepted from a publisher (the same bound the server applies to announced
+    /// streams). VP8 headers allow up to 16383x16383, which would need gigabytes on every viewer.
+    /// </summary>
+    public const int MaxWidth = 7680;
+
+    public const int MaxHeight = 4320;
+
     private readonly BlockingCollection<AssembledFrame> _queue = new(new ConcurrentQueue<AssembledFrame>(), 240);
     private readonly Thread _thread;
     private readonly Vp8Decoder _decoder = new();
@@ -87,11 +95,19 @@ public sealed class DecodePipeline : IDisposable
 
                 waitingForKeyFrame = false;
                 bytesInWindow += frame.Data.Length;
-                if (_decoder.Decode(frame.Data, ref _frame) && _frame is not null)
+                if (TryDecode(frame) && _frame is not null)
                 {
                     FramesDecoded++;
                     framesInWindow++;
-                    FrameDecoded?.Invoke(_frame);
+                    try
+                    {
+                        FrameDecoded?.Invoke(_frame);
+                    }
+                    catch (Exception ex) when (ex is not ObjectDisposedException)
+                    {
+                        // A failing consumer must not take the decoder thread (and the process) down.
+                        Debug.WriteLine($"Frame consumer failed: {ex.Message}");
+                    }
                 }
                 else
                 {
@@ -119,6 +135,26 @@ public sealed class DecodePipeline : IDisposable
         }
         catch (InvalidOperationException)
         {
+        }
+    }
+
+    private bool TryDecode(AssembledFrame frame)
+    {
+        if (frame.IsKeyFrame &&
+            Vp8Bitstream.TryGetKeyFrameSize(frame.Data, out var width, out var height) &&
+            (width > MaxWidth || height > MaxHeight))
+        {
+            return false;
+        }
+
+        try
+        {
+            return _decoder.Decode(frame.Data, ref _frame);
+        }
+        catch (OutOfMemoryException)
+        {
+            _frame = null;
+            return false;
         }
     }
 
