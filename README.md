@@ -245,6 +245,8 @@ dotnet test
 Without audio hardware, `DISCAGEM_TEST_TONE=440` replaces the microphone with a tone and
 `DISCAGEM_TEST_RECORD=/tmp/out.f32` writes what would be played to a raw 48 kHz mono float file.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and commit conventions (Conventional Commits).
+
 Database schema changes use EF Core migrations
 (`dotnet ef migrations add <Name> --project src/Discagem.Server --output-dir Data/Migrations`);
 they are applied automatically on start-up.
