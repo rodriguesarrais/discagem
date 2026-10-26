@@ -106,6 +106,37 @@ public sealed class VoiceTests
     }
 
     [Fact]
+    public void SpeakerStream_PlaysEveryPacketOfLaterTalkSpurts()
+    {
+        // Senders only transmit while talking, so sequence numbers continue without a gap across spurts.
+        var packets = EncodeTone(440, 150);
+        using var stream = new SpeakerStream(1);
+        var frame = new float[Frame];
+        long now = 0;
+        ushort sequence = 1000;
+        var sent = 0;
+        for (var spurt = 0; spurt < 3; spurt++)
+        {
+            for (var i = 0; i < 50; i++)
+            {
+                stream.Push(sequence++, packets[sent++], now);
+                stream.Read(frame, now);
+                now += 20;
+            }
+
+            // One second of silence.
+            for (var i = 0; i < 50; i++)
+            {
+                stream.Read(frame, now);
+                now += 20;
+            }
+        }
+
+        Assert.Equal(0, stream.LatePackets);
+        Assert.Equal(sent, stream.FramesDecoded);
+    }
+
+    [Fact]
     public void SpeakerStream_RecoversLostFramesWithFec()
     {
         var packets = EncodeTone(440, 40);

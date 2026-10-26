@@ -260,6 +260,53 @@ public sealed class VoiceChannelTests(Xunit.Abstractions.ITestOutputHelper outpu
     }
 
     [Fact]
+    public async Task OversizedAndFloodedPackets_AreNotForwarded()
+    {
+        var alice = await JoinAsync(_alice, _lounge, null);
+        var bob = await JoinAsync(_bob, _lounge, null);
+
+        // Larger than any Opus frame: dropped.
+        for (var i = 0; i < 20; i++)
+        {
+            alice.Peer.Send(new byte[1400], (uint)(i * 960));
+        }
+
+        await Task.Delay(500);
+        Assert.Equal(0, bob.Peer.PacketsReceived);
+
+        // A flood far beyond 50 packets per second: only the burst allowance gets through.
+        for (var i = 0; i < 1000; i++)
+        {
+            alice.Peer.Send(new byte[100], (uint)(i * 960));
+        }
+
+        await Task.Delay(1000);
+        Assert.InRange(bob.Peer.PacketsReceived, 40, 200);
+    }
+
+    [Fact]
+    public async Task SimultaneousJoinsByOneUser_LeaveASingleParticipant()
+    {
+        await using var otherDevice = await _factory.ConnectHubAsync(_bobAuth.Token);
+        var closed = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _bob.On<string, string>(nameof(IChatClient.MediaSessionClosed), (session, _) => closed.TrySetResult(session));
+        otherDevice.On<string, string>(nameof(IChatClient.MediaSessionClosed), (session, _) => closed.TrySetResult(session));
+
+        using var first = new VoicePeer([]);
+        using var second = new VoicePeer([]);
+        var offers = await Task.WhenAll(first.CreateOfferAsync(), second.CreateOfferAsync());
+        var answers = await Task.WhenAll(
+            _bob.InvokeAsync<MediaSessionAnswer>(nameof(IChatHub.JoinVoice), _lounge, offers[0]),
+            otherDevice.InvokeAsync<MediaSessionAnswer>(nameof(IChatHub.JoinVoice), _lounge, offers[1]));
+
+        // One of the two sessions was replaced and told so; the other remains.
+        var replaced = await closed.Task.WaitAsync(Timeout);
+        Assert.Contains(replaced, answers.Select(a => a.SessionId));
+        var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
+        Assert.Single(state.VoiceParticipants, p => p.UserId == _bobAuth.User.Id);
+    }
+
+    [Fact]
     public async Task LeavingMovingAndDeletingChannels_AreAnnounced()
     {
         var left = new List<(long Channel, long User)>();

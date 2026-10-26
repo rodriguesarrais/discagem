@@ -108,6 +108,11 @@ public sealed class VoiceService : IAsyncDisposable
                 _call = call;
                 relay.SetSession(answer.SessionId);
                 peer.ApplyAnswer(answer.AnswerSdp);
+
+                // Mute or deafen may have been toggled while joining (before _call was set, so the change
+                // was not applied): take the current settings now. The server starts everyone unmuted.
+                engine.IsMuted = _settings.VoiceMuted;
+                engine.IsDeafened = _settings.VoiceDeafened;
                 if (_settings.VoiceMuted || _settings.VoiceDeafened)
                 {
                     await _hub.SetVoiceStateAsync(_settings.VoiceMuted, _settings.VoiceDeafened);
@@ -141,12 +146,16 @@ public sealed class VoiceService : IAsyncDisposable
         }
     }
 
-    public async Task LeaveAsync()
+    /// <summary>Hangs up. With <paramref name="onlyChannelId"/>, only if the call is still in that channel.</summary>
+    public async Task LeaveAsync(long? onlyChannelId = null)
     {
         await _gate.WaitAsync();
         try
         {
-            await EndCallAsync(notifyServer: true, playCue: true);
+            if (onlyChannelId is null || _call?.ChannelId == onlyChannelId)
+            {
+                await EndCallAsync(notifyServer: true, playCue: true);
+            }
         }
         finally
         {

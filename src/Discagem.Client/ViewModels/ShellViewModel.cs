@@ -642,6 +642,14 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         if (voiceChannel is not null)
         {
             VoiceChannels.Remove(voiceChannel);
+            if (ConnectedVoiceChannel?.Id == id)
+            {
+                // The server normally hangs up first; make sure no call is left in a channel that is gone.
+                SetConnectedVoice(null);
+                ShowBanner($"{voiceChannel.Name} was deleted.", isError: false);
+                _ = SafeAsync(() => _voice.LeaveAsync(id));
+            }
+
             return;
         }
 
@@ -1270,8 +1278,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                         await _voice.JoinAsync(channel.Id);
                         if (ConnectedVoiceChannel?.Id != channel.Id)
                         {
-                            // The user hung up while we were reconnecting.
-                            await SafeAsync(_voice.LeaveAsync);
+                            // The user hung up (and maybe joined elsewhere) while we were reconnecting:
+                            // end this call only, not a newer one.
+                            await SafeAsync(() => _voice.LeaveAsync(channel.Id));
                         }
                         else if (ConnectedVoiceChannel != channel)
                         {
@@ -1315,7 +1324,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         SetConnectedVoice(null);
         IsJoiningVoice = false;
-        await SafeAsync(_voice.LeaveAsync);
+        await SafeAsync(() => _voice.LeaveAsync());
     }
 
     [RelayCommand]

@@ -211,16 +211,19 @@ public sealed class ChatHub(
             throw new HubException("The last text channel cannot be deleted.");
         }
 
-        if (channel.Kind == ChannelKind.Voice)
-        {
-            await voice.CloseChannelAsync(channelId);
-        }
-
         var files = await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).Select(a => a.StorageName).ToListAsync();
         await db.Attachments.Where(a => a.Message != null && a.Message.ChannelId == channelId).ExecuteDeleteAsync();
         db.Channels.Remove(channel);
         await db.SaveChangesAsync();
         DeleteUploads(files);
+
+        // Disconnect voice only once the channel is gone, so a join racing with the deletion either
+        // shows up here or fails its own check in JoinVoice.
+        if (channel.Kind == ChannelKind.Voice)
+        {
+            await voice.CloseChannelAsync(channelId);
+        }
+
         await Clients.All.ChannelDeleted(channelId);
     }
 
@@ -269,14 +272,24 @@ public sealed class ChatHub(
             throw new HubException("That voice channel does not exist.");
         }
 
+        MediaSessionAnswer answer;
         try
         {
-            return await voice.JoinAsync(UserId, Context.ConnectionId, channelId, offerSdp);
+            answer = await voice.JoinAsync(UserId, Context.ConnectionId, channelId, offerSdp);
         }
         catch (MediaException ex)
         {
             throw new HubException(ex.Message);
         }
+
+        // The channel may have been deleted while the connection was being negotiated (see DeleteChannel).
+        if (!await db.Channels.AnyAsync(c => c.Id == channelId))
+        {
+            await voice.LeaveAsync(UserId, Context.ConnectionId);
+            throw new HubException("That voice channel does not exist.");
+        }
+
+        return answer;
     }
 
     public Task LeaveVoice() => voice.LeaveAsync(UserId, Context.ConnectionId);

@@ -261,8 +261,9 @@ public sealed class SpeakerStream : IDisposable
             }
             else
             {
-                // Nothing left: the speaker stopped talking.
-                _lastPlayed = _next - 1;
+                // Nothing left: the speaker stopped talking. The concealed tail did not consume any real
+                // packets: the sender's sequence numbers carry on without a gap in the next talk spurt.
+                _lastPlayed = _next - 1 - _concealed;
                 _next = -1;
                 return false;
             }
