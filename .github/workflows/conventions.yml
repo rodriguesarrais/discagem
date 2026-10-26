@@ -1,0 +1,59 @@
+name: Conventions
+
+# Checks pull requests against the conventions in CONTRIBUTING.md: branch names, a Conventional
+# Commits title (the squash-merge commit message) and Conventional Commits messages.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Branch, title and commits
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check
+        env:
+          BRANCH: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          types='feat|fix|perf|refactor|test|docs|style|build|ci|chore|revert'
+          branch_pattern="^(${types}|feature|bugfix|hotfix|release)/[a-z0-9][a-z0-9._-]*$"
+          message_pattern="^(${types})(\([a-z0-9._/-]+\))?!?: [^ ].*$"
+          failed=0
+
+          if [[ "$BRANCH" == dependabot/* || "$BRANCH" =~ $branch_pattern ]]; then
+            echo "Branch name: $BRANCH"
+          else
+            echo "::error::Branch \"$BRANCH\" should be named <type>/<short-description>, for example feat/windows-installer (see CONTRIBUTING.md)."
+            failed=1
+          fi
+
+          if [[ "$TITLE" =~ $message_pattern ]]; then
+            echo "Title: $TITLE"
+          else
+            echo "::error::Pull request title \"$TITLE\" is not a Conventional Commits message, for example \"feat(voice): add push-to-talk\" (see CONTRIBUTING.md)."
+            failed=1
+          fi
+
+          while IFS= read -r line; do
+            sha="${line%% *}"
+            subject="${line#* }"
+            if [[ "$subject" =~ $message_pattern ]]; then
+              echo "Commit ${sha:0:7}: $subject"
+            else
+              echo "::error::Commit ${sha:0:7} \"$subject\" is not a Conventional Commits message (see CONTRIBUTING.md)."
+              failed=1
+            fi
+          done < <(git log --no-merges --format='%H %s' "$BASE_SHA..$HEAD_SHA")
+
+          exit "$failed"
