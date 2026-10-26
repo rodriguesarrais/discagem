@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Discagem.Client/Discagem.Client.csproj" />
+    <Project Path="src/Discagem.Media/Discagem.Media.csproj" />
+    <Project Path="src/Discagem.Server/Discagem.Server.csproj" />
+    <Project Path="src/Discagem.Shared/Discagem.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Discagem.Tests/Discagem.Tests.csproj" />
+  </Folder>
+</Solution>

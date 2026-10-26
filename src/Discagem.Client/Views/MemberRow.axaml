@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Discagem.Client.ViewModels"
+             xmlns:c="using:Discagem.Client.Controls"
+             x:Class="Discagem.Client.Views.MemberRow"
+             x:DataType="vm:MemberViewModel">
+  <Button Classes="row" Click="OnClick" Opacity="{Binding Opacity}">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <c:AvatarView Width="34" Height="34" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}"
+                    Status="{Binding Status}" RingBrush="{StaticResource SidebarBrush}" Margin="0,0,12,0" />
+      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14.5" TextTrimming="CharacterEllipsis" />
+          <c:Icon Data="{StaticResource IconCrown}" Width="13" Height="13" Foreground="#F5C542" StrokeThickness="2.4"
+                  IsVisible="{Binding IsAdmin}" ToolTip.Tip="Server admin" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding IsLive}">
+          <c:Icon Data="{StaticResource IconMonitor}" Width="12" Height="12" Foreground="{StaticResource LiveBrush}" />
+          <TextBlock Text="Streaming" FontSize="12" Foreground="{StaticResource LiveBrush}" FontWeight="SemiBold" />
+        </StackPanel>
+      </StackPanel>
+      <Border Grid.Column="2" Classes="live-badge" IsVisible="{Binding IsLive}">
+        <TextBlock Text="LIVE" />
+      </Border>
+    </Grid>
+  </Button>
+</UserControl>

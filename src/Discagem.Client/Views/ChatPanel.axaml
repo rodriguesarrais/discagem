@@ -1,0 +1,258 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Discagem.Client.ViewModels"
+             xmlns:c="using:Discagem.Client.Controls"
+             xmlns:views="using:Discagem.Client.Views"
+             x:Class="Discagem.Client.Views.ChatPanel"
+             x:DataType="vm:ShellViewModel"
+             x:Name="Root"
+             Background="{StaticResource ChatBrush}"
+             DragDrop.AllowDrop="True">
+
+  <Grid x:Name="LayoutRoot" RowDefinitions="52,Auto,0,0,*">
+
+    <!-- Channel header -->
+    <Border Grid.Row="0" BorderBrush="{StaticResource RailBrush}" BorderThickness="0,0,0,1" BoxShadow="0 1 2 0 #30000000">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="16,0,10,0">
+        <c:Icon Data="{StaticResource IconHash}" Width="22" Height="22" Foreground="{StaticResource TextMutedBrush}" StrokeThickness="2.2" />
+        <TextBlock Grid.Column="1" Text="{Binding SelectedChannel.Name, FallbackValue=''}" Classes="title" FontSize="16"
+                   VerticalAlignment="Center" Margin="8,0,0,0" />
+        <Border Grid.Column="2" Width="1" Height="24" Background="{StaticResource DividerBrush}" Margin="14,0"
+                IsVisible="{Binding SelectedChannel.HasTopic, FallbackValue=False}" />
+        <TextBlock Grid.Column="3" Text="{Binding SelectedChannel.Topic, FallbackValue=''}" Classes="muted"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4">
+          <ToggleButton Classes="icon" IsChecked="{Binding ShowMembers}" ToolTip.Tip="Member list">
+            <c:Icon Data="{StaticResource IconUsers}" />
+          </ToggleButton>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Banners -->
+    <StackPanel Grid.Row="1">
+      <Border Background="{StaticResource WarningBrush}" Padding="12,6" IsVisible="{Binding IsReconnecting}">
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <c:Icon Data="{StaticResource IconWifiOff}" Width="16" Height="16" Foreground="#2A1E00" />
+          <TextBlock Text="{Binding ConnectionText}" Foreground="#2A1E00" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Background="{Binding BannerIsError, Converter={x:Static views:Converters.BannerBackground}}" Padding="16,8,8,8" IsVisible="{Binding HasBanner}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <c:Icon Data="{StaticResource IconAlert}" Width="18" Height="18" Foreground="White" Margin="0,0,10,0" />
+          <TextBlock Grid.Column="1" Text="{Binding BannerMessage}" Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="icon small" Foreground="White" Command="{Binding DismissBannerCommand}" ToolTip.Tip="Dismiss">
+            <c:Icon Data="{StaticResource IconClose}" />
+          </Button>
+        </Grid>
+      </Border>
+    </StackPanel>
+
+    <!-- Stream being watched -->
+    <views:StreamView Grid.Row="2" DataContext="{Binding ActiveStream}" IsVisible="{Binding $parent[UserControl].((vm:ShellViewModel)DataContext).IsWatching}" />
+    <GridSplitter Grid.Row="3" Height="5" ResizeDirection="Rows" Background="{StaticResource RailBrush}" x:Name="StreamSplitter" />
+
+    <!-- Messages and composer -->
+    <Grid Grid.Row="4" RowDefinitions="*,Auto,Auto">
+      <ScrollViewer x:Name="MessageScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,16">
+          <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Margin="16,8" Foreground="{StaticResource AccentBrush}"
+                       IsVisible="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}" />
+
+          <StackPanel Margin="16,24,16,8" Spacing="8" IsVisible="{Binding !SelectedChannel.HasMoreHistory, FallbackValue=False}">
+            <Border Width="68" Height="68" CornerRadius="34" Background="{StaticResource ElevatedBrush}" HorizontalAlignment="Left">
+              <c:Icon Data="{StaticResource IconHash}" Width="38" Height="38" Foreground="{StaticResource TextPrimaryBrush}" />
+            </Border>
+            <TextBlock Text="{Binding SelectedChannel.Name, StringFormat='Welcome to #{0}!', FallbackValue=''}" Classes="h1" FontSize="30" />
+            <TextBlock Text="{Binding SelectedChannel.Name, StringFormat='This is the start of the #{0} channel.', FallbackValue=''}" Classes="secondary" />
+          </StackPanel>
+
+          <ItemsControl x:Name="MessageList" ItemsSource="{Binding SelectedChannel.Messages, FallbackValue={x:Null}}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MessageItemViewModel">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto,*" Margin="16,18,16,2" IsVisible="{Binding ShowDaySeparator}">
+                    <Border Height="1" Background="{StaticResource DividerBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding DayLabel}" Classes="caption" FontWeight="SemiBold" Margin="10,0" />
+                    <Border Grid.Column="2" Height="1" Background="{StaticResource DividerBrush}" VerticalAlignment="Center" />
+                  </Grid>
+
+                  <Border Classes="message" Classes.mention="{Binding MentionsMe}" Padding="16,2,16,2"
+                          Margin="{Binding IsGroupStart, Converter={x:Static views:Converters.GroupMargin}}">
+                    <Panel>
+                      <Grid ColumnDefinitions="56,*">
+                        <c:AvatarView Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
+                                      DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}"
+                                      IsVisible="{Binding IsGroupStart}" />
+                        <Panel IsVisible="{Binding IsContinuation}">
+                          <TextBlock Classes="caption hover-only" Text="{Binding ShortTime}" FontSize="10.5"
+                                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,4,0,0"
+                                     ToolTip.Tip="{Binding FullTimestamp}" />
+                        </Panel>
+
+                        <StackPanel Grid.Column="1" Spacing="2">
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGroupStart}">
+                            <TextBlock Text="{Binding Author.DisplayName}" FontWeight="SemiBold" FontSize="15"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <c:Icon Data="{StaticResource IconCrown}" Width="12" Height="12" Foreground="#F5C542" StrokeThickness="2.4"
+                                    IsVisible="{Binding Author.IsAdmin}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TimestampLabel}" Classes="caption" VerticalAlignment="Center"
+                                       ToolTip.Tip="{Binding FullTimestamp}" />
+                          </StackPanel>
+
+                          <c:MessageContentView Text="{Binding Content}" IsEdited="{Binding IsEdited}" IsVisible="{Binding !IsEditing}" />
+
+                          <TextBox Text="{Binding EditText}" TextWrapping="Wrap" AcceptsReturn="False" Margin="0,4,0,0"
+                                   IsVisible="{Binding IsEditing}" AttachedToVisualTree="OnEditBoxAttached">
+                            <TextBox.KeyBindings>
+                              <KeyBinding Gesture="Enter"
+                                          Command="{Binding #Root.((vm:ShellViewModel)DataContext).SaveEditCommand}"
+                                          CommandParameter="{Binding}" />
+                              <KeyBinding Gesture="Escape"
+                                          Command="{Binding #Root.((vm:ShellViewModel)DataContext).CancelEditCommand}"
+                                          CommandParameter="{Binding}" />
+                            </TextBox.KeyBindings>
+                          </TextBox>
+                          <TextBlock Classes="caption" IsVisible="{Binding IsEditing}" Margin="0,2,0,4">
+                            <Run Text="escape to" /> <Run Text="cancel" Foreground="{StaticResource LinkBrush}" />
+                            <Run Text=" • enter to" /> <Run Text="save" Foreground="{StaticResource LinkBrush}" />
+                          </TextBlock>
+
+                          <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:AttachmentViewModel">
+                                <Panel Margin="0,6,0,2" HorizontalAlignment="Left">
+                                  <Button Classes="bare" IsVisible="{Binding IsImage}" Command="{Binding OpenCommand}" Cursor="Hand"
+                                          ToolTip.Tip="{Binding FileName}">
+                                    <Button.ContextMenu>
+                                      <ContextMenu>
+                                        <MenuItem Header="Save image…" Command="{Binding SaveCommand}" />
+                                      </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Border CornerRadius="8" ClipToBounds="True" Background="{StaticResource RailBrush}"
+                                            MinWidth="120" MinHeight="80" MaxWidth="440" MaxHeight="320">
+                                      <Panel>
+                                        <Image Source="{Binding Image}" Stretch="Uniform" MaxWidth="440" MaxHeight="320"
+                                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        <ProgressBar IsIndeterminate="True" Width="60" Height="3" MinHeight="3" IsVisible="{Binding IsLoading}"
+                                                     Foreground="{StaticResource AccentBrush}" />
+                                        <TextBlock Text="{Binding Error}" Classes="caption" Margin="12" TextWrapping="Wrap"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                      </Panel>
+                                    </Border>
+                                  </Button>
+                                  <Border IsVisible="{Binding IsFile}" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource DividerBrush}"
+                                          BorderThickness="1" CornerRadius="8" Padding="12,10" Width="380">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                      <c:Icon Data="{StaticResource IconFile}" Width="30" Height="30" Foreground="{StaticResource AccentBrush}" />
+                                      <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FileName}" Foreground="{StaticResource LinkBrush}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding SizeLabel}" Classes="caption" />
+                                      </StackPanel>
+                                      <Button Grid.Column="2" Classes="icon" Command="{Binding SaveCommand}" ToolTip.Tip="Download">
+                                        <c:Icon Data="{StaticResource IconDownload}" />
+                                      </Button>
+                                    </Grid>
+                                  </Border>
+                                </Panel>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </Grid>
+
+                      <!-- Hover toolbar -->
+                      <Panel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,0,0" IsVisible="{Binding CanDelete}">
+                      <Border Classes="toolbar hover-only">
+                        <StackPanel Orientation="Horizontal">
+                          <Button Classes="icon small" ToolTip.Tip="Edit" IsVisible="{Binding IsMine}"
+                                  Command="{Binding #Root.((vm:ShellViewModel)DataContext).BeginEditCommand}" CommandParameter="{Binding}">
+                            <c:Icon Data="{StaticResource IconEdit}" />
+                          </Button>
+                          <Button Classes="icon small danger-hover" ToolTip.Tip="Delete"
+                                  Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteMessageCommand}" CommandParameter="{Binding}">
+                            <c:Icon Data="{StaticResource IconTrash}" />
+                          </Button>
+                        </StackPanel>
+                      </Border>
+                      </Panel>
+                    </Panel>
+                  </Border>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Composer -->
+      <Border Grid.Row="1" Margin="16,0,16,0" CornerRadius="10" Background="{StaticResource InputBrush}">
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding PendingAttachments}" IsVisible="{Binding HasPendingAttachments}" Margin="12,12,12,4">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PendingAttachmentViewModel">
+                <Border Background="{StaticResource SidebarBrush}" CornerRadius="8" Padding="10,8" Margin="0,0,8,8" Width="210">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                    <c:Icon Data="{StaticResource IconFile}" Width="26" Height="26" Foreground="{StaticResource AccentBrush}" Grid.RowSpan="2" />
+                    <TextBlock Grid.Column="1" Text="{Binding FileName}" Margin="8,0" TextTrimming="CharacterEllipsis" FontSize="13" />
+                    <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding SizeLabel}" Margin="8,0" Classes="caption" />
+                    <Button Grid.Column="2" Grid.RowSpan="2" Classes="icon small danger-hover" ToolTip.Tip="Remove"
+                            Command="{Binding #Root.((vm:ShellViewModel)DataContext).RemoveAttachmentCommand}" CommandParameter="{Binding}">
+                      <c:Icon Data="{StaticResource IconClose}" />
+                    </Button>
+                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="True" Height="2" MinHeight="2"
+                                 VerticalAlignment="Bottom" Margin="0,4,0,-4" IsVisible="{Binding IsUploading}"
+                                 Foreground="{StaticResource AccentBrush}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="6,0">
+            <Button Classes="icon" VerticalAlignment="Top" Margin="0,5,2,0" ToolTip.Tip="Upload a file"
+                    Command="{Binding AttachFilesCommand}">
+              <c:Icon Data="{StaticResource IconPlusCircle}" Width="22" Height="22" />
+            </Button>
+            <TextBox Grid.Column="1" x:Name="Composer" Classes="composer" Text="{Binding ComposerText}"
+                     Watermark="{Binding SelectedChannel.Placeholder, FallbackValue=''}"
+                     MaxLength="4000" />
+            <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top" Margin="2,5,0,0" ToolTip.Tip="Send"
+                    Command="{Binding SendCommand}" IsEnabled="{Binding !IsSending}">
+              <c:Icon Data="{StaticResource IconSend}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Typing indicator -->
+      <Panel Grid.Row="2" Height="24" Margin="20,0,16,2">
+        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasTyping}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+            <Ellipse Classes="typing-dot" />
+            <Ellipse Classes="typing-dot second" />
+            <Ellipse Classes="typing-dot third" />
+          </StackPanel>
+          <TextBlock Text="{Binding TypingText}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+        </StackPanel>
+      </Panel>
+    </Grid>
+
+    <!-- Drop target overlay -->
+    <Border Grid.RowSpan="5" x:Name="DropOverlay" IsVisible="False" Background="#CC17181C" IsHitTestVisible="False">
+      <Border Background="{StaticResource AccentBrush}" CornerRadius="14" Padding="40,28" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+          <c:Icon Data="{StaticResource IconDownload}" Width="40" Height="40" Foreground="White" />
+          <TextBlock Text="Drop files to upload" Classes="h2" Foreground="White" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding SelectedChannel.Name, StringFormat='They will be attached to your next message in #{0}', FallbackValue=''}"
+                     Foreground="#E6FFFFFF" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</UserControl>

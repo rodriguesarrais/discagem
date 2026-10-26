@@ -11,7 +11,12 @@ public sealed unsafe class Vp8Decoder : IDisposable
     private IntPtr _cfg;
     private bool _disposed;
 
-    public Vp8Decoder(int threads = 4)
+    /// <param name="threads">
+    /// Decoder threads. libvpx's multi-threaded VP8 decoder synchronises rows by spin-waiting, which
+    /// wastes a lot of CPU when the machine is busy (e.g. a game is running), so one thread is the
+    /// default; a single thread decodes 1080p screen content in a few milliseconds.
+    /// </param>
+    public Vp8Decoder(int threads = 1)
     {
         VpxNative.EnsureResolver();
         _ctx = VpxNative.AllocZeroed(VpxNative.CodecContextSize);

@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:c="using:Discagem.Client.Controls"
+        x:Class="Discagem.Client.Views.Dialogs.ChannelEditorDialog"
+        x:DataType="vm:ChannelEditorViewModel"
+        Width="460" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        Title="{Binding Heading}">
+  <StackPanel>
+    <StackPanel Margin="20,20,20,24" Spacing="18">
+      <TextBlock Text="{Binding Heading}" Classes="h2" />
+      <StackPanel>
+        <TextBlock Text="CHANNEL NAME" Classes="label" />
+        <TextBox Text="{Binding Name}" x:Name="NameBox" MaxLength="48" Watermark="new-channel">
+          <TextBox.InnerLeftContent>
+            <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Margin="12,0,0,0" Foreground="{StaticResource TextMutedBrush}" />
+          </TextBox.InnerLeftContent>
+        </TextBox>
+        <TextBlock Text="{Binding Preview}" Classes="caption" Margin="2,6,0,0" />
+      </StackPanel>
+      <StackPanel>
+        <TextBlock Text="TOPIC" Classes="label" />
+        <TextBox Text="{Binding Topic}" MaxLength="256" Watermark="Let everyone know what this channel is about" />
+      </StackPanel>
+    </StackPanel>
+    <Border Background="{StaticResource SidebarBrush}" Padding="16,14">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+        <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
+        <Button Classes="primary" Content="{Binding ConfirmText}" Click="OnConfirm" IsDefault="True" IsEnabled="{Binding CanConfirm}" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</Window>

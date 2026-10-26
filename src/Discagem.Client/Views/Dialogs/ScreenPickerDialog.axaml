@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:c="using:Discagem.Client.Controls"
+        xmlns:media="using:Discagem.Media.Pipeline"
+        x:Class="Discagem.Client.Views.Dialogs.ScreenPickerDialog"
+        x:DataType="vm:ScreenPickerViewModel"
+        Width="780" Height="640" MinWidth="560" MinHeight="480" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        Title="Share your screen">
+
+  <Window.Resources>
+    <DataTemplate x:Key="TileTemplate" x:DataType="vm:CaptureTileViewModel">
+      <StackPanel Width="208" Spacing="6">
+        <Border Width="208" Height="117" CornerRadius="6" Background="#0B0B0E" ClipToBounds="True">
+          <Panel>
+            <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <c:Icon Data="{StaticResource IconMonitor}" Width="34" Height="34" Foreground="{StaticResource TextMutedBrush}"
+                    IsVisible="{Binding !HasThumbnail}" />
+          </Panel>
+        </Border>
+        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="{Binding SizeLabel}" Classes="caption" />
+      </StackPanel>
+    </DataTemplate>
+  </Window.Resources>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <StackPanel Margin="24,20,24,8" Spacing="4">
+      <TextBlock Text="Share your screen" Classes="h2" FontSize="20" />
+      <TextBlock Text="Pick a screen or an application window. Everyone on the server will be able to watch."
+                 Classes="secondary" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Panel Grid.Row="1" Margin="16,4,16,0">
+      <TabControl IsVisible="{Binding IsSupported}" Padding="0,8,0,0">
+        <TabItem Header="Screens">
+          <ListBox Classes="tiles" ItemsSource="{Binding Screens}" SelectedItem="{Binding SelectedScreen}"
+                   ItemTemplate="{StaticResource TileTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+          </ListBox>
+        </TabItem>
+        <TabItem Header="Applications" IsVisible="{Binding SupportsWindows}">
+          <ListBox Classes="tiles" ItemsSource="{Binding Windows}" SelectedItem="{Binding SelectedWindow}"
+                   ItemTemplate="{StaticResource TileTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+          </ListBox>
+        </TabItem>
+      </TabControl>
+
+      <ProgressBar IsIndeterminate="True" Width="160" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}"
+                   IsVisible="{Binding IsLoading}" VerticalAlignment="Center" />
+
+      <StackPanel IsVisible="{Binding !IsSupported}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="420">
+        <c:Icon Data="{StaticResource IconMonitor}" Width="48" Height="48" Foreground="{StaticResource TextMutedBrush}" />
+        <TextBlock Text="{Binding UnsupportedReason}" Classes="secondary" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+    </Panel>
+
+    <Border Grid.Row="2" Background="{StaticResource SidebarBrush}" Padding="24,16">
+      <Grid ColumnDefinitions="*,16,200" RowDefinitions="Auto,Auto,Auto">
+        <TextBlock Text="STREAM TITLE" Classes="label" />
+        <TextBox Grid.Row="1" Text="{Binding Title}" MaxLength="64" />
+        <TextBlock Grid.Column="2" Text="QUALITY" Classes="label" />
+        <ComboBox Grid.Column="2" Grid.Row="1" ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}"
+                  HorizontalAlignment="Stretch" Height="40">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="media:StreamQuality">
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,16,0,0">
+          <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
+          <Button Classes="live" Click="OnGoLive" IsEnabled="{Binding CanGoLive}" IsDefault="True">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconScreenShare}" Width="18" Height="18" />
+              <TextBlock Text="Go Live" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

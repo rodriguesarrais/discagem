@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Discagem.Client.ViewModels"
+             x:Class="Discagem.Client.Views.SplashView"
+             x:DataType="vm:SplashViewModel"
+             Background="{StaticResource LoginBackground}">
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="18">
+    <Border Width="84" Height="84" CornerRadius="24" Background="{StaticResource BrandGradient}" HorizontalAlignment="Center"
+            BoxShadow="0 10 40 0 #807C6CFF">
+      <Viewbox Margin="10">
+        <Canvas Width="24" Height="24">
+          <Path Data="{StaticResource LogoBubble}" Fill="White" />
+          <Path Data="{StaticResource LogoPlay}" Fill="#7B5CFA" />
+        </Canvas>
+      </Viewbox>
+    </Border>
+    <ProgressBar IsIndeterminate="True" Width="160" Height="4" MinHeight="4" Foreground="{StaticResource AccentBrush}" />
+    <TextBlock Text="{Binding Message}" Classes="secondary" HorizontalAlignment="Center" />
+  </StackPanel>
+</UserControl>

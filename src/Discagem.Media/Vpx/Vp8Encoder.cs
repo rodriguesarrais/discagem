@@ -76,7 +76,9 @@ public sealed unsafe class Vp8Encoder : IDisposable
             throw new InvalidOperationException($"vpx_codec_enc_config_default failed: {VpxNative.ErrorToString(err)}");
         }
 
-        var threads = Math.Clamp(Options.Threads ?? Environment.ProcessorCount - 1, 1, 8);
+        // libvpx worker threads spin-wait on each other; on a busy machine more threads cost more
+        // CPU than they save, so use at most half of the cores.
+        var threads = Math.Clamp(Options.Threads ?? Environment.ProcessorCount / 2, 1, 4);
         VpxNative.WriteU32(_cfg, VpxNative.EncCfg.GThreads, (uint)threads);
         VpxNative.WriteU32(_cfg, VpxNative.EncCfg.GWidth, (uint)Options.Width);
         VpxNative.WriteU32(_cfg, VpxNative.EncCfg.GHeight, (uint)Options.Height);
@@ -106,7 +108,7 @@ public sealed unsafe class Vp8Encoder : IDisposable
         var cpuUsed = pixels >= 1920 * 1080 ? -10 : pixels >= 1280 * 720 ? -8 : -6;
         Control(VpxNative.VP8E_SET_CPUUSED, cpuUsed);
         Control(VpxNative.VP8E_SET_NOISE_SENSITIVITY, 0);
-        Control(VpxNative.VP8E_SET_TOKEN_PARTITIONS, threads > 1 ? 2 : 0);
+        Control(VpxNative.VP8E_SET_TOKEN_PARTITIONS, 0);
         Control(VpxNative.VP8E_SET_MAX_INTRA_BITRATE_PCT, 600);
         if (Options.ScreenContent)
         {
