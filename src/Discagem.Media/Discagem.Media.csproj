@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Discagem.Media</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SIPSorcery" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Discagem.Tests" />
+  </ItemGroup>
+
+</Project>
