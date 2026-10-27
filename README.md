@@ -106,10 +106,10 @@ framing, jitter buffering and device buffers.
 
 ## Releases
 
-Every [release](https://github.com/rodriguesarrais/discagem/releases) contains the Windows and Linux
-desktop clients, self-contained server builds for x64 and ARM64 Linux, and a `SHA256SUMS` file; the
-server image is published as `ghcr.io/rodriguesarrais/discagem-server` (`latest` is the newest
-stable release).
+Every [release](https://github.com/rodriguesarrais/discagem/releases) contains the Windows client
+(installer and portable zip), the Linux client, self-contained server builds for x64 and ARM64 Linux,
+and a `SHA256SUMS` file; the server image is published as `ghcr.io/rodriguesarrais/discagem-server`
+(`latest` is the newest stable release).
 
 To publish a release, push a version tag, or run the *Release* workflow from the Actions tab and
 enter the version:
@@ -198,18 +198,36 @@ variables (`Section__Key`, as in `.env.example`).
 
 ### Windows
 
-Download `Discagem-<version>-win-x64.zip` from the latest release, or build it yourself with the
-.NET 10 SDK:
+Download `Discagem-<version>-win-x64-setup.exe` from the latest release and run it. The installer
+needs no administrator rights: it installs Discagem for the current user in
+`%LOCALAPPDATA%\Programs\Discagem`, adds a Start menu shortcut (and, optionally, a desktop shortcut)
+and registers an uninstaller. To update, run the installer of a newer release; it replaces the
+previous version and keeps your settings. Uninstall from *Settings → Apps → Installed apps*; your
+settings and saved session are kept unless you tick *Settings and saved session*. The installer and
+the client are not code-signed, so SmartScreen may warn the first time: choose *More info → Run
+anyway*. For unattended installs, run the installer with `/S`.
+
+`Discagem-<version>-win-x64.zip` is the portable alternative: extract it anywhere and run
+`Discagem.exe`.
+
+To build them yourself with the .NET 10 SDK:
+
+```bash
+# Installer, written to dist/ (needs NSIS 3: "sudo apt install nsis" on Debian/Ubuntu)
+installer/windows/build.sh 0.2.0 dist
+```
 
 ```powershell
+# Portable single-file build
 dotnet publish src/Discagem.Client -c Release -r win-x64 --self-contained `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
   -p:EnableCompressionInSingleFile=true -o publish/win-x64
 ```
 
-Keep `Discagem.exe` and `vpxmd.dll` (the VP8 codec) together. Screen sharing needs the
-[Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe), which most
-machines already have; the client tells you if it is missing.
+In the portable build, keep `Discagem.exe` and `vpxmd.dll` (the VP8 codec) together. Screen sharing
+needs the [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe),
+which most machines already have; the installer offers to open its download page when it is missing,
+and the client tells you as well.
 
 While you are in a voice channel, Windows may lower the volume of other applications (its default
 "communications activity" setting). To turn that off, open *Sound settings → More sound settings →
@@ -261,6 +279,7 @@ they are applied automatically on start-up.
 | `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
 | `deploy/` | Dockerfile, Compose file with Caddy, environment template and systemd unit. |
+| `installer/windows/` | NSIS script, wizard images and build script of the Windows installer. |
 | `.github/workflows/` | CI (build, tests, Windows client artifact, image build) and the release workflow. |
 
 ## Security notes
