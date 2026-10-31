@@ -224,14 +224,16 @@
           <!-- Live status card -->
           <Border Margin="8,0,8,8" Padding="12,10" CornerRadius="8" Background="#1A3DBE73"
                   BorderBrush="#553DBE73" BorderThickness="1" IsVisible="{Binding IsLive}">
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Ellipse Width="9" Height="9" Fill="{StaticResource OnlineBrush}" Classes="pulse"
                            Classes.animated="{Binding IsLive}" VerticalAlignment="Center" />
                 <TextBlock Text="You're live" FontWeight="Bold" Foreground="{StaticResource OnlineBrush}" />
               </StackPanel>
               <TextBlock Grid.Row="1" Text="{Binding LiveStatsText}" Classes="caption" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
-              <Button Grid.Column="1" Grid.RowSpan="2" Classes="icon danger-hover" ToolTip.Tip="Stop sharing"
+              <TextBlock Grid.Row="2" Text="{Binding LiveSoundText}" Classes="caption" Margin="0,2,0,0" TextWrapping="Wrap"
+                         IsVisible="{Binding LiveSoundText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <Button Grid.Column="1" Grid.RowSpan="3" Classes="icon danger-hover" ToolTip.Tip="Stop sharing"
                       Command="{Binding StopLiveCommand}" VerticalAlignment="Center">
                 <c:Icon Data="{StaticResource IconStop}" Fill="{StaticResource LiveBrush}" Foreground="{StaticResource LiveBrush}" />
               </Button>
