@@ -107,6 +107,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly Func<string?> _hubConnectionId;
     private readonly VoiceService _voice;
     private readonly DispatcherTimer _meterTimer;
+    private readonly Func<Task<string>> _checkForUpdates;
 
     public SettingsViewModel(
         ApiClient api,
@@ -115,8 +116,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         string serverName,
         Action<AuthResponse> tokenChanged,
         Func<string?> hubConnectionId,
-        VoiceService voice)
+        VoiceService voice,
+        Func<Task<string>> checkForUpdates)
     {
+        _checkForUpdates = checkForUpdates;
+        _checkForUpdatesAutomatically = settings.CheckForUpdates;
         _api = api;
         _settings = settings;
         _tokenChanged = tokenChanged;
@@ -265,6 +269,36 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         _settings.CloseToTray = value;
         _settings.Save();
+    }
+
+    [ObservableProperty]
+    private bool _checkForUpdatesAutomatically;
+
+    [ObservableProperty]
+    private string _updateStatus = "";
+
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
+    partial void OnCheckForUpdatesAutomaticallyChanged(bool value)
+    {
+        _settings.CheckForUpdates = value;
+        _settings.Save();
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        IsCheckingForUpdates = true;
+        UpdateStatus = "Checking…";
+        try
+        {
+            UpdateStatus = await _checkForUpdates();
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
     }
 
     public string AppVersion =>

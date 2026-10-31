@@ -63,12 +63,7 @@ public sealed class App : Application
         var open = new NativeMenuItem("Open Discagem");
         open.Click += (_, _) => ShowWindow(window);
         var quit = new NativeMenuItem("Quit Discagem");
-        quit.Click += (_, _) =>
-        {
-            // TryShutdown, unlike Shutdown, raises ShutdownRequested so that the session is saved and closed.
-            _quitting = true;
-            desktop.TryShutdown();
-        };
+        quit.Click += (_, _) => Quit();
 
         var tray = new TrayIcon
         {
@@ -78,6 +73,17 @@ public sealed class App : Application
         };
         tray.Clicked += (_, _) => ShowWindow(window);
         TrayIcon.SetIcons(this, [tray]);
+    }
+
+    /// <summary>Quits for real, also when closing the window would only hide it in the notification area.</summary>
+    public static void Quit()
+    {
+        if (Current is App app && app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            // TryShutdown, unlike Shutdown, raises ShutdownRequested so that the session is saved and closed.
+            app._quitting = true;
+            desktop.TryShutdown();
+        }
     }
 
     private static void ShowWindow(Window window)

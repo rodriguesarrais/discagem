@@ -51,6 +51,9 @@ public sealed class ClientSettings
     [JsonIgnore]
     public bool CloseToTrayEnabled => CloseToTray ?? OperatingSystem.IsWindows();
 
+    /// <summary>Whether to look for new releases at start-up and every few hours.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     public double WindowWidth { get; set; } = 1280;
 
     public double WindowHeight { get; set; } = 800;
