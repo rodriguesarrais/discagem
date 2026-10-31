@@ -24,9 +24,13 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
     private WatchSession? _session;
     private bool _disposed;
 
-    public StreamViewerViewModel(LiveStreamViewModel stream)
+    private readonly ClientSettings _settings;
+
+    public StreamViewerViewModel(LiveStreamViewModel stream, ClientSettings settings)
     {
         Stream = stream;
+        _settings = settings;
+        _volumePercent = settings.StreamVolumes.TryGetValue(stream.Streamer.Id, out var volume) ? volume * 100 : 100;
     }
 
     public LiveStreamViewModel Stream { get; }
@@ -51,9 +55,51 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
 
     public bool HasFrame => Frame is not null;
 
+    /// <summary>Stream volume, 0–200 %, remembered per streamer.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VolumeLabel))]
+    private double _volumePercent;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSilenced))]
+    private bool _isAudioMuted;
+
+    /// <summary>Deafening in voice also silences streams.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSilenced))]
+    private bool _isDeafened;
+
+    public bool IsSilenced => IsAudioMuted || IsDeafened;
+
+    public string VolumeLabel => $"{VolumePercent:0}%";
+
+    partial void OnVolumePercentChanged(double value)
+    {
+        _settings.StreamVolumes[Stream.Streamer.Id] = (float)(value / 100);
+        _settings.Save();
+        ApplyAudio();
+    }
+
+    partial void OnIsAudioMutedChanged(bool value) => ApplyAudio();
+
+    partial void OnIsDeafenedChanged(bool value) => ApplyAudio();
+
+    private void ApplyAudio()
+    {
+        if (_session is { } session)
+        {
+            session.Audio.Volume = (float)(VolumePercent / 100);
+            session.Audio.IsMuted = IsSilenced;
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleAudio() => IsAudioMuted = !IsAudioMuted;
+
     public void Attach(WatchSession session)
     {
         _session = session;
+        ApplyAudio();
         session.Decoder.FrameDecoded += OnFrameDecoded;
         session.Decoder.StatsUpdated += stats => Dispatcher.UIThread.Post(() =>
             StatsText = stats.Width > 0 ? $"{stats.Width}×{stats.Height} · {stats.FramesPerSecond:0} FPS · {stats.ReceivedKbps / 1000:0.0} Mbps" : "");

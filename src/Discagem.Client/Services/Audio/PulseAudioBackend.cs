@@ -6,8 +6,9 @@ namespace Discagem.Client.Services.Audio;
 
 /// <summary>
 /// Linux audio through the PulseAudio "simple" API, which PipeWire also provides. Streams are
-/// 48 kHz mono float, so the sound server does any conversion; each stream runs on its own thread
-/// moving 10 ms blocks.
+/// 48 kHz mono or stereo float, so the sound server does any conversion; each stream runs on its own
+/// thread moving 10 ms blocks. The audio of screen shares is recorded from the monitor of the default
+/// output, which carries everything the computer plays, Discagem's own sounds included.
 /// </summary>
 internal sealed class PulseAudioBackend : IAudioBackend
 {
@@ -27,21 +28,33 @@ internal sealed class PulseAudioBackend : IAudioBackend
     public IReadOnlyList<AudioDeviceInfo> OutputDevices() => [AudioDeviceInfo.Default];
 
     public IAudioStream OpenInput(string? deviceId, AudioSink sink) =>
-        new PulseStream(Native.Direction.Record, sink, null);
+        new PulseStream(Native.Direction.Record, null, 1, "Voice input", sink, null);
 
-    public IAudioStream OpenOutput(string? deviceId, AudioSource source) =>
-        new PulseStream(Native.Direction.Playback, null, source);
+    public IAudioStream OpenOutput(string? deviceId, AudioSource source, int channels = 1) =>
+        new PulseStream(Native.Direction.Playback, null, channels, channels == 1 ? "Voice output" : "Stream audio", null, source);
+
+    public bool SupportsSystemCapture => true;
+
+    public bool SupportsApplicationCapture => false;
+
+    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) =>
+        new PulseStream(Native.Direction.Record, "@DEFAULT_MONITOR@", 2, "Screen share audio", sink, null)
+        {
+            DeviceName = "Everything playing on the default output",
+        };
 
     private sealed unsafe class PulseStream : IAudioStream
     {
         private readonly IntPtr _handle;
         private readonly Thread _thread;
+        private readonly int _channels;
         private volatile bool _stopped;
 
-        public PulseStream(Native.Direction direction, AudioSink? sink, AudioSource? source)
+        public PulseStream(Native.Direction direction, string? device, int channels, string streamName, AudioSink? sink, AudioSource? source)
         {
-            var spec = new Native.SampleSpec { Format = Native.SampleFormatFloat32Le, Rate = DiscagemAudio.SampleRate, Channels = 1 };
-            const uint blockBytes = BlockSamples * sizeof(float);
+            _channels = channels;
+            var spec = new Native.SampleSpec { Format = Native.SampleFormatFloat32Le, Rate = DiscagemAudio.SampleRate, Channels = (byte)channels };
+            var blockBytes = (uint)(BlockSamples * channels * sizeof(float));
             var attributes = new Native.BufferAttributes
             {
                 MaxLength = uint.MaxValue,
@@ -56,18 +69,18 @@ internal sealed class PulseAudioBackend : IAudioBackend
                 null,
                 "Discagem",
                 direction,
-                null,
-                direction == Native.Direction.Record ? "Voice input" : "Voice output",
+                device,
+                streamName,
                 ref spec,
                 IntPtr.Zero,
                 ref attributes,
                 out var error);
             if (_handle == IntPtr.Zero)
             {
-                throw new AudioDeviceException($"Could not open the {(direction == Native.Direction.Record ? "microphone" : "speakers")}: {Native.Describe(error)}.");
+                var what = device is not null ? "the computer's audio" : direction == Native.Direction.Record ? "the microphone" : "the speakers";
+                throw new AudioDeviceException($"Could not open {what}: {Native.Describe(error)}.");
             }
 
-            DeviceName = "System default";
             _thread = new Thread(() => Run(direction, sink, source))
             {
                 IsBackground = true,
@@ -77,13 +90,14 @@ internal sealed class PulseAudioBackend : IAudioBackend
             _thread.Start();
         }
 
-        public string DeviceName { get; }
+        public string DeviceName { get; init; } = "System default";
 
         public event Action<string>? Failed;
 
         private void Run(Native.Direction direction, AudioSink? sink, AudioSource? source)
         {
-            var buffer = new float[BlockSamples];
+            var buffer = new float[BlockSamples * _channels];
+            var bytes = (nuint)(buffer.Length * sizeof(float));
             fixed (float* data = buffer)
             {
                 while (!_stopped)
@@ -92,7 +106,7 @@ internal sealed class PulseAudioBackend : IAudioBackend
                     int error;
                     if (direction == Native.Direction.Record)
                     {
-                        result = Native.pa_simple_read(_handle, data, (nuint)(BlockSamples * sizeof(float)), out error);
+                        result = Native.pa_simple_read(_handle, data, bytes, out error);
                         if (result >= 0)
                         {
                             sink!(buffer);
@@ -101,7 +115,7 @@ internal sealed class PulseAudioBackend : IAudioBackend
                     else
                     {
                         source!(buffer);
-                        result = Native.pa_simple_write(_handle, data, (nuint)(BlockSamples * sizeof(float)), out error);
+                        result = Native.pa_simple_write(_handle, data, bytes, out error);
                     }
 
                     if (result < 0)

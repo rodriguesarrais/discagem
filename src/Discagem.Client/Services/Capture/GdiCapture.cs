@@ -97,6 +97,7 @@ internal static class GdiCapture
                 Kind = CaptureKind.Window,
                 Width = bounds.Width,
                 Height = bounds.Height,
+                ProcessId = (int)processId,
                 Factory = () => new GdiWindowSource(name, handle),
             });
             return true;
