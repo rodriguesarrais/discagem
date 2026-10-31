@@ -6,7 +6,8 @@ namespace Discagem.Media.Audio;
 /// <summary>
 /// One remote speaker: an adaptive jitter buffer in front of an Opus decoder. Frames are pulled at
 /// the pace of the playback device; lost frames are rebuilt from the next packet's forward error
-/// correction data when possible, and concealed otherwise.
+/// correction data when possible, and concealed otherwise. Voice is mono; the audio of a screen
+/// share is interleaved stereo.
 /// </summary>
 /// <remarks>
 /// Speakers only send while they talk, so a talk spurt simply stops: after a few concealed frames
@@ -22,7 +23,7 @@ public sealed class SpeakerStream : IDisposable
     private readonly object _sync = new();
     private readonly SortedDictionary<long, byte[]> _packets = new();
     private readonly SequenceUnwrapper _unwrapper = new();
-    private readonly OpusVoiceDecoder _decoder = new();
+    private readonly OpusVoiceDecoder _decoder;
     private long _next = -1;
     private long _lastPlayed = -1;
     private long _bufferingSinceMs = -1;
@@ -33,12 +34,16 @@ public sealed class SpeakerStream : IDisposable
     private long _lastAudibleMs = long.MinValue / 2;
     private bool _disposed;
 
-    public SpeakerStream(uint speakerId)
+    public SpeakerStream(uint speakerId, int channels = 1)
     {
         SpeakerId = speakerId;
+        _decoder = new OpusVoiceDecoder(channels);
     }
 
     public uint SpeakerId { get; }
+
+    /// <summary>Samples in one 20 ms frame passed to <see cref="Read"/> (all channels, interleaved).</summary>
+    public int FrameLength => _decoder.FrameLength;
 
     /// <summary>Playback volume for this speaker (1 = unchanged).</summary>
     public float Gain { get; set; } = 1f;

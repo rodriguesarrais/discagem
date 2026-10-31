@@ -21,6 +21,9 @@ public sealed class CaptureSource
 
     public int Height { get; init; }
 
+    /// <summary>For windows: the process that owns it, whose audio is shared with it.</summary>
+    public int? ProcessId { get; init; }
+
     public required Func<IFrameSource> Factory { get; init; }
 
     public IFrameSource Create() => Factory();

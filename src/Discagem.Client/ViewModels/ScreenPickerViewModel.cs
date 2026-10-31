@@ -11,7 +11,7 @@ using Discagem.Media.Pipeline;
 namespace Discagem.Client.ViewModels;
 
 /// <summary>What the user chose to share.</summary>
-public sealed record ScreenShareSelection(CaptureSource Source, StreamQuality Quality, string Title);
+public sealed record ScreenShareSelection(CaptureSource Source, StreamQuality Quality, string Title, bool ShareAudio);
 
 /// <summary>A selectable screen or window with a live thumbnail.</summary>
 public sealed partial class CaptureTileViewModel(CaptureSource source) : ObservableObject
@@ -33,11 +33,31 @@ public sealed partial class CaptureTileViewModel(CaptureSource source) : Observa
 
 public sealed partial class ScreenPickerViewModel : ObservableObject
 {
-    public ScreenPickerViewModel(string defaultTitle, int qualityIndex)
+    private readonly bool _supportsApplicationAudio;
+
+    public ScreenPickerViewModel(string defaultTitle, int qualityIndex, bool canShareAudio = false, bool supportsApplicationAudio = false, bool shareAudio = true)
     {
         Title = defaultTitle;
         Quality = StreamQuality.Presets[Math.Clamp(qualityIndex, 0, StreamQuality.Presets.Length - 1)];
+        CanShareAudio = canShareAudio;
+        _supportsApplicationAudio = supportsApplicationAudio;
+        _shareAudio = canShareAudio && shareAudio;
     }
+
+    public bool CanShareAudio { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AudioHint))]
+    private bool _shareAudio;
+
+    /// <summary>What viewers will hear with the current choice.</summary>
+    public string AudioHint => !ShareAudio
+        ? "Viewers will not hear anything."
+        : !_supportsApplicationAudio
+            ? "Viewers hear everything your computer plays, Discagem's voice chat included. Turn this off if they are in your voice channel."
+            : Selected?.Source.Kind == CaptureKind.Window
+                ? "Viewers hear this window's application only."
+                : "Viewers hear everything your computer plays, except Discagem.";
 
     public ObservableCollection<CaptureTileViewModel> Screens { get; } = [];
 
@@ -58,11 +78,11 @@ public sealed partial class ScreenPickerViewModel : ObservableObject
     private string _title;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Selected), nameof(CanGoLive))]
+    [NotifyPropertyChangedFor(nameof(Selected), nameof(CanGoLive), nameof(AudioHint))]
     private CaptureTileViewModel? _selectedScreen;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Selected), nameof(CanGoLive))]
+    [NotifyPropertyChangedFor(nameof(Selected), nameof(CanGoLive), nameof(AudioHint))]
     private CaptureTileViewModel? _selectedWindow;
 
     [ObservableProperty]
@@ -91,7 +111,7 @@ public sealed partial class ScreenPickerViewModel : ObservableObject
     }
 
     public ScreenShareSelection? BuildSelection() =>
-        Selected is { } tile ? new ScreenShareSelection(tile.Source, Quality, Title.Trim()) : null;
+        Selected is { } tile ? new ScreenShareSelection(tile.Source, Quality, Title.Trim(), CanShareAudio && ShareAudio) : null;
 
     public async Task LoadAsync()
     {

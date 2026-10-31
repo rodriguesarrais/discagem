@@ -29,6 +29,10 @@ public sealed partial class LiveStreamViewModel : ObservableObject
     [ObservableProperty]
     private string _formatLabel = "";
 
+    /// <summary>Whether the streamer shares their computer's sound.</summary>
+    [ObservableProperty]
+    private bool _hasAudio;
+
     public bool HasViewers => ViewerCount > 0;
 
     public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? $"{Streamer.DisplayName}'s screen" : Title;
@@ -38,6 +42,7 @@ public sealed partial class LiveStreamViewModel : ObservableObject
         Title = stream.Title;
         ViewerCount = stream.ViewerIds.Count;
         FormatLabel = $"{stream.Height}p · {stream.FrameRate} FPS";
+        HasAudio = stream.HasAudio;
         OnPropertyChanged(nameof(DisplayTitle));
     }
 }

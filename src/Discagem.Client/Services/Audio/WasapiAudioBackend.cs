@@ -9,7 +9,9 @@ namespace Discagem.Client.Services.Audio;
 /// <summary>
 /// Windows audio through WASAPI in shared mode. The microphone is opened in the communications
 /// processing mode where available, which lets Windows apply its echo cancellation, noise
-/// suppression and gain control. Conversion to and from 48 kHz mono happens here.
+/// suppression and gain control. Conversion to and from 48 kHz mono (or stereo) happens here.
+/// The audio of screen shares is captured with process loopback (Windows 10 2004 and later), which
+/// can follow one application or leave Discagem's own sounds out.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class WasapiAudioBackend : IAudioBackend
@@ -102,16 +104,62 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
     }
 
-    public IAudioStream OpenOutput(string? deviceId, AudioSource source)
+    public IAudioStream OpenOutput(string? deviceId, AudioSource source, int channels = 1)
     {
         var device = Resolve(DataFlow.Render, deviceId);
         try
         {
-            return new OutputStream(device, source);
+            return new OutputStream(device, source, channels);
         }
         catch (Exception ex) when (IsDeviceError(ex))
         {
             throw new AudioDeviceException($"Could not open the speakers ({ex.Message}).", ex);
+        }
+    }
+
+    public bool SupportsSystemCapture => true;
+
+    /// <summary>Process loopback capture needs Windows 10 version 2004 (build 19041).</summary>
+    public bool SupportsApplicationCapture => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041);
+
+    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink)
+    {
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        {
+            try
+            {
+                // Process loopback has no device mix format; ask for 48 kHz float stereo and let Windows convert.
+                var mode = processId is null ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree;
+                var recorder = new WasapiRecorderBuilder()
+                    .WithProcessLoopback((uint)(processId ?? Environment.ProcessId), mode)
+                    .WithFormat(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2))
+                    .WithBufferLength(20)
+                    .BuildAsync()
+                    .GetAwaiter()
+                    .GetResult();
+                return new LoopbackStream(recorder, processId is null ? "System audio (without Discagem)" : "Application audio", sink);
+            }
+            catch (Exception ex) when (IsDeviceError(ex))
+            {
+                // Fall back to everything the default output plays.
+            }
+        }
+
+        var device = Resolve(DataFlow.Render, null);
+        try
+        {
+            // Polling: loopback streams do not signal their event on every Windows version.
+            var loopback = new WasapiRecorderBuilder()
+                .WithDevice(device)
+                .WithLoopbackCapture()
+                .WithPollingSync()
+                .WithBufferLength(40)
+                .Build();
+            return new LoopbackStream(loopback, $"Everything playing on {device.FriendlyName}", sink);
+        }
+        catch (Exception ex) when (IsDeviceError(ex))
+        {
+            throw new AudioDeviceException($"Could not capture the computer's audio ({ex.Message}).", ex);
         }
     }
 
@@ -227,12 +275,112 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
     }
 
+    /// <summary>A loopback recorder delivering 48 kHz interleaved stereo.</summary>
+    private sealed class LoopbackStream : IAudioStream
+    {
+        private readonly WasapiRecorder _recorder;
+        private readonly PcmFormat _format;
+        private readonly InterleavedResampler _resampler;
+        private readonly AudioSink _sink;
+        private float[] _stereo = [];
+        private float[] _resampled = [];
+        private int _disposed;
+
+        public LoopbackStream(WasapiRecorder recorder, string description, AudioSink sink)
+        {
+            _recorder = recorder;
+            _sink = sink;
+            DeviceName = description;
+            try
+            {
+                _format = ToPcmFormat(recorder.WaveFormat);
+                _resampler = new InterleavedResampler(2, _format.SampleRate, Discagem.Media.WebRtc.DiscagemAudio.SampleRate);
+                recorder.DataAvailable += OnDataAvailable;
+                recorder.RecordingStopped += (_, e) =>
+                {
+                    if (e.Exception is not null && Volatile.Read(ref _disposed) == 0)
+                    {
+                        Failed?.Invoke(e.Exception.Message);
+                    }
+                };
+                recorder.StartRecording();
+            }
+            catch
+            {
+                recorder.Dispose();
+                throw;
+            }
+        }
+
+        public string DeviceName { get; }
+
+        public event Action<string>? Failed;
+
+        private void OnDataAvailable(ReadOnlySpan<byte> buffer, AudioClientBufferFlags flags, long devicePosition, long qpcPosition)
+        {
+            if (buffer.IsEmpty || Volatile.Read(ref _disposed) != 0)
+            {
+                return;
+            }
+
+            var frames = buffer.Length / _format.BlockAlign;
+            if (_stereo.Length < frames * 2)
+            {
+                _stereo = new float[frames * 2];
+            }
+
+            var stereo = _stereo.AsSpan(0, frames * 2);
+            if ((flags & AudioClientBufferFlags.Silent) != 0)
+            {
+                stereo.Clear();
+            }
+            else
+            {
+                PcmConversion.ToStereo(buffer, _format, stereo);
+            }
+
+            if (_resampler.IsPassThrough)
+            {
+                _sink(stereo);
+                return;
+            }
+
+            var needed = _resampler.MaxOutputFor(stereo.Length);
+            if (_resampled.Length < needed)
+            {
+                _resampled = new float[needed];
+            }
+
+            var written = _resampler.Process(stereo, _resampled);
+            _sink(_resampled.AsSpan(0, written));
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                _recorder.StopRecording();
+            }
+            catch (Exception ex) when (IsDeviceError(ex))
+            {
+                // The device is already gone.
+            }
+
+            _recorder.Dispose();
+        }
+    }
+
     private sealed class OutputStream : IAudioStream
     {
         private readonly WasapiPlayer _player;
         private int _disposed;
 
-        public OutputStream(MMDevice device, AudioSource source)
+        public OutputStream(MMDevice device, AudioSource source, int channels)
         {
             DeviceName = device.FriendlyName;
             _player = new WasapiPlayerBuilder()
@@ -252,7 +400,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
                         Failed?.Invoke(e.Exception.Message);
                     }
                 };
-                _player.Init(new Provider(mixFormat, ToPcmFormat(mixFormat), source));
+                _player.Init(new Provider(mixFormat, ToPcmFormat(mixFormat), source, channels));
                 _player.Play();
             }
             catch
@@ -286,25 +434,33 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
     }
 
-    /// <summary>Pulls 48 kHz mono audio and converts it to the device's mix format.</summary>
-    private sealed class Provider(WaveFormat waveFormat, PcmFormat format, AudioSource source) : IWaveProvider
+    /// <summary>Pulls 48 kHz mono or stereo audio and converts it to the device's mix format.</summary>
+    private sealed class Provider(WaveFormat waveFormat, PcmFormat format, AudioSource source, int channels) : IWaveProvider
     {
-        private readonly PlaybackResampler _resampler = new(format.SampleRate, source);
-        private float[] _mono = [];
+        private readonly PlaybackResampler _resampler = new(format.SampleRate, source, channels);
+        private float[] _samples = [];
 
         public WaveFormat WaveFormat { get; } = waveFormat;
 
         public int Read(Span<byte> buffer)
         {
             var frames = buffer.Length / format.BlockAlign;
-            if (_mono.Length < frames)
+            if (_samples.Length < frames * channels)
             {
-                _mono = new float[frames];
+                _samples = new float[frames * channels];
             }
 
-            var mono = _mono.AsSpan(0, frames);
-            _resampler.Read(mono);
-            PcmConversion.FromMono(mono, format, buffer);
+            var samples = _samples.AsSpan(0, frames * channels);
+            _resampler.Read(samples);
+            if (channels == 2)
+            {
+                PcmConversion.FromStereo(samples, format, buffer);
+            }
+            else
+            {
+                PcmConversion.FromMono(samples, format, buffer);
+            }
+
             return frames * format.BlockAlign;
         }
     }

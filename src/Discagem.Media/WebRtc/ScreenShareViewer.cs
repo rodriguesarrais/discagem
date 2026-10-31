@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Discagem.Media.Audio;
 using Discagem.Media.Rtp;
 using SIPSorcery.Net;
 
@@ -6,7 +7,8 @@ namespace Discagem.Media.WebRtc;
 
 /// <summary>
 /// Receives a screen share from the SFU: reorders packets, requests retransmissions (NACK) and key
-/// frames (PLI), and emits complete encoded frames.
+/// frames (PLI), and emits complete encoded frames. The stream's audio, if any, arrives on a second
+/// track and is passed on packet by packet.
 /// </summary>
 public sealed class ScreenShareViewer : MediaPeer
 {
@@ -21,9 +23,18 @@ public sealed class ScreenShareViewer : MediaPeer
     private long _packetsReceived;
     private long _bytesReceived;
     private long _framesReceived;
+    private long _audioPacketsReceived;
 
     public ScreenShareViewer(IEnumerable<IceServerConfig> iceServers)
-        : base(iceServers, DiscagemVideo.CreateTrack(MediaStreamStatusEnum.RecvOnly))
+        : this(iceServers, withAudio: true)
+    {
+    }
+
+    /// <summary>Test hook: <c>withAudio: false</c> behaves like a client from before streams had audio.</summary>
+    internal ScreenShareViewer(IEnumerable<IceServerConfig> iceServers, bool withAudio)
+        : base(iceServers, withAudio
+            ? [DiscagemVideo.CreateTrack(MediaStreamStatusEnum.RecvOnly), DiscagemAudio.CreateTrack(MediaStreamStatusEnum.RecvOnly)]
+            : [DiscagemVideo.CreateTrack(MediaStreamStatusEnum.RecvOnly)])
     {
         PeerConnection.OnRtpPacketReceived += OnRtpPacket;
         _maintenance = new Thread(MaintenanceLoop) { IsBackground = true, Name = "Discagem viewer" };
@@ -32,6 +43,11 @@ public sealed class ScreenShareViewer : MediaPeer
 
     /// <summary>Raised for every complete frame, in decode order (on a network thread).</summary>
     public event Action<AssembledFrame>? FrameReceived;
+
+    /// <summary>Raised on the network thread for every audio packet (the streamer's sequence number and the Opus data).</summary>
+    public event Action<ushort, ReadOnlyMemory<byte>>? AudioReceived;
+
+    public long AudioPacketsReceived => Interlocked.Read(ref _audioPacketsReceived);
 
     public long PacketsReceived => Interlocked.Read(ref _packetsReceived);
 
@@ -72,6 +88,18 @@ public sealed class ScreenShareViewer : MediaPeer
 
     private void OnRtpPacket(System.Net.IPEndPoint remote, SDPMediaTypesEnum media, RTPPacket rtp)
     {
+        if (media == SDPMediaTypesEnum.audio)
+        {
+            // The server prefixes the streamer's own sequence number, so losses upstream show as gaps.
+            if (VoicePayload.TryUnwrap(rtp.Payload, out var sequence, out _, out var opus))
+            {
+                Interlocked.Increment(ref _audioPacketsReceived);
+                AudioReceived?.Invoke(sequence, opus);
+            }
+
+            return;
+        }
+
         if (media != SDPMediaTypesEnum.video)
         {
             return;

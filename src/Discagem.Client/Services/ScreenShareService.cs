@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using Discagem.Client.Services.Audio;
 using Discagem.Client.Services.Capture;
+using Discagem.Media.Audio;
 using Discagem.Media.Imaging;
 using Discagem.Media.Pipeline;
 using Discagem.Media.WebRtc;
@@ -9,8 +11,8 @@ using SIPSorcery.Net;
 namespace Discagem.Client.Services;
 
 /// <summary>
-/// Client side of screen sharing: publishes the local screen and watches other people's streams,
-/// using the chat connection for signalling.
+/// Client side of screen sharing: publishes the local screen (and, optionally, what the computer
+/// plays) and watches other people's streams, using the chat connection for signalling.
 /// </summary>
 public sealed class ScreenShareService : IAsyncDisposable
 {
@@ -18,14 +20,18 @@ public sealed class ScreenShareService : IAsyncDisposable
 
     private readonly ChatConnection _hub;
     private readonly IReadOnlyList<IceServerConfig> _iceServers;
+    private readonly IAudioBackend _audio;
+    private readonly Func<string?> _outputDevice;
     private readonly ConcurrentDictionary<string, MediaPeer> _peers = new();
     private readonly ConcurrentDictionary<string, WatchSession> _watching = new();
     private PublishSession? _publish;
 
-    public ScreenShareService(ChatConnection hub, IReadOnlyList<IceServerConfig> iceServers)
+    public ScreenShareService(ChatConnection hub, IReadOnlyList<IceServerConfig> iceServers, IAudioBackend audio, Func<string?> outputDevice)
     {
         _hub = hub;
         _iceServers = iceServers;
+        _audio = audio;
+        _outputDevice = outputDevice;
         _hub.IceCandidate += OnRemoteCandidate;
         _hub.MediaSessionClosed += OnMediaSessionClosed;
     }
@@ -40,7 +46,13 @@ public sealed class ScreenShareService : IAsyncDisposable
     /// <summary>Raised (on a background thread) when publishing stops unexpectedly.</summary>
     public event Action<string>? PublishStopped;
 
-    public async Task StartAsync(CaptureSource source, StreamQuality quality, string title)
+    /// <summary>Raised (on a background thread) when the stream's audio could not be captured; the video carries on.</summary>
+    public event Action<string>? PublishAudioProblem;
+
+    /// <summary>Whether this computer can send its audio with a screen share.</summary>
+    public bool CanShareAudio => _audio.SupportsSystemCapture;
+
+    public async Task StartAsync(CaptureSource source, StreamQuality quality, string title, bool shareAudio = false)
     {
         await StopAsync();
 
@@ -57,7 +69,8 @@ public sealed class ScreenShareService : IAsyncDisposable
             }
 
             var (width, height) = BgraScaler.FitWithin(firstSize.Item1, firstSize.Item2, quality.MaxHeight);
-            publisher = new ScreenSharePublisher(_iceServers, quality.BitrateKbpsFor(width, height));
+            var withAudio = shareAudio && CanShareAudio;
+            publisher = new ScreenSharePublisher(_iceServers, quality.BitrateKbpsFor(width, height), withAudio);
             var relay = new CandidateRelay(_hub);
             publisher.LocalCandidate += relay.OnLocalCandidate;
 
@@ -88,6 +101,10 @@ public sealed class ScreenShareService : IAsyncDisposable
 
             _publish = session;
             pipeline.Start();
+            if (withAudio)
+            {
+                _ = Task.Run(() => StartAudio(session, publisher, source.Kind == CaptureKind.Window ? source.ProcessId : null));
+            }
         }
         catch
         {
@@ -110,6 +127,26 @@ public sealed class ScreenShareService : IAsyncDisposable
 
             throw;
         }
+    }
+
+    /// <summary>Captures the computer's audio (or the shared window's application) and sends it with the stream.</summary>
+    private void StartAudio(PublishSession session, ScreenSharePublisher publisher, int? processId)
+    {
+        var sender = new StreamAudioSender(publisher.SendAudio);
+        IAudioStream capture;
+        try
+        {
+            capture = _audio.OpenSystemCapture(processId, sender.Write);
+        }
+        catch (Exception ex) when (ex is AudioDeviceException or InvalidOperationException or NotSupportedException or System.Runtime.InteropServices.COMException)
+        {
+            sender.Dispose();
+            PublishAudioProblem?.Invoke($"Your stream has no sound: {ex.Message}");
+            return;
+        }
+
+        capture.Failed += reason => PublishAudioProblem?.Invoke($"Your stream's sound stopped: {reason}");
+        session.AttachAudio(capture, sender);
     }
 
     public async Task StopAsync()
@@ -150,12 +187,14 @@ public sealed class ScreenShareService : IAsyncDisposable
         }
     }
 
-    /// <summary>Starts watching a stream. The returned session delivers decoded frames.</summary>
+    /// <summary>Starts watching a stream. The returned session delivers decoded frames and plays the stream's audio.</summary>
     public async Task<WatchSession> WatchAsync(string streamId)
     {
         var viewer = new ScreenShareViewer(_iceServers);
         var decoder = new DecodePipeline();
+        var audio = new StreamAudioReceiver(0);
         viewer.FrameReceived += decoder.Enqueue;
+        viewer.AudioReceived += (sequence, opus) => audio.Push(sequence, opus.Span);
         decoder.DecodeError += viewer.ReportDecodeError;
         var relay = new CandidateRelay(_hub);
         viewer.LocalCandidate += relay.OnLocalCandidate;
@@ -164,7 +203,7 @@ public sealed class ScreenShareService : IAsyncDisposable
         {
             var offer = await viewer.CreateOfferAsync();
             var answer = await _hub.WatchStreamAsync(streamId, offer);
-            var session = new WatchSession(this, streamId, answer.SessionId, viewer, decoder);
+            var session = new WatchSession(this, streamId, answer.SessionId, viewer, decoder, audio, source => _audio.OpenOutput(_outputDevice(), source, channels: 2));
             _peers[answer.SessionId] = viewer;
             _watching[answer.SessionId] = session;
             relay.SetSession(answer.SessionId);
@@ -175,6 +214,7 @@ public sealed class ScreenShareService : IAsyncDisposable
         {
             viewer.Dispose();
             decoder.Dispose();
+            audio.Dispose();
             throw;
         }
     }
@@ -237,18 +277,50 @@ public sealed class ScreenShareService : IAsyncDisposable
         ScreenSharePublisher publisher,
         CaptureEncodePipeline pipeline) : IDisposable
     {
-        private int _disposed;
+        private readonly object _sync = new();
+        private IAudioStream? _audioCapture;
+        private StreamAudioSender? _audioSender;
+        private bool _disposed;
 
         public string StreamId { get; } = streamId;
 
         public string SessionId { get; } = sessionId;
 
+        /// <summary>Hands over the audio capture, which is opened after the stream started (or disposes it if the stream has stopped since).</summary>
+        public void AttachAudio(IAudioStream capture, StreamAudioSender sender)
+        {
+            lock (_sync)
+            {
+                if (!_disposed)
+                {
+                    _audioCapture = capture;
+                    _audioSender = sender;
+                    return;
+                }
+            }
+
+            capture.Dispose();
+            sender.Dispose();
+        }
+
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            IAudioStream? capture;
+            StreamAudioSender? sender;
+            lock (_sync)
             {
-                return;
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                capture = _audioCapture;
+                sender = _audioSender;
             }
+
+            capture?.Dispose();
+            sender?.Dispose();
 
             // The pipeline disposes the frame source once its capture thread has exited.
             pipeline.Dispose();
@@ -261,15 +333,30 @@ public sealed class ScreenShareService : IAsyncDisposable
 public sealed class WatchSession : IDisposable
 {
     private readonly ScreenShareService _owner;
+    private readonly Func<AudioSource, IAudioStream> _openOutput;
+    private readonly object _audioSync = new();
+    private IAudioStream? _output;
     private int _disposed;
 
-    internal WatchSession(ScreenShareService owner, string streamId, string sessionId, ScreenShareViewer viewer, DecodePipeline decoder)
+    internal WatchSession(
+        ScreenShareService owner,
+        string streamId,
+        string sessionId,
+        ScreenShareViewer viewer,
+        DecodePipeline decoder,
+        StreamAudioReceiver audio,
+        Func<AudioSource, IAudioStream> openOutput)
     {
         _owner = owner;
+        _openOutput = openOutput;
         StreamId = streamId;
         SessionId = sessionId;
         Viewer = viewer;
         Decoder = decoder;
+        Audio = audio;
+
+        // The speakers are only opened once the stream actually sends sound.
+        audio.Started += () => Task.Run(OpenOutput);
     }
 
     public string StreamId { get; }
@@ -280,8 +367,40 @@ public sealed class WatchSession : IDisposable
 
     public DecodePipeline Decoder { get; }
 
+    /// <summary>The stream's audio: volume and mute apply here.</summary>
+    public StreamAudioReceiver Audio { get; }
+
     /// <summary>Raised when the server closed the session (for example because the stream ended).</summary>
     public event Action<string>? Closed;
+
+    /// <summary>Raised (on a background thread) when the stream's audio cannot be played.</summary>
+    public event Action<string>? AudioProblem;
+
+    private void OpenOutput()
+    {
+        IAudioStream output;
+        try
+        {
+            output = _openOutput(Audio.Read);
+        }
+        catch (AudioDeviceException ex)
+        {
+            AudioProblem?.Invoke($"The stream's sound cannot be played: {ex.Message}");
+            return;
+        }
+
+        output.Failed += reason => AudioProblem?.Invoke($"The stream's sound stopped: {reason}");
+        lock (_audioSync)
+        {
+            if (Volatile.Read(ref _disposed) == 0)
+            {
+                _output = output;
+                return;
+            }
+        }
+
+        output.Dispose();
+    }
 
     internal void CloseFromServer(string reason)
     {
@@ -301,8 +420,18 @@ public sealed class WatchSession : IDisposable
         }
 
         _owner.OnWatchSessionDisposed(this, notifyServer);
+        IAudioStream? output;
+        lock (_audioSync)
+        {
+            output = _output;
+            _output = null;
+        }
+
+        // Stop the speakers before the receiver they read from.
+        output?.Dispose();
         Viewer.Dispose();
         Decoder.Dispose();
+        Audio.Dispose();
         return true;
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using Discagem.Media.Audio;
 using Discagem.Media.Pipeline;
 using Discagem.Media.WebRtc;
 using Discagem.Shared;
@@ -109,9 +110,9 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
         }
     }
 
-    private async Task<StreamHarness> StartPublishingAsync(Func<Discagem.Media.Rtp.VideoPacket, bool>? dropFilter = null)
+    private async Task<StreamHarness> StartPublishingAsync(Func<Discagem.Media.Rtp.VideoPacket, bool>? dropFilter = null, bool withAudio = false)
     {
-        var publisher = new ScreenSharePublisher([], 2500) { DropFilter = dropFilter };
+        var publisher = new ScreenSharePublisher([], 2500, withAudio) { DropFilter = dropFilter };
         var offer = await publisher.CreateOfferAsync();
         var answer = await _alice.InvokeAsync<MediaSessionAnswer>(nameof(IChatHub.StartStream), new StartStreamRequest(offer, "Test stream", 1280, 720, 30));
         publisher.ApplyAnswer(answer.AnswerSdp);
@@ -160,9 +161,9 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
         }
     }
 
-    private async Task<ViewerHarness> WatchAsync(HubConnection hub, string streamId)
+    private async Task<ViewerHarness> WatchAsync(HubConnection hub, string streamId, bool withAudio = true)
     {
-        var viewer = new ScreenShareViewer([]);
+        var viewer = new ScreenShareViewer([], withAudio);
         var decoder = new DecodePipeline();
         viewer.FrameReceived += decoder.Enqueue;
         decoder.DecodeError += viewer.ReportDecodeError;
@@ -188,12 +189,89 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
         var info = await started.Task.WaitAsync(Timeout);
         Assert.Equal(stream.StreamId, info.StreamId);
         Assert.Equal("Test stream", info.Title);
+        Assert.False(info.HasAudio);
 
         using var viewer = await WatchAsync(_bob, stream.StreamId);
         await WaitUntil(() => viewer.Frames >= 45, "45 decoded frames");
 
         Assert.True(viewer.CorrectColour >= viewer.Frames - 2, $"{viewer.CorrectColour} of {viewer.Frames} frames had the expected colour");
         Assert.Equal((1280, 720), stream.Pipeline.EncodedSize);
+    }
+
+    [Fact]
+    public async Task ScreenShare_ForwardsAudioToViewersThatSupportIt()
+    {
+        var started = new TaskCompletionSource<StreamInfoDto>();
+        _bob.On<StreamInfoDto>(nameof(IChatClient.StreamStarted), s => started.TrySetResult(s));
+
+        using var stream = await StartPublishingAsync(withAudio: true);
+        Assert.True((await started.Task.WaitAsync(Timeout)).HasAudio);
+
+        using var viewer = await WatchAsync(_bob, stream.StreamId);
+        var carol = await _factory.ConnectHubAsync((await _factory.RegisterAsync("carol")).Auth.Token);
+        await using var _ = carol;
+        using var legacyViewer = await WatchAsync(carol, stream.StreamId, withAudio: false);
+
+        var received = new ConcurrentQueue<(ushort Sequence, byte[] Opus)>();
+        viewer.Viewer.AudioReceived += (sequence, opus) => received.Enqueue((sequence, opus.ToArray()));
+
+        // A second of stereo audio at the real packet rate: 440 Hz on the left, 1000 Hz on the right.
+        using var sender = new StreamAudioSender(stream.Publisher.SendAudio);
+        var left = new Discagem.Tests.Media.AudioTestSignals.Tone(440);
+        var right = new Discagem.Tests.Media.AudioTestSignals.Tone(1000);
+        var block = new float[1920];
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        for (var frame = 0; frame < 60; frame++)
+        {
+            var l = left.Next(960);
+            var r = right.Next(960);
+            for (var i = 0; i < 960; i++)
+            {
+                block[i * 2] = l[i];
+                block[i * 2 + 1] = r[i];
+            }
+
+            sender.Write(block);
+            var wait = (frame + 1) * 20 - (int)clock.ElapsedMilliseconds;
+            if (wait > 0)
+            {
+                await Task.Delay(wait);
+            }
+        }
+
+        await WaitUntil(() => received.Count >= 55, "55 audio packets");
+        await WaitUntil(() => viewer.Frames >= 30 && legacyViewer.Frames >= 30, "video for both viewers");
+        Assert.Equal(0, legacyViewer.Viewer.AudioPacketsReceived);
+
+        // The server keeps the streamer's sequence numbers, so the jitter buffer can spot losses.
+        var packets = received.ToArray();
+        for (var i = 1; i < packets.Length; i++)
+        {
+            Assert.Equal((ushort)(packets[i - 1].Sequence + 1), packets[i].Sequence);
+        }
+
+        using var receiver = new StreamAudioReceiver(1);
+        var output = new List<float>();
+        foreach (var (sequence, opus) in packets)
+        {
+            receiver.Push(sequence, opus);
+            receiver.Read(block);
+            output.AddRange(block);
+        }
+
+        var tail = output.ToArray().AsSpan(output.Count / 2);
+        var leftOut = new float[tail.Length / 2];
+        var rightOut = new float[tail.Length / 2];
+        for (var i = 0; i < leftOut.Length; i++)
+        {
+            leftOut[i] = tail[i * 2];
+            rightOut[i] = tail[i * 2 + 1];
+        }
+
+        Assert.True(Discagem.Tests.Media.AudioTestSignals.Rms(leftOut) > 0.15, "the left channel is silent");
+        Assert.True(Discagem.Tests.Media.AudioTestSignals.Rms(rightOut) > 0.15, "the right channel is silent");
+        Assert.True(Discagem.Tests.Media.AudioTestSignals.Amplitude(leftOut, 1000) < 0.05, "the channels were mixed");
+        Assert.True(Discagem.Tests.Media.AudioTestSignals.Amplitude(rightOut, 440) < 0.05, "the channels were mixed");
     }
 
     [Fact]

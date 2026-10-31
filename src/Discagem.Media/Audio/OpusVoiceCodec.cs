@@ -39,10 +39,28 @@ public sealed class OpusVoiceEncoder : IDisposable
     public void Dispose() => (_encoder as IDisposable)?.Dispose();
 }
 
-/// <summary>Decodes one speaker's Opus stream into 20 ms frames of 48 kHz mono audio.</summary>
+/// <summary>
+/// Decodes one speaker's Opus stream into 20 ms frames of 48 kHz audio: mono for voice, or
+/// interleaved stereo for stream audio.
+/// </summary>
 public sealed class OpusVoiceDecoder : IDisposable
 {
-    private readonly IOpusDecoder _decoder = OpusCodecFactory.CreateDecoder(DiscagemAudio.SampleRate, 1);
+    private readonly IOpusDecoder _decoder;
+    private readonly int _channels;
+
+    public OpusVoiceDecoder(int channels = 1)
+    {
+        if (channels is not (1 or 2))
+        {
+            throw new ArgumentOutOfRangeException(nameof(channels), "Opus streams are mono or stereo.");
+        }
+
+        _channels = channels;
+        _decoder = OpusCodecFactory.CreateDecoder(DiscagemAudio.SampleRate, channels);
+    }
+
+    /// <summary>Samples in one decoded frame (<see cref="DiscagemAudio.FrameSamples"/> per channel).</summary>
+    public int FrameLength => DiscagemAudio.FrameSamples * _channels;
 
     /// <summary>Decodes a packet into <paramref name="frame"/>. Returns false for packets that are not a valid 20 ms frame.</summary>
     public bool Decode(ReadOnlySpan<byte> packet, Span<float> frame) => Run(packet, frame, fec: false);
@@ -55,7 +73,7 @@ public sealed class OpusVoiceDecoder : IDisposable
 
     private bool Run(ReadOnlySpan<byte> packet, Span<float> frame, bool fec)
     {
-        var samples = frame[..DiscagemAudio.FrameSamples];
+        var samples = frame[..FrameLength];
         try
         {
             if (_decoder.Decode(packet, samples, DiscagemAudio.FrameSamples, fec) == DiscagemAudio.FrameSamples)

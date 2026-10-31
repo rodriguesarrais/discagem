@@ -53,8 +53,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         _hub = new ChatConnection(session.Api.BaseAddress, () => _session.Api.Token);
         var iceServers = BuildIceServers(session);
-        _media = new ScreenShareService(_hub, iceServers);
-        _voice = new VoiceService(_hub, iceServers, session.Settings, AudioBackends.Create(), session.User.Id);
+        var audio = AudioBackends.Create();
+        _media = new ScreenShareService(_hub, iceServers, audio, () => session.Settings.VoiceOutputDevice);
+        _voice = new VoiceService(_hub, iceServers, session.Settings, audio, session.User.Id);
         _isMuted = session.Settings.VoiceMuted;
         _isDeafened = session.Settings.VoiceDeafened;
         _typingTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateTypingText());
@@ -69,6 +70,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             IsLive = false;
             ShowBanner(reason);
         });
+        _media.PublishAudioProblem += message => Dispatcher.UIThread.Post(() => ShowBanner(message));
         _voice.SpeakingChanged += (userId, speaking) => Dispatcher.UIThread.Post(() => OnSpeakingChanged(userId, speaking));
         _voice.Disconnected += (reason, canRejoin) => Dispatcher.UIThread.Post(() =>
         {
@@ -1067,7 +1069,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        var picker = new ScreenPickerViewModel($"{Me.DisplayName}'s screen", _session.Settings.StreamQualityIndex);
+        var picker = new ScreenPickerViewModel(
+            $"{Me.DisplayName}'s screen",
+            _session.Settings.StreamQualityIndex,
+            _media.CanShareAudio,
+            _voice.Audio.SupportsApplicationCapture,
+            _session.Settings.StreamShareAudio);
         var selection = await _dialogs.PickScreenAsync(picker);
         if (selection is null)
         {
@@ -1075,13 +1082,18 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         _session.Settings.StreamQualityIndex = Array.IndexOf(StreamQuality.Presets, selection.Quality);
+        if (_media.CanShareAudio)
+        {
+            _session.Settings.StreamShareAudio = selection.ShareAudio;
+        }
+
         _session.Settings.Save();
 
         IsStartingStream = true;
         LiveStatsText = "Starting…";
         try
         {
-            await _media.StartAsync(selection.Source, selection.Quality, selection.Title);
+            await _media.StartAsync(selection.Source, selection.Quality, selection.Title, selection.ShareAudio);
             IsLive = true;
         }
         catch (Exception ex)
@@ -1119,7 +1131,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             CloseStreamViewer(ActiveStream, null);
         }
 
-        var viewer = new StreamViewerViewModel(stream);
+        var viewer = new StreamViewerViewModel(stream, _session.Settings) { IsDeafened = IsDeafened };
         viewer.CloseRequested += CloseStreamViewer;
         ActiveStream = viewer;
         try
@@ -1131,6 +1143,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                 return;
             }
 
+            session.AudioProblem += message => Dispatcher.UIThread.Post(() => ShowBanner(message));
             viewer.Attach(session);
         }
         catch (Exception ex)
@@ -1349,6 +1362,14 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         IsDeafened = !IsDeafened;
         await _voice.SetDeafenedAsync(IsDeafened);
+    }
+
+    partial void OnIsDeafenedChanged(bool value)
+    {
+        if (ActiveStream is { } viewer)
+        {
+            viewer.IsDeafened = value;
+        }
     }
 
     private void SetConnectedVoice(VoiceChannelViewModel? channel)

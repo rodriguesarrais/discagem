@@ -72,8 +72,15 @@ public sealed class SfuService : IHostedService
             await EndStreamAsync(existing, "replaced");
         }
 
+        // Clients without stream audio support offer video only.
+        var hasAudio = OffersAudio(request.OfferSdp);
         var pc = _factory.Create();
         pc.addTrack(DiscagemVideo.CreateTrack(MediaStreamStatusEnum.RecvOnly));
+        if (hasAudio)
+        {
+            pc.addTrack(DiscagemAudio.CreateTrack(MediaStreamStatusEnum.RecvOnly));
+        }
+
         var session = new MediaSession(connectionId, userId, pc, isPublisher: true);
         var stream = new LiveStream(
             "st_" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(8)),
@@ -82,7 +89,8 @@ public sealed class SfuService : IHostedService
             request.Width,
             request.Height,
             request.FrameRate,
-            _time.GetUtcNow());
+            _time.GetUtcNow(),
+            hasAudio);
         session.Stream = stream;
 
         pc.OnRtpPacketReceived += (_, media, packet) =>
@@ -90,6 +98,10 @@ public sealed class SfuService : IHostedService
             if (media == SDPMediaTypesEnum.video)
             {
                 stream.OnPublisherPacket(packet);
+            }
+            else if (media == SDPMediaTypesEnum.audio)
+            {
+                stream.OnPublisherAudio(packet);
             }
         };
         pc.onicecandidate += candidate => SendCandidate(session, candidate);
@@ -115,7 +127,7 @@ public sealed class SfuService : IHostedService
 
         _sessions[session.Id] = session;
         _streams[stream.Id] = stream;
-        _logger.LogInformation("User {UserId} started stream {StreamId} ({Width}x{Height}@{Fps})", userId, stream.Id, request.Width, request.Height, request.FrameRate);
+        _logger.LogInformation("User {UserId} started stream {StreamId} ({Width}x{Height}@{Fps}, audio: {HasAudio})", userId, stream.Id, request.Width, request.Height, request.FrameRate, hasAudio);
         await _hub.Clients.All.StreamStarted(stream.ToDto());
         return new MediaSessionAnswer(stream.Id, session.Id, answer);
     }
@@ -144,9 +156,15 @@ public sealed class SfuService : IHostedService
             throw new MediaException("This stream has reached its viewer limit.");
         }
 
+        var receivesAudio = stream.HasAudio && OffersAudio(offerSdp);
         var pc = _factory.Create();
         pc.addTrack(DiscagemVideo.CreateTrack(MediaStreamStatusEnum.SendOnly));
-        var session = new MediaSession(connectionId, userId, pc, isPublisher: false) { Stream = stream };
+        if (receivesAudio)
+        {
+            pc.addTrack(DiscagemAudio.CreateTrack(MediaStreamStatusEnum.SendOnly));
+        }
+
+        var session = new MediaSession(connectionId, userId, pc, isPublisher: false) { Stream = stream, ReceivesAudio = receivesAudio };
 
         pc.OnReceiveReport += (_, media, report) =>
         {
@@ -250,6 +268,20 @@ public sealed class SfuService : IHostedService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Ignoring malformed ICE candidate for session {SessionId}", session.Id);
+        }
+    }
+
+    /// <summary>Whether a client's offer includes an (enabled) audio section.</summary>
+    private static bool OffersAudio(string offerSdp)
+    {
+        try
+        {
+            return SDP.ParseSDPDescription(offerSdp).Media.Any(m => m.Media == SDPMediaTypesEnum.audio && m.Port != 0);
+        }
+        catch (Exception)
+        {
+            // NegotiateAsync reports unparseable offers.
+            return false;
         }
     }
 

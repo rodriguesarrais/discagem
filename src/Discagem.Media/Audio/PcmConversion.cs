@@ -78,6 +78,86 @@ public static class PcmConversion
         }
     }
 
+    /// <summary>
+    /// Converts interleaved samples to interleaved stereo (mono is duplicated; surround is downmixed
+    /// with the centre and surround channels at -3 dB). Returns the number of frames written.
+    /// </summary>
+    public static int ToStereo(ReadOnlySpan<byte> interleaved, PcmFormat format, Span<float> stereo)
+    {
+        var frames = interleaved.Length / format.BlockAlign;
+        if (stereo.Length < frames * 2)
+        {
+            throw new ArgumentException("The output buffer is too small.", nameof(stereo));
+        }
+
+        const float Minus3Db = 0.7071f;
+        var bytesPerSample = format.BytesPerSample;
+        for (var frame = 0; frame < frames; frame++)
+        {
+            var samples = interleaved.Slice(frame * format.BlockAlign, format.BlockAlign);
+
+            float left, right;
+            if (format.Channels == 1)
+            {
+                left = right = Read(samples, format.SampleType);
+            }
+            else
+            {
+                left = Read(samples, format.SampleType);
+                right = Read(samples[bytesPerSample..], format.SampleType);
+                if (format.Channels >= 3)
+                {
+                    var centre = Read(samples[(2 * bytesPerSample)..], format.SampleType) * Minus3Db;
+                    left += centre;
+                    right += centre;
+                }
+
+                // Channel 3 is the LFE; the rest are surround pairs (back, then side).
+                for (var channel = 4; channel + 1 < format.Channels; channel += 2)
+                {
+                    left += Read(samples[(channel * bytesPerSample)..], format.SampleType) * Minus3Db;
+                    right += Read(samples[((channel + 1) * bytesPerSample)..], format.SampleType) * Minus3Db;
+                }
+            }
+
+            stereo[frame * 2] = left;
+            stereo[frame * 2 + 1] = right;
+        }
+
+        return frames;
+    }
+
+    /// <summary>
+    /// Writes interleaved stereo samples (<c>stereo.Length / 2</c> frames) to a device buffer: left and
+    /// right go to the first two channels and any others stay silent; a mono device gets the average.
+    /// </summary>
+    public static void FromStereo(ReadOnlySpan<float> stereo, PcmFormat format, Span<byte> interleaved)
+    {
+        var frames = stereo.Length / 2;
+        if (interleaved.Length < frames * format.BlockAlign)
+        {
+            throw new ArgumentException("The output buffer is too small.", nameof(interleaved));
+        }
+
+        var bytesPerSample = format.BytesPerSample;
+        for (var frame = 0; frame < frames; frame++)
+        {
+            var offset = frame * format.BlockAlign;
+            var left = stereo[frame * 2];
+            var right = stereo[frame * 2 + 1];
+            for (var channel = 0; channel < format.Channels; channel++)
+            {
+                var value = format.Channels == 1 ? (left + right) * 0.5f : channel switch
+                {
+                    0 => left,
+                    1 => right,
+                    _ => 0f,
+                };
+                Write(interleaved.Slice(offset + channel * bytesPerSample, bytesPerSample), format.SampleType, value);
+            }
+        }
+    }
+
     private static float Read(ReadOnlySpan<byte> data, PcmSampleType type) => type switch
     {
         PcmSampleType.Float32 => BinaryPrimitives.ReadSingleLittleEndian(data),
@@ -135,23 +215,27 @@ public sealed class CaptureResampler(int deviceRate, AudioSink sink)
     }
 }
 
-/// <summary>Produces playback samples at the device rate from a 48 kHz source pulled on demand.</summary>
+/// <summary>
+/// Produces playback samples at the device rate from a 48 kHz source pulled on demand (mono, or
+/// interleaved with <c>channels</c> channels).
+/// </summary>
 public sealed class PlaybackResampler
 {
-    private const int BlockSamples = 480;
+    private const int BlockFrames = 480;
 
     private readonly AudioSource _source;
-    private readonly LinearResampler _resampler;
-    private readonly float[] _input = new float[BlockSamples];
+    private readonly InterleavedResampler _resampler;
+    private readonly float[] _input;
     private readonly float[] _converted;
     private int _start;
     private int _count;
 
-    public PlaybackResampler(int deviceRate, AudioSource source)
+    public PlaybackResampler(int deviceRate, AudioSource source, int channels = 1)
     {
         _source = source;
-        _resampler = new LinearResampler(DiscagemAudio.SampleRate, deviceRate);
-        _converted = new float[_resampler.MaxOutputFor(BlockSamples)];
+        _resampler = new InterleavedResampler(channels, DiscagemAudio.SampleRate, deviceRate);
+        _input = new float[BlockFrames * channels];
+        _converted = new float[_resampler.MaxOutputFor(_input.Length)];
     }
 
     public void Read(Span<float> output)
@@ -177,5 +261,79 @@ public sealed class PlaybackResampler
             _count -= count;
             output = output[count..];
         }
+    }
+}
+
+/// <summary>Resamples interleaved audio by converting each channel with its own <see cref="LinearResampler"/>.</summary>
+public sealed class InterleavedResampler
+{
+    private readonly LinearResampler[] _channels;
+    private float[] _planar = [];
+    private float[] _converted = [];
+
+    public InterleavedResampler(int channels, int inputRate, int outputRate)
+    {
+        if (channels < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(channels));
+        }
+
+        _channels = new LinearResampler[channels];
+        for (var i = 0; i < channels; i++)
+        {
+            _channels[i] = new LinearResampler(inputRate, outputRate);
+        }
+    }
+
+    public int Channels => _channels.Length;
+
+    public bool IsPassThrough => _channels[0].IsPassThrough;
+
+    /// <summary>Upper bound of the samples produced from <paramref name="inputCount"/> interleaved input samples.</summary>
+    public int MaxOutputFor(int inputCount) => _channels[0].MaxOutputFor(inputCount / Channels) * Channels;
+
+    /// <summary>Converts a block of whole frames. Returns the number of samples written.</summary>
+    public int Process(ReadOnlySpan<float> input, Span<float> output)
+    {
+        var channels = Channels;
+        if (channels == 1)
+        {
+            return _channels[0].Process(input, output);
+        }
+
+        var frames = input.Length / channels;
+        if (output.Length < MaxOutputFor(input.Length))
+        {
+            throw new ArgumentException("The output buffer is too small.", nameof(output));
+        }
+
+        var maxFrames = _channels[0].MaxOutputFor(frames);
+        if (_planar.Length < frames)
+        {
+            _planar = new float[frames];
+        }
+
+        if (_converted.Length < maxFrames)
+        {
+            _converted = new float[maxFrames];
+        }
+
+        var written = 0;
+        for (var channel = 0; channel < channels; channel++)
+        {
+            for (var frame = 0; frame < frames; frame++)
+            {
+                _planar[frame] = input[frame * channels + channel];
+            }
+
+            // Every channel advances identically, so they all produce the same number of frames.
+            written = _channels[channel].Process(_planar.AsSpan(0, frames), _converted);
+            for (var frame = 0; frame < written; frame++)
+            {
+                output[frame * channels + channel] = _converted[frame];
+            }
+        }
+
+        return written * channels;
     }
 }
