@@ -13,7 +13,7 @@ public abstract class MediaPeer : IDisposable
 {
     private int _disposed;
 
-    protected MediaPeer(IEnumerable<IceServerConfig> iceServers, MediaStreamTrack track)
+    protected MediaPeer(IEnumerable<IceServerConfig> iceServers, params MediaStreamTrack[] tracks)
     {
         var configuration = new RTCConfiguration
         {
@@ -24,7 +24,11 @@ public abstract class MediaPeer : IDisposable
         };
 
         PeerConnection = new RTCPeerConnection(configuration);
-        PeerConnection.addTrack(track);
+        foreach (var track in tracks)
+        {
+            PeerConnection.addTrack(track);
+        }
+
         PeerConnection.onicecandidate += candidate =>
         {
             if (candidate is not null)

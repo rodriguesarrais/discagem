@@ -5,7 +5,8 @@ namespace Discagem.Media.WebRtc;
 
 /// <summary>
 /// Sends encoded video to the SFU: packetises frames, paces them onto the network, keeps a history
-/// to answer NACKs and surfaces key frame requests (PLI).
+/// to answer NACKs and surfaces key frame requests (PLI). Optionally also sends the shared audio as
+/// a second (Opus) track on the same connection.
 /// </summary>
 public sealed class ScreenSharePublisher : MediaPeer
 {
@@ -19,14 +20,17 @@ public sealed class ScreenSharePublisher : MediaPeer
     private readonly VideoPacketizer _packetizer = new();
     private readonly PacketHistory _history = new(8192);
     private readonly PacedSender _pacer;
+    private readonly object _sendLock = new();
     private long _packetsSent;
+    private long _audioPacketsSent;
     private long _bytesSent;
     private long _packetsRetransmitted;
     private long _nackedPackets;
 
-    public ScreenSharePublisher(IEnumerable<IceServerConfig> iceServers, int bitrateKbps)
-        : base(iceServers, DiscagemVideo.CreateTrack(MediaStreamStatusEnum.SendOnly))
+    public ScreenSharePublisher(IEnumerable<IceServerConfig> iceServers, int bitrateKbps, bool withAudio = false)
+        : base(iceServers, Tracks(withAudio))
     {
+        HasAudio = withAudio;
         _pacer = new PacedSender(SendNow, PacingRateFor(bitrateKbps));
         _pacer.Overflowed += () =>
         {
@@ -36,6 +40,14 @@ public sealed class ScreenSharePublisher : MediaPeer
         };
         PeerConnection.OnReceiveReport += OnReceiveReport;
     }
+
+    private static MediaStreamTrack[] Tracks(bool withAudio) => withAudio
+        ? [DiscagemVideo.CreateTrack(MediaStreamStatusEnum.SendOnly), DiscagemAudio.CreateTrack(MediaStreamStatusEnum.SendOnly)]
+        : [DiscagemVideo.CreateTrack(MediaStreamStatusEnum.SendOnly)];
+
+    public bool HasAudio { get; }
+
+    public long AudioPacketsSent => Interlocked.Read(ref _audioPacketsSent);
 
     /// <summary>Raised when the server asks for a key frame, or the send queue overflowed.</summary>
     public event Action? KeyFrameRequested;
@@ -88,9 +100,37 @@ public sealed class ScreenSharePublisher : MediaPeer
             return;
         }
 
-        PeerConnection.SendRtpRaw(SDPMediaTypesEnum.video, packet.Payload, packet.Timestamp, packet.Marker ? 1 : 0, DiscagemVideo.PayloadType);
+        // Audio is sent from the capture thread; both tracks share the connection's SRTP state.
+        lock (_sendLock)
+        {
+            PeerConnection.SendRtpRaw(SDPMediaTypesEnum.video, packet.Payload, packet.Timestamp, packet.Marker ? 1 : 0, DiscagemVideo.PayloadType);
+        }
+
         Interlocked.Increment(ref _packetsSent);
         Interlocked.Add(ref _bytesSent, packet.Payload.Length);
+    }
+
+    /// <summary>Sends one Opus packet of the shared audio. Dropped while the connection is not up.</summary>
+    public void SendAudio(ReadOnlySpan<byte> opus, uint timestamp)
+    {
+        if (!HasAudio || IsDisposed || !IsConnected || opus.IsEmpty)
+        {
+            return;
+        }
+
+        try
+        {
+            lock (_sendLock)
+            {
+                PeerConnection.SendRtpRaw(SDPMediaTypesEnum.audio, opus.ToArray(), timestamp, 0, DiscagemAudio.PayloadType);
+            }
+
+            Interlocked.Increment(ref _audioPacketsSent);
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException)
+        {
+            // Raced with the connection closing.
+        }
     }
 
     private void OnReceiveReport(System.Net.IPEndPoint remote, SDPMediaTypesEnum media, RTCPCompoundPacket report)
