@@ -69,8 +69,15 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _updateTimer = new DispatcherTimer(TimeSpan.FromHours(6), DispatcherPriority.Background, async (_, _) => await CheckForUpdatesAutomaticallyAsync());
 
         WireHubEvents();
-        _media.PublishStatsUpdated += stats => Dispatcher.UIThread.Post(() =>
-            LiveStatsText = $"{stats.Height}p · {stats.FramesPerSecond:0} FPS · {stats.SentKbps / 1000:0.0} Mbps");
+        _media.PublishStatsUpdated += stats =>
+        {
+            var sound = _media.DescribePublishAudio();
+            Dispatcher.UIThread.Post(() =>
+            {
+                LiveStatsText = $"{stats.Height}p · {stats.FramesPerSecond:0} FPS · {stats.SentKbps / 1000:0.0} Mbps";
+                LiveSoundText = sound.Length > 0 ? char.ToUpperInvariant(sound[0]) + sound[1..] : "";
+            });
+        };
         _media.PublishStopped += reason => Dispatcher.UIThread.Post(() =>
         {
             IsLive = false;
@@ -183,6 +190,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     [ObservableProperty]
     private string _liveStatsText = "Starting…";
+
+    /// <summary>What the live stream's sound is doing (captured source, nothing playing, or why there is none).</summary>
+    [ObservableProperty]
+    private string _liveSoundText = "";
 
     [ObservableProperty]
     private bool _showMembers;
@@ -1228,6 +1239,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         IsStartingStream = true;
         LiveStatsText = "Starting…";
+        LiveSoundText = "";
         try
         {
             await _media.StartAsync(selection.Source, selection.Quality, selection.Title, selection.ShareAudio);

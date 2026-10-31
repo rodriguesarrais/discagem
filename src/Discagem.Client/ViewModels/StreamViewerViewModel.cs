@@ -101,8 +101,16 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
         _session = session;
         ApplyAudio();
         session.Decoder.FrameDecoded += OnFrameDecoded;
-        session.Decoder.StatsUpdated += stats => Dispatcher.UIThread.Post(() =>
-            StatsText = stats.Width > 0 ? $"{stats.Width}×{stats.Height} · {stats.FramesPerSecond:0} FPS · {stats.ReceivedKbps / 1000:0.0} Mbps" : "");
+        long lastAudioPackets = 0;
+        session.Decoder.StatsUpdated += stats =>
+        {
+            // Whether sound arrived since the last update: tells "the streamer shares no sound" from "nothing is playing".
+            var audioPackets = session.Audio.PacketsReceived;
+            var sound = audioPackets > lastAudioPackets ? " · sound" : Stream.HasAudio ? " · no sound playing" : " · no sound shared";
+            lastAudioPackets = audioPackets;
+            Dispatcher.UIThread.Post(() =>
+                StatsText = stats.Width > 0 ? $"{stats.Width}×{stats.Height} · {stats.FramesPerSecond:0} FPS · {stats.ReceivedKbps / 1000:0.0} Mbps{sound}" : "");
+        };
         session.Viewer.StateChanged += state => Dispatcher.UIThread.Post(() =>
         {
             Status = state switch

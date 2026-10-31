@@ -202,6 +202,10 @@
           </TextBlock>
           <TextBlock Text="{Binding ServerAddress}" Classes="caption" />
           <TextBlock Text="{Binding AppVersion, StringFormat='Discagem desktop {0}'}" Classes="caption" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <Button Classes="link" Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
+            <TextBlock Text="{Binding LogFolder}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
         </StackPanel>
       </StackPanel>
     </ScrollViewer>

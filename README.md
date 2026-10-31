@@ -37,9 +37,10 @@ native Avalonia application for Windows (and Linux/X11).
 
 **Screen sharing**
 - Share a whole monitor or a single application window, with live thumbnails in the picker.
-- Sound comes along in stereo: on Windows, sharing a window sends that application's audio and sharing
-  a screen sends everything except Discagem itself, so voice chat is not echoed back. Viewers get a
-  volume control per streamer, and deafening silences streams too.
+- Sound comes along in stereo, and voice chat never does: sharing a screen sends everything the
+  computer plays except Discagem itself, and on Windows sharing a window sends only that
+  application's sound. Viewers get a volume control per streamer, and deafening silences streams
+  too. The streamer and the viewers see whether sound is being sent and received.
 - Quality presets from 720p30 to 1440p30 / source resolution; VP8 tuned for screen content.
 - Any number of people can watch at the same time; the stream can be popped out or shown full screen.
 - Live statistics (resolution, frame rate, bitrate) for both the streamer and viewers.
@@ -100,13 +101,16 @@ which keeps them clear of the SRTP replay window (see `src/Discagem.Media/Rtp/Vi
 A simple loss-based controller lowers the bitrate when the streamer's uplink drops packets.
 
 The stream's sound travels as a second track on the same connection: 48 kHz stereo Opus at
-128 kbit/s in 20 ms frames, paused during silence. On Windows 10 version 2004 and later it is captured
-with WASAPI process loopback, either from the shared window's application (and its child processes)
-or from everything except Discagem; older Windows versions capture everything the default output
-plays. On Linux it is recorded from the monitor of the default PulseAudio/PipeWire output, which also
-carries Discagem's own sounds. The server forwards the packets with the streamer's sequence numbers,
-as it does for voice, and viewers play them through a jitter buffer with loss concealment. Clients
-from before stream audio keep working: they simply receive the video only.
+128 kbit/s in 20 ms frames, paused during silence. Discagem's own sounds (voice chat, watched
+streams) are always left out, so the people in a call never hear themselves through a stream. On
+Windows (10 version 2004 or later) the sound is captured with WASAPI process loopback, either from the
+shared window's application and its child processes or from everything except Discagem; Windows
+offers no way to leave voice chat out on older versions, so they share no sound. On Linux Discagem
+records every PulseAudio/PipeWire playback stream except its own, each through its own monitor
+stream, and mixes them, picking up applications that start playing later. The server forwards the
+packets with the streamer's sequence numbers, as it does for voice, and viewers play them through a
+jitter buffer with loss concealment. Clients from before stream audio keep working: they simply
+receive the video only.
 
 ### How voice works
 
@@ -269,6 +273,9 @@ Settings and the saved session are stored in `%APPDATA%\Discagem` (Windows, with
 encrypted by DPAPI) or `~/.config/Discagem` (Linux). Set `DISCAGEM_PROFILE=name` to run several
 clients side by side with separate profiles.
 
+If something does not work (a stream without sound, say), *Settings → About → Open log folder* shows
+`discagem.log`, which records how audio and streams were set up and any errors.
+
 ## Development
 
 Requirements: .NET 10 SDK and libvpx (for the media tests and the client on Linux).
@@ -323,8 +330,8 @@ they are applied automatically on start-up.
 - Voice has no push-to-talk yet, and no noise suppression or echo cancellation on Linux.
 - Voice packets are forwarded unmixed, so each listener receives one stream per person speaking at
   that moment; this is fine for the 25-person channel limit.
-- On Linux, a stream's sound is everything the computer plays, including Discagem's voice chat, and
-  sharing a window does not narrow it down to that application.
+- On Linux, only whole screens can be shared (not single windows), so a stream's sound is every
+  application's except Discagem's.
 - Stream audio and video are not explicitly synchronised; both use short buffers, so they stay close.
 - Capture uses GDI on Windows; DXGI Desktop Duplication and hardware H.264 encoding would lower CPU usage.
 - Networks that block all outbound UDP cannot receive streams (there is no TCP/TURN fallback).

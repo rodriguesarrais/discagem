@@ -52,6 +52,38 @@ public sealed class ScreenShareService : IAsyncDisposable
     /// <summary>Whether this computer can send its audio with a screen share.</summary>
     public bool CanShareAudio => _audio.SupportsSystemCapture;
 
+    /// <summary>
+    /// A short description of the live stream's sound for the streamer: what is captured and whether
+    /// anything is being sent right now (compared with the previous call).
+    /// </summary>
+    public string DescribePublishAudio()
+    {
+        if (_publish is not { } session)
+        {
+            return "";
+        }
+
+        if (!session.WantsAudio)
+        {
+            return "sound off";
+        }
+
+        if (session.AudioError is { } error)
+        {
+            return $"no sound: {error}";
+        }
+
+        if (session.AudioDescription is not { } description)
+        {
+            return "starting sound…";
+        }
+
+        var sent = session.Publisher.AudioPacketsSent;
+        var sending = sent > session.LastAudioPacketsSent;
+        session.LastAudioPacketsSent = sent;
+        return sending ? $"sound: {description}" : $"sound: {description} (nothing playing)";
+    }
+
     public async Task StartAsync(CaptureSource source, StreamQuality quality, string title, bool shareAudio = false)
     {
         await StopAsync();
@@ -88,7 +120,7 @@ public sealed class ScreenShareService : IAsyncDisposable
 
             // From here on the pipeline owns the frame source.
             pipeline = new CaptureEncodePipeline(frameSource, publisher, quality);
-            var session = new PublishSession(answer.StreamId, answer.SessionId, publisher, pipeline);
+            var session = new PublishSession(answer.StreamId, answer.SessionId, publisher, pipeline) { WantsAudio = shareAudio };
             pipeline.StatsUpdated += stats => PublishStatsUpdated?.Invoke(stats);
             pipeline.Failed += reason => _ = StopWithReasonAsync(session, $"Screen sharing stopped: {reason}");
             publisher.StateChanged += state =>
@@ -104,6 +136,10 @@ public sealed class ScreenShareService : IAsyncDisposable
             if (withAudio)
             {
                 _ = Task.Run(() => StartAudio(session, publisher, source.Kind == CaptureKind.Window ? source.ProcessId : null));
+            }
+            else if (shareAudio)
+            {
+                session.AudioError = "this computer cannot capture its sound";
             }
         }
         catch
@@ -138,14 +174,25 @@ public sealed class ScreenShareService : IAsyncDisposable
         {
             capture = _audio.OpenSystemCapture(processId, sender.Write);
         }
-        catch (Exception ex) when (ex is AudioDeviceException or InvalidOperationException or NotSupportedException or System.Runtime.InteropServices.COMException)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
+            // Whatever went wrong, say so: a stream that is silent without explanation looks like a bug.
             sender.Dispose();
-            PublishAudioProblem?.Invoke($"Your stream has no sound: {ex.Message}");
+            var reason = ex is AudioDeviceException ? ex.Message : $"{ex.GetType().Name}: {ex.Message}";
+            session.AudioError = reason.TrimEnd('.');
+            ClientLog.Error($"Stream audio capture failed (process {processId?.ToString() ?? "none"}): {ex}");
+            PublishAudioProblem?.Invoke($"Your stream has no sound: {reason}");
             return;
         }
 
-        capture.Failed += reason => PublishAudioProblem?.Invoke($"Your stream's sound stopped: {reason}");
+        ClientLog.Info($"Stream audio: capturing {capture.DeviceName} with {_audio.Name}.");
+        capture.Failed += reason =>
+        {
+            session.AudioError = $"capture stopped ({reason})";
+            ClientLog.Error($"Stream audio capture stopped: {reason}");
+            PublishAudioProblem?.Invoke($"Your stream's sound stopped: {reason}");
+        };
+        session.AudioDescription = capture.DeviceName;
         session.AttachAudio(capture, sender);
     }
 
@@ -286,6 +333,17 @@ public sealed class ScreenShareService : IAsyncDisposable
 
         public string SessionId { get; } = sessionId;
 
+        public ScreenSharePublisher Publisher { get; } = publisher;
+
+        public bool WantsAudio { get; init; }
+
+        /// <summary>What the audio capture records, once it runs.</summary>
+        public volatile string? AudioDescription;
+
+        public volatile string? AudioError;
+
+        public long LastAudioPacketsSent;
+
         /// <summary>Hands over the audio capture, which is opened after the stream started (or disposes it if the stream has stopped since).</summary>
         public void AttachAudio(IAudioStream capture, StreamAudioSender sender)
         {
@@ -324,7 +382,7 @@ public sealed class ScreenShareService : IAsyncDisposable
 
             // The pipeline disposes the frame source once its capture thread has exited.
             pipeline.Dispose();
-            publisher.Dispose();
+            Publisher.Dispose();
         }
     }
 }
@@ -383,13 +441,19 @@ public sealed class WatchSession : IDisposable
         {
             output = _openOutput(Audio.Read);
         }
-        catch (AudioDeviceException ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
+            ClientLog.Error($"Stream audio playback failed: {ex}");
             AudioProblem?.Invoke($"The stream's sound cannot be played: {ex.Message}");
             return;
         }
 
-        output.Failed += reason => AudioProblem?.Invoke($"The stream's sound stopped: {reason}");
+        ClientLog.Info($"Stream audio: playing on {output.DeviceName}.");
+        output.Failed += reason =>
+        {
+            ClientLog.Error($"Stream audio playback stopped: {reason}");
+            AudioProblem?.Invoke($"The stream's sound stopped: {reason}");
+        };
         lock (_audioSync)
         {
             if (Volatile.Read(ref _disposed) == 0)
