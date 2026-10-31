@@ -166,6 +166,17 @@
           </Border>
         </StackPanel>
 
+        <!-- App -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="App" Classes="h2" />
+          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+            <StackPanel Spacing="6">
+              <CheckBox IsChecked="{Binding CloseToTray}" Content="Keep running in the notification area when the window is closed" />
+              <TextBlock Text="{Binding TrayHint}" Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
         <!-- About -->
         <StackPanel Spacing="6">
           <TextBlock Text="About" Classes="h2" Margin="0,0,0,8" />

@@ -42,6 +42,15 @@ public sealed class ClientSettings
     /// <summary>Per-user playback volume (user id to gain; 1 = 100 %).</summary>
     public Dictionary<long, float> UserVolumes { get; set; } = [];
 
+    /// <summary>
+    /// Whether closing the window keeps Discagem running in the notification area (null: the
+    /// platform default, on for Windows; Linux desktops do not all show tray icons).
+    /// </summary>
+    public bool? CloseToTray { get; set; }
+
+    [JsonIgnore]
+    public bool CloseToTrayEnabled => CloseToTray ?? OperatingSystem.IsWindows();
+
     public double WindowWidth { get; set; } = 1280;
 
     public double WindowHeight { get; set; } = 800;
