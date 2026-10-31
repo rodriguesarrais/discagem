@@ -100,14 +100,21 @@ Function .onInit
   StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${APP_NAME}"
 FunctionEnd
 
-; Waits until the client is closed: Windows does not let a running executable be deleted.
+; Waits until the client is closed: Windows does not let a running executable be deleted. A client
+; that just started this installer to update itself is given a few seconds to exit before the user
+; is asked (or, in a silent install, before giving up).
 !macro WaitForClientToClose
+  StrCpy $R9 0
   ${DoWhile} ${FileExists} "$INSTDIR\${APP_EXE}"
     ClearErrors
     Delete "$INSTDIR\${APP_EXE}"
     ${If} ${Errors}
-    ${AndIf} ${Cmd} `MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${APP_NAME} is running. Close it and click Retry." /SD IDCANCEL IDCANCEL`
-      Abort "${APP_NAME} is still running."
+      ${If} $R9 < 30
+        IntOp $R9 $R9 + 1
+        Sleep 500
+      ${ElseIf} ${Cmd} `MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${APP_NAME} is running. Quit it (right-click its icon in the notification area and choose Quit Discagem), then click Retry." /SD IDCANCEL IDCANCEL`
+        Abort "${APP_NAME} is still running."
+      ${EndIf}
     ${EndIf}
   ${Loop}
 !macroend
@@ -149,6 +156,16 @@ SectionEnd
 Section "Desktop shortcut" SecDesktop
   CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
 SectionEnd
+
+; /RUN starts Discagem once installed: the client passes it (with /S) when it updates itself.
+Function .onInstSuccess
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} $0 "/RUN" $1
+  ${IfNot} ${Errors}
+    Exec '"$INSTDIR\${APP_EXE}"'
+  ${EndIf}
+FunctionEnd
 
 ; ---------------------------------------------------------------------------------------------------
 ; Uninstaller
