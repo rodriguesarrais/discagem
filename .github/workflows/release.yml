@@ -294,3 +294,13 @@ jobs:
             gh release create "$TAG" dist/* --title "Discagem $VERSION" --notes-file notes.md --generate-notes \
               --target "$GITHUB_SHA" "${flags[@]}"
           fi
+
+  # Updates the server on the VPS when the repository is configured for it (see deploy.yml).
+  deploy:
+    name: Deploy
+    needs: [version, release]
+    if: needs.version.outputs.prerelease == 'false'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit

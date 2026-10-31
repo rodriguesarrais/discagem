@@ -1,0 +1,73 @@
+name: Deploy
+
+# Updates the Discagem server on the VPS to the latest published image, over SSH. The Release
+# workflow calls this after each stable release; it can also be run by hand from the Actions tab.
+#
+# Configure it in the repository settings (Settings > Secrets and variables > Actions):
+#   variables: DEPLOY_HOST (the VPS), DEPLOY_USER, optionally DEPLOY_PORT (default 22) and
+#              DEPLOY_URL (public address, for example https://chat.example.com)
+#   secrets:   DEPLOY_SSH_KEY (private key) and DEPLOY_KNOWN_HOSTS (output of ssh-keyscan for the VPS)
+# On the VPS the key may only run deploy/vps/discagem-update (see README, "Automatic deployment").
+# Without DEPLOY_HOST the job is skipped.
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: Version expected on the server afterwards (checked through DEPLOY_URL when set)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Update the server
+    runs-on: ubuntu-24.04
+    if: vars.DEPLOY_HOST != ''
+    steps:
+      - name: Run the update on the VPS
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER }}
+          PORT: ${{ vars.DEPLOY_PORT || '22' }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [[ -z "$USER" || -z "$KEY" || -z "$KNOWN_HOSTS" ]]; then
+            echo "::error::Set DEPLOY_USER, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (see README, \"Automatic deployment\")."
+            exit 1
+          fi
+          dir="$RUNNER_TEMP/ssh"
+          install -m 700 -d "$dir"
+          printf '%s\n' "$KEY" > "$dir/deploy_key"
+          chmod 600 "$dir/deploy_key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$dir/known_hosts"
+          # The server runs its update script whatever command is sent: the key is restricted to it.
+          ssh -i "$dir/deploy_key" -p "$PORT" -o UserKnownHostsFile="$dir/known_hosts" -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=20 "$USER@$HOST" update
+          rm -rf "$dir"
+
+      - name: Check the public address
+        if: vars.DEPLOY_URL != ''
+        env:
+          URL: ${{ vars.DEPLOY_URL }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          expected="Discagem server${VERSION:+ $VERSION}"
+          for _ in $(seq 30); do
+            body=$(curl -fsS -m 10 "$URL/" || true)
+            if [[ "$body" == "$expected"* ]]; then
+              echo "$URL answers: $body"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::$URL answers \"$body\", expected \"$expected\"."
+          exit 1
