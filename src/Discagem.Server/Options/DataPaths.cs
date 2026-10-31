@@ -16,5 +16,12 @@ public static class DataPaths
         return path;
     }
 
+    public static string Avatars(DiscagemOptions options)
+    {
+        var path = Path.Combine(Root(options), "avatars");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
     public static string Database(DiscagemOptions options) => Path.Combine(Root(options), "discagem.db");
 }
