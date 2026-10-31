@@ -31,6 +31,9 @@ public sealed class MediaSession
 
     public LiveStream? Stream { get; set; }
 
+    /// <summary>For viewers: whether the client negotiated the stream's audio track.</summary>
+    public bool ReceivesAudio { get; init; }
+
     public bool IsConnected => PeerConnection.connectionState == RTCPeerConnectionState.connected;
 
     public bool IsClosed => Volatile.Read(ref _closed) != 0;
@@ -58,7 +61,7 @@ public sealed class MediaSession
         }
     }
 
-    /// <summary>Sends a voice packet to this session. Safe to call from multiple threads.</summary>
+    /// <summary>Sends an audio packet (voice, or a stream's audio) to this session. Safe to call from multiple threads.</summary>
     public void SendAudio(byte[] payload, uint timestamp)
     {
         if (IsClosed || !IsConnected)

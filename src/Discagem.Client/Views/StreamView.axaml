@@ -41,6 +41,27 @@
             <c:Icon Data="{StaticResource IconEye}" Width="15" Height="15" Foreground="#CCFFFFFF" />
             <TextBlock Text="{Binding Stream.ViewerCount}" Foreground="#CCFFFFFF" FontSize="12.5" />
           </StackPanel>
+          <Button Classes="icon" Foreground="White" ToolTip.Tip="Stream volume" IsVisible="{Binding Stream.HasAudio}">
+            <Panel>
+              <c:Icon Data="{StaticResource IconVolume}" IsVisible="{Binding !IsSilenced}" />
+              <c:Icon Data="{StaticResource IconVolumeOff}" IsVisible="{Binding IsSilenced}" />
+            </Panel>
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="240" Spacing="8" Margin="4">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="STREAM VOLUME" Classes="label" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding VolumeLabel}" Classes="secondary" FontSize="12" VerticalAlignment="Center" />
+                  </Grid>
+                  <Slider Minimum="0" Maximum="200" Value="{Binding VolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True"
+                          IsEnabled="{Binding !IsSilenced}" />
+                  <CheckBox Content="Mute stream" IsChecked="{Binding IsAudioMuted}" />
+                  <TextBlock Text="You are deafened: streams are silent too." Classes="secondary" FontSize="12" TextWrapping="Wrap"
+                             IsVisible="{Binding IsDeafened}" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
           <Button Classes="icon" Foreground="White" ToolTip.Tip="Open in a separate window" Click="OnPopOutClick" x:Name="PopOutButton">
             <c:Icon Data="{StaticResource IconPopOut}" />
           </Button>

@@ -42,6 +42,12 @@ public sealed class ClientSettings
     /// <summary>Per-user playback volume (user id to gain; 1 = 100 %).</summary>
     public Dictionary<long, float> UserVolumes { get; set; } = [];
 
+    /// <summary>Whether to send the computer's sound (or the shared window's) with a screen share.</summary>
+    public bool StreamShareAudio { get; set; } = true;
+
+    /// <summary>Volume of each streamer's stream audio (user id to gain; 1 = 100 %).</summary>
+    public Dictionary<long, float> StreamVolumes { get; set; } = [];
+
     /// <summary>
     /// Whether closing the window keeps Discagem running in the notification area (null: the
     /// platform default, on for Windows; Linux desktops do not all show tray icons).

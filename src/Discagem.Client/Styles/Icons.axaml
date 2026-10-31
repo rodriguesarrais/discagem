@@ -28,6 +28,7 @@
   <StreamGeometry x:Key="IconAlert">M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 Z M12 8 V12 M12 16 H12.01</StreamGeometry>
   <StreamGeometry x:Key="IconCheck">M20 6 L9 17 L4 12</StreamGeometry>
   <StreamGeometry x:Key="IconVolume">M11 5 L6 9 H2 V15 H6 L11 19 Z M19.07 4.93 A10 10 0 0 1 19.07 19.07 M15.54 8.46 A5 5 0 0 1 15.54 15.54</StreamGeometry>
+  <StreamGeometry x:Key="IconVolumeOff">M11 5 L6 9 H2 V15 H6 L11 19 Z M22 9 L16 15 M16 9 L22 15</StreamGeometry>
   <StreamGeometry x:Key="IconMic">M12 2 A3 3 0 0 0 9 5 V12 A3 3 0 0 0 15 12 V5 A3 3 0 0 0 12 2 Z M19 10 V12 A7 7 0 0 1 5 12 V10 M12 19 V22 M8 22 H16</StreamGeometry>
   <StreamGeometry x:Key="IconMicOff">M2 2 L22 22 M9 9 V12 A3 3 0 0 0 14.12 14.12 M15 9.34 V5 A3 3 0 0 0 9.06 4.4 M17 16.95 A7 7 0 0 1 5 12 V10 M19 10 V12 A7 7 0 0 1 18.89 13.23 M12 19 V22 M8 22 H16</StreamGeometry>
   <StreamGeometry x:Key="IconHeadphones">M3 18 V12 A9 9 0 0 1 21 12 V18 M21 19 A2 2 0 0 1 19 21 H18 A2 2 0 0 1 16 19 V16 A2 2 0 0 1 18 14 H21 Z M3 19 A2 2 0 0 0 5 21 H6 A2 2 0 0 0 8 19 V16 A2 2 0 0 0 6 14 H3 Z</StreamGeometry>
