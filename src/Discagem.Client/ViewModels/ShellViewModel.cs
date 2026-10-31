@@ -33,6 +33,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly ChatConnection _hub;
     private readonly ScreenShareService _media;
     private readonly VoiceService _voice;
+    private readonly AvatarCache _avatars;
     private readonly ImageCache _images;
     private readonly Dictionary<long, MemberViewModel> _members = new();
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
@@ -48,6 +49,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _session = session;
         _dialogs = dialogs;
         _images = new ImageCache(session.Api);
+        _avatars = new AvatarCache(session.Api);
         _me = GetOrAddMember(session.User, isMe: true);
         _showMembers = session.Settings.ShowMembers;
 
@@ -674,7 +676,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             return existing;
         }
 
-        var member = new MemberViewModel(user, isMe || user.Id == _session.User.Id);
+        var member = new MemberViewModel(user, isMe || user.Id == _session.User.Id, _avatars);
         _members[user.Id] = member;
         if (member.IsMe)
         {
@@ -835,6 +837,20 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             PendingAttachments.Add(new PendingAttachmentViewModel(file.Name, size, () => file.OpenReadAsync(), GuessContentType(file.Name)));
         }
 
+        OnPropertyChanged(nameof(HasPendingAttachments));
+    }
+
+    /// <summary>Attaches an image pasted from the clipboard (already encoded as PNG).</summary>
+    public void AddPastedImage(byte[] png)
+    {
+        if (PendingAttachments.Count >= Limits.MaxAttachmentsPerMessage)
+        {
+            ShowBanner($"You can attach at most {Limits.MaxAttachmentsPerMessage} files per message.");
+            return;
+        }
+
+        var name = $"image-{DateTime.Now:yyyyMMdd-HHmmss}.png";
+        PendingAttachments.Add(new PendingAttachmentViewModel(name, png.Length, () => Task.FromResult<Stream>(new MemoryStream(png)), "image/png"));
         OnPropertyChanged(nameof(HasPendingAttachments));
     }
 
@@ -1016,7 +1032,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _session.Api.Token = auth.Token;
             _session.Settings.Token = auth.Token;
             _session.Settings.Save();
-        }, () => _hub.ConnectionId, _voice);
+        }, () => _hub.ConnectionId, _voice, _dialogs);
         var logout = false;
         settings.LogoutRequested += () => logout = true;
         try

@@ -107,6 +107,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly Func<string?> _hubConnectionId;
     private readonly VoiceService _voice;
     private readonly DispatcherTimer _meterTimer;
+    private readonly IDialogService _dialogs;
 
     public SettingsViewModel(
         ApiClient api,
@@ -115,8 +116,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         string serverName,
         Action<AuthResponse> tokenChanged,
         Func<string?> hubConnectionId,
-        VoiceService voice)
+        VoiceService voice,
+        IDialogService dialogs)
     {
+        _dialogs = dialogs;
         _api = api;
         _settings = settings;
         _tokenChanged = tokenChanged;
@@ -318,6 +321,74 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             ProfileError = true;
             ProfileMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [ObservableProperty]
+    private string? _photoMessage;
+
+    [ObservableProperty]
+    private bool _photoError;
+
+    [RelayCommand]
+    private async Task ChangePhotoAsync()
+    {
+        var file = await _dialogs.PickImageAsync("Choose a profile photo");
+        if (file is null)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        PhotoMessage = null;
+        try
+        {
+            byte[] png;
+            await using (var stream = await file.OpenReadAsync())
+            {
+                png = AvatarImages.Prepare(stream);
+            }
+
+            Me.Update(await _api.UploadAvatarAsync(png));
+            PhotoError = false;
+            PhotoMessage = "Photo updated.";
+        }
+        catch (Exception ex) when (ex is ApiException or IOException or UnauthorizedAccessException)
+        {
+            PhotoError = true;
+            PhotoMessage = ex.Message;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            // Avalonia could not decode the file.
+            PhotoError = true;
+            PhotoMessage = "That file is not an image Discagem can read.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemovePhotoAsync()
+    {
+        IsBusy = true;
+        PhotoMessage = null;
+        try
+        {
+            Me.Update(await _api.RemoveAvatarAsync());
+            PhotoError = false;
+            PhotoMessage = "Photo removed.";
+        }
+        catch (ApiException ex)
+        {
+            PhotoError = true;
+            PhotoMessage = ex.Message;
         }
         finally
         {

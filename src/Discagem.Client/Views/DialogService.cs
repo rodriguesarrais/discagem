@@ -48,6 +48,24 @@ public sealed class DialogService(Window owner) : IDialogService
         return files;
     }
 
+    public async Task<IStorageFile?> PickImageAsync(string title)
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Images")
+                {
+                    Patterns = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.bmp"],
+                    MimeTypes = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"],
+                },
+            ],
+        });
+        return files.FirstOrDefault();
+    }
+
     public Task<IStorageFile?> SaveFileAsync(string suggestedName) =>
         owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {

@@ -1,5 +1,8 @@
+using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Discagem.Client.Controls;
+using Discagem.Client.Services;
 using Discagem.Shared;
 
 namespace Discagem.Client.ViewModels;
@@ -7,10 +10,14 @@ namespace Discagem.Client.ViewModels;
 /// <summary>A user as shown in the member list, in messages and on streams.</summary>
 public sealed partial class MemberViewModel : ObservableObject
 {
-    public MemberViewModel(UserDto user, bool isMe)
+    private readonly AvatarCache? _avatars;
+    private int? _avatarVersion;
+
+    public MemberViewModel(UserDto user, bool isMe, AvatarCache? avatars = null)
     {
         Id = user.Id;
         IsMe = isMe;
+        _avatars = avatars;
         Update(user);
     }
 
@@ -30,6 +37,10 @@ public sealed partial class MemberViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isAdmin;
+
+    /// <summary>The profile photo, once loaded (null without one).</summary>
+    [ObservableProperty]
+    private Bitmap? _avatarImage;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Status), nameof(Opacity))]
@@ -51,5 +62,30 @@ public sealed partial class MemberViewModel : ObservableObject
         DisplayName = user.DisplayName;
         AvatarColor = user.AvatarColor;
         IsAdmin = user.IsAdmin;
+        if (user.AvatarVersion != _avatarVersion)
+        {
+            _avatarVersion = user.AvatarVersion;
+            if (user.AvatarVersion is { } version && _avatars is not null)
+            {
+                _ = LoadAvatarAsync(version);
+            }
+            else
+            {
+                AvatarImage = null;
+            }
+        }
+    }
+
+    private async Task LoadAvatarAsync(int version)
+    {
+        var image = await _avatars!.GetAsync(Id, version);
+        Dispatcher.UIThread.Post(() =>
+        {
+            // A newer photo may have arrived while this one loaded.
+            if (_avatarVersion == version)
+            {
+                AvatarImage = image;
+            }
+        });
     }
 }
