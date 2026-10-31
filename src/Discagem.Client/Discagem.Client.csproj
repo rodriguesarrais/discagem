@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Where the client looks for new releases (owner/repository on GitHub). -->
+    <AssemblyMetadata Include="UpdateRepository" Value="rodriguesarrais/discagem" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />

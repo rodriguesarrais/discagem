@@ -108,6 +108,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly VoiceService _voice;
     private readonly DispatcherTimer _meterTimer;
     private readonly IDialogService _dialogs;
+    private readonly Func<Task<string>> _checkForUpdates;
 
     public SettingsViewModel(
         ApiClient api,
@@ -117,9 +118,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Action<AuthResponse> tokenChanged,
         Func<string?> hubConnectionId,
         VoiceService voice,
-        IDialogService dialogs)
+        IDialogService dialogs,
+        Func<Task<string>> checkForUpdates)
     {
         _dialogs = dialogs;
+        _checkForUpdates = checkForUpdates;
+        _checkForUpdatesAutomatically = settings.CheckForUpdates;
         _api = api;
         _settings = settings;
         _tokenChanged = tokenChanged;
@@ -137,6 +141,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _outputDevice = OutputDevices.FirstOrDefault(d => d.Id == settings.VoiceOutputDevice) ?? OutputDevices[0];
         _thresholdDb = settings.VoiceThresholdDb;
         _outputVolumePercent = settings.VoiceOutputVolume * 100;
+        _closeToTray = settings.CloseToTrayEnabled;
 
         // Show the microphone level live (in a call, or while testing), as a guide for the sensitivity slider.
         _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) =>
@@ -254,6 +259,50 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     ];
 
     public IReadOnlyList<StreamQuality> Qualities => StreamQuality.Presets;
+
+    /// <summary>Whether closing the window keeps Discagem running in the notification area.</summary>
+    [ObservableProperty]
+    private bool _closeToTray;
+
+    public string TrayHint => OperatingSystem.IsWindows()
+        ? "Open it again from its icon in the notification area (you may find it under the ^ arrow), or from the Start menu. Quit it from the icon's menu."
+        : "Your desktop must show tray icons (on GNOME, the AppIndicator extension). Launching Discagem again brings the window back.";
+
+    partial void OnCloseToTrayChanged(bool value)
+    {
+        _settings.CloseToTray = value;
+        _settings.Save();
+    }
+
+    [ObservableProperty]
+    private bool _checkForUpdatesAutomatically;
+
+    [ObservableProperty]
+    private string _updateStatus = "";
+
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
+    partial void OnCheckForUpdatesAutomaticallyChanged(bool value)
+    {
+        _settings.CheckForUpdates = value;
+        _settings.Save();
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        IsCheckingForUpdates = true;
+        UpdateStatus = "Checking…";
+        try
+        {
+            UpdateStatus = await _checkForUpdates();
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
 
     public string AppVersion =>
         typeof(SettingsViewModel).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0] ?? "0.0.0";

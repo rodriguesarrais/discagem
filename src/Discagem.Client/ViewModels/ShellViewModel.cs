@@ -39,6 +39,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
     private readonly DispatcherTimer _typingTimer;
     private readonly DispatcherTimer _tokenRefreshTimer;
+    private readonly UpdateService _updates = new();
+    private readonly DispatcherTimer _updateTimer;
+    private ReleaseVersion? _dismissedUpdate;
     private DateTime _lastTypingSent = DateTime.MinValue;
     private bool _recoveringVoice;
     private TaskCompletionSource _voiceRecoveryWake = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -63,6 +66,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _typingTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateTypingText());
         // Tokens last for weeks; refresh them so long-running sessions never reconnect with an expired one.
         _tokenRefreshTimer = new DispatcherTimer(TimeSpan.FromHours(6), DispatcherPriority.Background, async (_, _) => await RefreshTokenAsync());
+        _updateTimer = new DispatcherTimer(TimeSpan.FromHours(6), DispatcherPriority.Background, async (_, _) => await CheckForUpdatesAutomaticallyAsync());
 
         WireHubEvents();
         _media.PublishStatsUpdated += stats => Dispatcher.UIThread.Post(() =>
@@ -285,6 +289,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         _typingTimer.Start();
         _tokenRefreshTimer.Start();
+        _updateTimer.Start();
+        _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(
+            _ => Dispatcher.UIThread.Post(async () => await CheckForUpdatesAutomaticallyAsync()), TaskScheduler.Default);
         Connection = ConnectionState.Connecting;
         while (!_disposed)
         {
@@ -1034,7 +1041,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _session.Api.Token = auth.Token;
             _session.Settings.Token = auth.Token;
             _session.Settings.Save();
-        }, () => _hub.ConnectionId, _voice, _dialogs);
+        }, () => _hub.ConnectionId, _voice, _dialogs, () => CheckForUpdatesAsync(manual: true));
         var logout = false;
         settings.LogoutRequested += () => logout = true;
         try
@@ -1060,6 +1067,120 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _session.Settings.Token = null;
         _session.Settings.Save();
         LoggedOut?.Invoke(reason);
+    }
+
+    // ---- Updates ---------------------------------------------------------------------------
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdate), nameof(UpdateText), nameof(UpdateActionText), nameof(CanInstallUpdate))]
+    private AvailableUpdate? _availableUpdate;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText))]
+    private bool _isInstallingUpdate;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText))]
+    private double _updateProgress;
+
+    public bool HasUpdate => AvailableUpdate is not null;
+
+    /// <summary>Installed with the Windows installer and the release has one: the update installs itself.</summary>
+    public bool CanInstallUpdate => UpdateService.CanInstall && AvailableUpdate?.InstallerUrl is not null;
+
+    public string UpdateText => AvailableUpdate is not { } update
+        ? ""
+        : IsInstallingUpdate
+            ? $"Downloading Discagem {update.Version}… {UpdateProgress:0}%"
+            : $"Discagem {update.Version} is available (you have {UpdateService.CurrentVersion}).";
+
+    public string UpdateActionText => CanInstallUpdate ? "Update now" : "Download";
+
+    private async Task CheckForUpdatesAutomaticallyAsync()
+    {
+        if (!_disposed && _session.Settings.CheckForUpdates && !IsInstallingUpdate)
+        {
+            await CheckForUpdatesAsync(manual: false);
+        }
+    }
+
+    /// <summary>Looks for a newer release and shows it in the update bar. Returns a status line for the settings dialog.</summary>
+    public async Task<string> CheckForUpdatesAsync(bool manual)
+    {
+        try
+        {
+            var update = await _updates.CheckAsync();
+            if (update is null)
+            {
+                return $"You have the latest version ({UpdateService.CurrentVersion}).";
+            }
+
+            // "Later" hides a version until the user asks again or a newer one comes out.
+            if (manual || _dismissedUpdate != update.Version)
+            {
+                AvailableUpdate = update;
+            }
+
+            return $"Discagem {update.Version} is available.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            return $"Could not check for updates: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (AvailableUpdate is not { } update || IsInstallingUpdate)
+        {
+            return;
+        }
+
+        if (!CanInstallUpdate)
+        {
+            UpdateService.OpenInBrowser(update.PageUrl);
+            return;
+        }
+
+        if ((IsInVoice || IsLive) && !await _dialogs.ConfirmAsync(
+                "Update Discagem",
+                "Updating restarts Discagem, which ends your call and your screen share. Update now?",
+                "Update now",
+                danger: false))
+        {
+            return;
+        }
+
+        IsInstallingUpdate = true;
+        UpdateProgress = 0;
+        try
+        {
+            var path = await _updates.DownloadInstallerAsync(update, new Progress<double>(fraction => UpdateProgress = fraction * 100));
+            UpdateService.LaunchInstaller(path);
+            App.Quit();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or TaskCanceledException or System.ComponentModel.Win32Exception)
+        {
+            IsInstallingUpdate = false;
+            ShowBanner($"Could not update Discagem: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void ShowReleaseNotes()
+    {
+        if (AvailableUpdate is { } update)
+        {
+            UpdateService.OpenInBrowser(update.PageUrl);
+        }
+    }
+
+    [RelayCommand]
+    private void DismissUpdate()
+    {
+        _dismissedUpdate = AvailableUpdate?.Version;
+        AvailableUpdate = null;
     }
 
     // ---- Screen sharing -------------------------------------------------------------------
@@ -1523,7 +1644,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         {
             _typingTimer.Stop();
             _tokenRefreshTimer.Stop();
+            _updateTimer.Stop();
         });
+        _updates.Dispose();
         ActiveStream?.Dispose();
         await _voice.DisposeAsync();
         await _media.DisposeAsync();

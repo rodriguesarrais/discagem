@@ -31,6 +31,22 @@
 
     <!-- Banners -->
     <StackPanel Grid.Row="1">
+      <Border Background="{StaticResource AccentBrush}" Padding="16,6,8,6" IsVisible="{Binding HasUpdate}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+          <c:Icon Data="{StaticResource IconDownload}" Width="18" Height="18" Foreground="White" Margin="0,0,10,0" />
+          <TextBlock Grid.Column="1" Text="{Binding UpdateText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="link" Foreground="White" Content="What's new" Command="{Binding ShowReleaseNotesCommand}"
+                  VerticalAlignment="Center" Margin="12,0" />
+          <Button Grid.Column="3" Content="{Binding UpdateActionText}" Command="{Binding InstallUpdateCommand}"
+                  IsEnabled="{Binding !IsInstallingUpdate}" Background="White" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"
+                  Padding="14,5" CornerRadius="6" VerticalAlignment="Center" />
+          <Button Grid.Column="4" Classes="icon small" Foreground="White" Command="{Binding DismissUpdateCommand}" ToolTip.Tip="Later"
+                  IsVisible="{Binding !IsInstallingUpdate}" Margin="6,0,0,0">
+            <c:Icon Data="{StaticResource IconClose}" />
+          </Button>
+        </Grid>
+      </Border>
       <Border Background="{StaticResource WarningBrush}" Padding="12,6" IsVisible="{Binding IsReconnecting}">
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
           <c:Icon Data="{StaticResource IconWifiOff}" Width="16" Height="16" Foreground="#2A1E00" />

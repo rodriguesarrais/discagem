@@ -44,6 +44,14 @@ native Avalonia application for Windows (and Linux/X11).
 - Any number of people can watch at the same time; the stream can be popped out or shown full screen.
 - Live statistics (resolution, frame rate, bitrate) for both the streamer and viewers.
 
+**Desktop app**
+- Keeps running in the notification area when its window is closed (on by default on Windows, an
+  option in *Settings → App*); launching it again brings the window back instead of a second copy.
+- Checks the GitHub releases for new versions at start-up and every six hours. Installed with the
+  Windows installer, it updates itself in one click: it downloads the new installer, verifies it
+  against the release's `SHA256SUMS`, installs it silently and restarts. Other builds link to the
+  release page.
+
 **Private by design**
 - Accounts require an invite code; the first account becomes the administrator.
 - Everything runs on your server: no third-party STUN/TURN or media services are involved.
@@ -216,9 +224,10 @@ variables (`Section__Key`, as in `.env.example`).
 Download `Discagem-<version>-win-x64-setup.exe` from the latest release and run it. The installer
 needs no administrator rights: it installs Discagem for the current user in
 `%LOCALAPPDATA%\Programs\Discagem`, adds a Start menu shortcut (and, optionally, a desktop shortcut)
-and registers an uninstaller. To update, run the installer of a newer release; it replaces the
-previous version and keeps your settings. Uninstall from *Settings → Apps → Installed apps*; your
-settings and saved session are kept unless you tick *Settings and saved session*. The installer and
+and registers an uninstaller. When a new release is out, the client offers *Update now*, which
+replaces the previous version, keeps your settings and restarts Discagem (running a newer installer by
+hand does the same). Uninstall from *Settings → Apps → Installed apps*; your settings and saved
+session are kept unless you tick *Settings and saved session*. The installer and
 the client are not code-signed, so SmartScreen may warn the first time: choose *More info → Run
 anyway*. For unattended installs, run the installer with `/S`.
 
