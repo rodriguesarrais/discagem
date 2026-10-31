@@ -8,7 +8,7 @@
     <Image Source="{Binding Frame}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" IsVisible="{Binding !HasFrame}" MaxWidth="420">
-      <c:AvatarView Width="72" Height="72" DisplayName="{Binding Stream.Streamer.DisplayName}" Color="{Binding Stream.Streamer.AvatarColor}"
+      <c:AvatarView Width="72" Height="72" DisplayName="{Binding Stream.Streamer.DisplayName}" Color="{Binding Stream.Streamer.AvatarColor}" Image="{Binding Stream.Streamer.AvatarImage}"
                     HorizontalAlignment="Center" />
       <ProgressBar IsIndeterminate="{Binding !HasFrame}" Width="120" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}" />
       <TextBlock Text="{Binding Status}" Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
@@ -23,7 +23,7 @@
         </LinearGradientBrush>
       </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <c:AvatarView Width="32" Height="32" DisplayName="{Binding Stream.Streamer.DisplayName}" Color="{Binding Stream.Streamer.AvatarColor}"
+        <c:AvatarView Width="32" Height="32" DisplayName="{Binding Stream.Streamer.DisplayName}" Color="{Binding Stream.Streamer.AvatarColor}" Image="{Binding Stream.Streamer.AvatarImage}"
                       VerticalAlignment="Center" />
         <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="8">

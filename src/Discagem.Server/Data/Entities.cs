@@ -17,6 +17,12 @@ public sealed class User
 
     public required string AvatarColor { get; set; }
 
+    /// <summary>Whether the user has uploaded a profile photo (stored in the avatars folder under the user id).</summary>
+    public bool HasAvatar { get; set; }
+
+    /// <summary>Incremented whenever the photo changes, so that clients know to fetch it again.</summary>
+    public int AvatarVersion { get; set; }
+
     public bool IsAdmin { get; set; }
 
     /// <summary>Incremented to invalidate previously issued tokens (e.g. after a password change).</summary>

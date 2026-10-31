@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 
 namespace Discagem.Client.Controls;
 
@@ -13,7 +14,7 @@ public enum PresenceStatus
     Live,
 }
 
-/// <summary>A round avatar with the user's initials and an optional presence dot.</summary>
+/// <summary>A round avatar (the profile photo, or the user's initials) with an optional presence dot.</summary>
 public sealed class AvatarView : Control
 {
     public static readonly StyledProperty<string?> DisplayNameProperty =
@@ -31,6 +32,9 @@ public sealed class AvatarView : Control
     public static readonly StyledProperty<bool> IsSpeakingProperty =
         AvaloniaProperty.Register<AvatarView, bool>(nameof(IsSpeaking));
 
+    public static readonly StyledProperty<IImage?> ImageProperty =
+        AvaloniaProperty.Register<AvatarView, IImage?>(nameof(Image));
+
     private static readonly IBrush OnlineBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#3DBE73"));
     private static readonly IBrush OfflineBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#80848E"));
     private static readonly IBrush LiveBrush = new SolidColorBrush(Avalonia.Media.Color.Parse("#F04452"));
@@ -39,7 +43,7 @@ public sealed class AvatarView : Control
 
     static AvatarView()
     {
-        AffectsRender<AvatarView>(DisplayNameProperty, ColorProperty, StatusProperty, RingBrushProperty, IsSpeakingProperty);
+        AffectsRender<AvatarView>(DisplayNameProperty, ColorProperty, StatusProperty, RingBrushProperty, IsSpeakingProperty, ImageProperty);
     }
 
     public string? DisplayName
@@ -72,6 +76,13 @@ public sealed class AvatarView : Control
     {
         get => GetValue(IsSpeakingProperty);
         set => SetValue(IsSpeakingProperty, value);
+    }
+
+    /// <summary>The profile photo; the initials are drawn while there is none.</summary>
+    public IImage? Image
+    {
+        get => GetValue(ImageProperty);
+        set => SetValue(ImageProperty, value);
     }
 
     protected override Size MeasureOverride(Size availableSize) => new(40, 40);
@@ -116,20 +127,34 @@ public sealed class AvatarView : Control
 
         // While speaking, shrink the avatar a little and draw the ring in the freed space.
         var avatarRadius = IsSpeaking ? radius - 3 : radius;
-        context.DrawEllipse(fill, null, center, avatarRadius, avatarRadius);
         if (IsSpeaking)
         {
             context.DrawEllipse(null, SpeakingPen, center, radius - 1, radius - 1);
         }
 
-        var text = new FormattedText(
-            Initials(DisplayName),
-            CultureInfo.CurrentUICulture,
-            FlowDirection.LeftToRight,
-            InitialsTypeface,
-            Math.Max(8, avatarRadius * 2 * (Initials(DisplayName).Length > 1 ? 0.36 : 0.42)),
-            Brushes.White);
-        context.DrawText(text, new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
+        if (Image is { } image && image.Size.Width > 0 && image.Size.Height > 0)
+        {
+            var target = new Rect(center.X - avatarRadius, center.Y - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+            var side = Math.Min(image.Size.Width, image.Size.Height);
+            var source = new Rect((image.Size.Width - side) / 2, (image.Size.Height - side) / 2, side, side);
+            using (context.PushGeometryClip(new EllipseGeometry(target)))
+            using (context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.HighQuality }))
+            {
+                context.DrawImage(image, source, target);
+            }
+        }
+        else
+        {
+            context.DrawEllipse(fill, null, center, avatarRadius, avatarRadius);
+            var text = new FormattedText(
+                Initials(DisplayName),
+                CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight,
+                InitialsTypeface,
+                Math.Max(8, avatarRadius * 2 * (Initials(DisplayName).Length > 1 ? 0.36 : 0.42)),
+                Brushes.White);
+            context.DrawText(text, new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
+        }
 
         var statusBrush = Status switch
         {
