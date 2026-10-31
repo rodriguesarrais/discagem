@@ -7,8 +7,8 @@ namespace Discagem.Client.Services.Audio;
 /// <summary>
 /// Linux audio through the PulseAudio "simple" API, which PipeWire also provides. Streams are
 /// 48 kHz mono or stereo float, so the sound server does any conversion; each stream runs on its own
-/// thread moving 10 ms blocks. The audio of screen shares is recorded from the monitor of the default
-/// output, which carries everything the computer plays, Discagem's own sounds included.
+/// thread moving 10 ms blocks. The audio of screen shares is captured application by application,
+/// without Discagem's own sounds (see <see cref="PulseApplicationCapture"/>).
 /// </summary>
 internal sealed class PulseAudioBackend : IAudioBackend
 {
@@ -35,13 +35,10 @@ internal sealed class PulseAudioBackend : IAudioBackend
 
     public bool SupportsSystemCapture => true;
 
-    public bool SupportsApplicationCapture => false;
+    public bool SupportsApplicationCapture => true;
 
-    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) =>
-        new PulseStream(Native.Direction.Record, "@DEFAULT_MONITOR@", 2, "Screen share audio", sink, null)
-        {
-            DeviceName = "Everything playing on the default output",
-        };
+    /// <summary>Captures every application's playback except Discagem's own (see <see cref="PulseApplicationCapture"/>).</summary>
+    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) => new PulseApplicationCapture(processId, sink);
 
     private sealed unsafe class PulseStream : IAudioStream
     {

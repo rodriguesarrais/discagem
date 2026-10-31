@@ -88,6 +88,8 @@
           </CheckBox>
           <TextBlock Text="{Binding AudioHint}" Classes="secondary" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0" />
         </StackPanel>
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Margin="0,14,0,0" Text="{Binding AudioUnavailableReason}" Classes="secondary" FontSize="12"
+                   IsVisible="{Binding !CanShareAudio}" HorizontalAlignment="Left" VerticalAlignment="Center" MaxWidth="420" TextWrapping="Wrap" />
         <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Spacing="10" Margin="0,16,0,0">
           <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />

@@ -117,50 +117,63 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
     }
 
-    public bool SupportsSystemCapture => true;
+    /// <summary>Process loopback capture, which can leave Discagem's own sounds out, needs Windows 10 version 2004 (build 19041).</summary>
+    public bool SupportsSystemCapture => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041);
 
-    /// <summary>Process loopback capture needs Windows 10 version 2004 (build 19041).</summary>
-    public bool SupportsApplicationCapture => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041);
+    public bool SupportsApplicationCapture => SupportsSystemCapture;
 
+    /// <remarks>
+    /// Only process loopback is used: capturing a whole output device would also capture voice chat,
+    /// which must never reach the stream. A window's application that cannot be captured on its own
+    /// (one running as administrator, say) falls back to everything except Discagem.
+    /// </remarks>
     public IAudioStream OpenSystemCapture(int? processId, AudioSink sink)
     {
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        {
+            throw new AudioDeviceException("sharing sound without your voice chat needs Windows 10 version 2004 or later.");
+        }
+
+        Exception? applicationError = null;
+        if (processId is { } pid)
         {
             try
             {
-                // Process loopback has no device mix format; ask for 48 kHz float stereo and let Windows convert.
-                var mode = processId is null ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree;
-                var recorder = new WasapiRecorderBuilder()
-                    .WithProcessLoopback((uint)(processId ?? Environment.ProcessId), mode)
-                    .WithFormat(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2))
-                    .WithBufferLength(20)
-                    .BuildAsync()
-                    .GetAwaiter()
-                    .GetResult();
-                return new LoopbackStream(recorder, processId is null ? "System audio (without Discagem)" : "Application audio", sink);
+                return OpenProcessLoopback(pid, ProcessLoopbackMode.IncludeTargetProcessTree, "the shared window's application", sink);
             }
-            catch (Exception ex) when (IsDeviceError(ex))
+            catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                // Fall back to everything the default output plays.
+                applicationError = ex;
+                ClientLog.Warning($"Could not capture the sound of process {pid} alone: {ex}");
             }
         }
 
-        var device = Resolve(DataFlow.Render, null);
         try
         {
-            // Polling: loopback streams do not signal their event on every Windows version.
-            var loopback = new WasapiRecorderBuilder()
-                .WithDevice(device)
-                .WithLoopbackCapture()
-                .WithPollingSync()
-                .WithBufferLength(40)
-                .Build();
-            return new LoopbackStream(loopback, $"Everything playing on {device.FriendlyName}", sink);
+            var description = applicationError is null
+                ? "everything except Discagem"
+                : "everything except Discagem (the window's application could not be captured on its own)";
+            return OpenProcessLoopback(Environment.ProcessId, ProcessLoopbackMode.ExcludeTargetProcessTree, description, sink);
         }
-        catch (Exception ex) when (IsDeviceError(ex))
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            throw new AudioDeviceException($"Could not capture the computer's audio ({ex.Message}).", ex);
+            ClientLog.Error($"Could not capture the computer's sound: {ex}");
+            throw new AudioDeviceException($"could not capture the computer's sound ({ex.Message}).", ex);
         }
+    }
+
+    [SupportedOSPlatform("windows10.0.19041")]
+    private static LoopbackStream OpenProcessLoopback(int processId, ProcessLoopbackMode mode, string description, AudioSink sink)
+    {
+        // Process loopback has no device mix format: ask for 48 kHz float stereo and let Windows convert.
+        var recorder = new WasapiRecorderBuilder()
+            .WithProcessLoopback((uint)processId, mode)
+            .WithFormat(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2))
+            .WithBufferLength(20)
+            .BuildAsync()
+            .GetAwaiter()
+            .GetResult();
+        return new LoopbackStream(recorder, description, sink);
     }
 
     private static bool IsDeviceError(Exception ex) =>
