@@ -180,6 +180,46 @@ the server (for example `chat.example.com`).
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
    and your details. The first account is the administrator; share the invite code with your friends.
 
+### Automatic deployment
+
+Each stable release can update the server by itself: after publishing, the *Release* workflow runs
+the *Deploy* workflow, which connects to the VPS over SSH and runs
+[`deploy/vps/discagem-update`](deploy/vps/discagem-update). That script backs up the data volume
+(keeping the last five copies), pulls the new image, recreates only the Discagem container and waits
+until it answers. Calls and streams drop for a few seconds and reconnect on their own. The deploy key
+can do nothing but run that script: it is a forced command in `authorized_keys`, with forwarding and
+terminals disabled. *Deploy* can also be run by hand from the Actions tab.
+
+To set it up:
+
+1. On your computer, create a key pair for GitHub Actions (no passphrase):
+   `ssh-keygen -t ed25519 -N "" -C github-actions -f discagem-deploy`.
+2. On the VPS, as root (replace the Compose folder and the public key):
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/rodriguesarrais/discagem/main/deploy/vps/discagem-update \
+     -o /usr/local/bin/discagem-update && chmod 755 /usr/local/bin/discagem-update
+   printf 'COMPOSE_DIR=/path/to/the/discagem/compose/project\nSERVICE=discagem\n' > /etc/discagem-update.conf
+   useradd -m -s /bin/bash discagem-deploy && usermod -aG docker discagem-deploy
+   install -d -o discagem-deploy -m 750 /var/backups/discagem
+   install -d -o discagem-deploy -g discagem-deploy -m 700 ~discagem-deploy/.ssh
+   echo 'restrict,command="/usr/local/bin/discagem-update" ssh-ed25519 AAAA... github-actions' \
+     > ~discagem-deploy/.ssh/authorized_keys
+   chown discagem-deploy:discagem-deploy ~discagem-deploy/.ssh/authorized_keys
+   chmod 600 ~discagem-deploy/.ssh/authorized_keys
+   ```
+
+   Members of the `docker` group can control every container on the machine, so keep the private key
+   in GitHub's secrets only.
+3. Get the VPS's SSH host key, from a computer you trust: `ssh-keyscan -p 22 <VPS address>`.
+4. In the repository's *Settings → Secrets and variables → Actions*, add the secrets
+   `DEPLOY_SSH_KEY` (the contents of `discagem-deploy`, the private key) and `DEPLOY_KNOWN_HOSTS` (the
+   `ssh-keyscan` output), and the variables `DEPLOY_HOST` (the VPS address), `DEPLOY_USER`
+   (`discagem-deploy`), `DEPLOY_URL` (for example `https://chat.example.com`, checked after the update)
+   and, if SSH does not listen on 22, `DEPLOY_PORT`.
+
+Without `DEPLOY_HOST`, releases skip the deployment. Pre-releases are never deployed.
+
 ### Without Docker
 
 Extract `discagem-server-<version>-linux-x64.tar.gz` (or `-linux-arm64`) from a release into
@@ -302,9 +342,9 @@ they are applied automatically on start-up.
 | `src/Discagem.Server` | ASP.NET Core host: auth, attachments, SignalR hub, SFU, STUN responder, EF Core (SQLite). |
 | `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
-| `deploy/` | Dockerfile, Compose file with Caddy, environment template and systemd unit. |
+| `deploy/` | Dockerfile, Compose file with Caddy, environment template, systemd unit and the VPS update script. |
 | `installer/windows/` | NSIS script, wizard images and build script of the Windows installer. |
-| `.github/workflows/` | CI (build, tests, Windows client artifact, image build) and the release workflow. |
+| `.github/workflows/` | CI (build, tests, Windows client artifact, image build), the release and deploy workflows and the pull request conventions check. |
 
 ## Security notes
 
