@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using Discagem.Media.Audio;
 using Discagem.Media.WebRtc;
 using Discagem.Server.Hubs;
@@ -14,11 +13,7 @@ namespace Discagem.Server.Media;
 public sealed class VoiceParticipant(MediaSession session, long channelId)
 {
     /// <summary>A speaker sends 50 packets per second; anything well beyond that is dropped.</summary>
-    private const double PacketsPerSecond = 100;
-    private const double Burst = 50;
-
-    private double _tokens = Burst;
-    private long _lastRefill = Stopwatch.GetTimestamp();
+    private readonly PacketRateLimiter _limiter = new(packetsPerSecond: 100, burst: 50);
 
     public MediaSession Session { get; } = session;
 
@@ -36,19 +31,7 @@ public sealed class VoiceParticipant(MediaSession session, long channelId)
     /// Token bucket limiting how many packets this speaker can make the server fan out. Called only
     /// from the session's receive thread.
     /// </summary>
-    public bool TryConsumePacket()
-    {
-        var now = Stopwatch.GetTimestamp();
-        _tokens = Math.Min(Burst, _tokens + Stopwatch.GetElapsedTime(_lastRefill, now).TotalSeconds * PacketsPerSecond);
-        _lastRefill = now;
-        if (_tokens < 1)
-        {
-            return false;
-        }
-
-        _tokens--;
-        return true;
-    }
+    public bool TryConsumePacket() => _limiter.TryConsume();
 }
 
 /// <summary>

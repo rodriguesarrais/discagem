@@ -51,7 +51,7 @@ public sealed record MessageDto(
     DateTimeOffset? EditedAt,
     IReadOnlyList<AttachmentDto> Attachments);
 
-/// <summary>An active screen share.</summary>
+/// <summary>An active screen share. <c>HasAudio</c> is false for streams from clients without audio support.</summary>
 public sealed record StreamInfoDto(
     string StreamId,
     long UserId,
@@ -60,7 +60,8 @@ public sealed record StreamInfoDto(
     int Height,
     int FrameRate,
     DateTimeOffset StartedAt,
-    IReadOnlyList<long> ViewerIds);
+    IReadOnlyList<long> ViewerIds,
+    bool HasAudio = false);
 
 /// <summary>Snapshot of the server state sent to a client right after it connects.</summary>
 public sealed record SyncStateDto(
