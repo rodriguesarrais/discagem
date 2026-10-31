@@ -19,7 +19,10 @@ native Avalonia application for Windows (and Linux/X11).
 - Messages grouped by author and day, Discord-like markdown (`**bold**`, `*italic*`, `__underline__`,
   `~~strike~~`, `` `code` ``, fenced code blocks, quotes), clickable links and `@mentions`.
 - Edit (`↑` edits your last message) and delete; administrators can delete any message.
-- Image previews and file attachments (button or drag and drop), up to 25 MB by default.
+- Image previews and file attachments (button, drag and drop, or paste a screenshot or copied files
+  with Ctrl+V), up to 25 MB by default.
+- Profile photos, cropped to a square and shown in messages, the member list, voice channels and
+  streams (*Settings → My account → Change photo*); without one, the initials on a colour.
 - Typing indicators, online/offline presence, history paging and automatic reconnection.
 
 **Voice chat**
@@ -312,6 +315,8 @@ they are applied automatically on start-up.
   DTLS-SRTP.
 - Attachments are only served to signed-in users (and, until posted, only to the uploader); only
   common image types are served inline.
+- Profile photos are only served to signed-in users; the server accepts PNG and JPEG files of at most
+  1 MB (the client uploads a 256 × 256 PNG) and serves them with the type their contents show.
 
 ## Limitations and ideas
 

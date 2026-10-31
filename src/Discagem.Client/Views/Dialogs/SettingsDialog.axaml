@@ -20,10 +20,22 @@
           <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
             <StackPanel Spacing="16">
               <Grid ColumnDefinitions="Auto,*">
-                <c:AvatarView Width="72" Height="72" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" />
+                <c:AvatarView Width="72" Height="72" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" Image="{Binding Me.AvatarImage}" />
                 <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                   <TextBlock Text="{Binding DisplayName}" Classes="h2" />
                   <TextBlock Text="{Binding Me.Username, StringFormat='@{0}'}" Classes="muted" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <Button Classes="ghost" Command="{Binding ChangePhotoCommand}" IsEnabled="{Binding !IsBusy}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <c:Icon Data="{StaticResource IconImage}" Width="15" Height="15" />
+                        <TextBlock Text="Change photo" />
+                      </StackPanel>
+                    </Button>
+                    <Button Classes="link" Content="Remove photo" Command="{Binding RemovePhotoCommand}" VerticalAlignment="Center"
+                            IsVisible="{Binding Me.AvatarImage, Converter={x:Static ObjectConverters.IsNotNull}}" IsEnabled="{Binding !IsBusy}" />
+                    <TextBlock Text="{Binding PhotoMessage}" VerticalAlignment="Center" FontSize="12.5"
+                               Foreground="{Binding PhotoError, Converter={x:Static views:Converters.StatusForeground}}" />
+                  </StackPanel>
                 </StackPanel>
               </Grid>
               <StackPanel>

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -174,6 +175,46 @@ public partial class ChatPanel : UserControl
         {
             e.Handled = _viewModel.EditLastOwnMessage();
         }
+        else if (e.Key == Key.V && e.KeyModifiers.HasFlag(TopLevel.GetTopLevel(this)?.PlatformSettings?.HotkeyConfiguration.CommandModifiers ?? KeyModifiers.Control))
+        {
+            // Files and images (screenshots) become attachments; anything else is pasted as text.
+            e.Handled = true;
+            _ = PasteAsync();
+        }
+    }
+
+    private async Task PasteAsync()
+    {
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (_viewModel is null || clipboard is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var files = (await clipboard.TryGetFilesAsync())?.OfType<IStorageFile>().ToList();
+            if (files is { Count: > 0 })
+            {
+                await _viewModel.AddAttachmentsAsync(files);
+                return;
+            }
+
+            using var bitmap = await clipboard.TryGetBitmapAsync();
+            if (bitmap is not null)
+            {
+                using var png = new MemoryStream();
+                bitmap.Save(png);
+                _viewModel.AddPastedImage(png.ToArray());
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or ArgumentException or System.Runtime.InteropServices.COMException)
+        {
+            // Clipboard contents Discagem cannot read: fall back to pasting text.
+        }
+
+        Composer.Paste();
     }
 
     private void OnEditBoxAttached(object? sender, VisualTreeAttachmentEventArgs e)

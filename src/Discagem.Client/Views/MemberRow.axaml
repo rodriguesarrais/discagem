@@ -6,7 +6,7 @@
              x:DataType="vm:MemberViewModel">
   <Button Classes="row" Click="OnClick" Opacity="{Binding Opacity}">
     <Grid ColumnDefinitions="Auto,*,Auto">
-      <c:AvatarView Width="34" Height="34" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}"
+      <c:AvatarView Width="34" Height="34" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" Image="{Binding AvatarImage}"
                     Status="{Binding Status}" RingBrush="{StaticResource SidebarBrush}" Margin="0,0,12,0" />
       <StackPanel Grid.Column="1" VerticalAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="5">

@@ -139,7 +139,7 @@
                             </Border.ContextFlyout>
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                               <c:AvatarView Width="24" Height="24" DisplayName="{Binding Member.DisplayName}"
-                                            Color="{Binding Member.AvatarColor}" IsSpeaking="{Binding IsSpeaking}"
+                                            Color="{Binding Member.AvatarColor}" Image="{Binding Member.AvatarImage}" IsSpeaking="{Binding IsSpeaking}"
                                             Margin="0,0,8,0" />
                               <TextBlock Grid.Column="1" Text="{Binding Member.DisplayName}" FontSize="14"
                                          VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
@@ -174,7 +174,7 @@
                             ToolTip.Tip="{Binding IsMine, Converter={x:Static views:Converters.WatchTooltip}}">
                       <Grid ColumnDefinitions="Auto,*,Auto">
                         <c:AvatarView Width="32" Height="32" DisplayName="{Binding Streamer.DisplayName}"
-                                      Color="{Binding Streamer.AvatarColor}" Margin="0,0,10,0" />
+                                      Color="{Binding Streamer.AvatarColor}" Image="{Binding Streamer.AvatarImage}" Margin="0,0,10,0" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Streamer.DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                           <TextBlock Text="{Binding DisplayTitle}" Classes="caption" TextTrimming="CharacterEllipsis" />
@@ -249,7 +249,7 @@
         <!-- User panel -->
         <Border Grid.Row="3" Background="#1A1B20" Height="58" Padding="8,0">
           <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-            <c:AvatarView Width="36" Height="36" DisplayName="{Binding Me.DisplayName}" Color="{Binding Me.AvatarColor}"
+            <c:AvatarView Width="36" Height="36" DisplayName="{Binding Me.DisplayName}" Color="{Binding Me.AvatarColor}" Image="{Binding Me.AvatarImage}"
                           Status="Online" RingBrush="#1A1B20" VerticalAlignment="Center" IsSpeaking="{Binding IsMeSpeaking}" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,4,0">
               <TextBlock Text="{Binding Me.DisplayName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />

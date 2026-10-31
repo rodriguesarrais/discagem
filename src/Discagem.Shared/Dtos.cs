@@ -1,13 +1,17 @@
 namespace Discagem.Shared;
 
-/// <summary>Public representation of a user account.</summary>
+/// <summary>
+/// Public representation of a user account. <c>AvatarVersion</c> is null without a profile photo;
+/// otherwise the photo is at <c>/api/users/{id}/avatar</c>, and the number changes with every new photo.
+/// </summary>
 public sealed record UserDto(
     long Id,
     string Username,
     string DisplayName,
     string AvatarColor,
     bool IsAdmin,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    int? AvatarVersion = null);
 
 public enum ChannelKind
 {

@@ -100,7 +100,7 @@
                     <Panel>
                       <Grid ColumnDefinitions="56,*">
                         <c:AvatarView Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
-                                      DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}"
+                                      DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}" Image="{Binding Author.AvatarImage}"
                                       IsVisible="{Binding IsGroupStart}" />
                         <Panel IsVisible="{Binding IsContinuation}">
                           <TextBlock Classes="caption hover-only" Text="{Binding ShortTime}" FontSize="10.5"

@@ -17,6 +17,9 @@ public interface IDialogService
 
     Task<IReadOnlyList<IStorageFile>> PickFilesAsync();
 
+    /// <summary>Asks for one image file (PNG, JPEG, GIF, WebP or BMP).</summary>
+    Task<IStorageFile?> PickImageAsync(string title);
+
     Task<IStorageFile?> SaveFileAsync(string suggestedName);
 
     void ShowImage(Bitmap bitmap, string title);

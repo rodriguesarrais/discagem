@@ -99,6 +99,33 @@ public sealed class ApiClient : IDisposable
         return await SendCoreAsync<AttachmentDto>(request, cancellationToken, TimeSpan.FromMinutes(10));
     }
 
+    /// <summary>Replaces the profile photo (a prepared PNG, see <see cref="AvatarImages"/>).</summary>
+    public async Task<UserDto> UploadAvatarAsync(byte[] png, CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(png);
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        form.Add(file, "file", "avatar.png");
+        using var request = new HttpRequestMessage(HttpMethod.Put, "api/me/avatar") { Content = form };
+        return await SendCoreAsync<UserDto>(request, cancellationToken, TimeSpan.FromMinutes(2));
+    }
+
+    public Task<UserDto> RemoveAvatarAsync() => SendAsync<UserDto>(HttpMethod.Delete, "api/me/avatar", null);
+
+    public async Task<byte[]> DownloadAvatarAsync(long userId, int version, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _http.GetAsync($"api/users/{userId}/avatar?v={version}", cancellationToken);
+            await EnsureSuccessAsync(response);
+            return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiException("Could not reach the server.", ex.StatusCode, ex);
+        }
+    }
+
     public async Task<byte[]> DownloadAttachmentAsync(AttachmentDto attachment, CancellationToken cancellationToken = default)
     {
         try

@@ -7,7 +7,8 @@ public static class Mapping
     public static DateTimeOffset ToOffset(this DateTime utc) => new(DateTime.SpecifyKind(utc, DateTimeKind.Utc));
 
     public static UserDto ToDto(this User user) =>
-        new(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.IsAdmin, user.CreatedAt.ToOffset());
+        new(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.IsAdmin, user.CreatedAt.ToOffset(),
+            user.HasAvatar ? user.AvatarVersion : null);
 
     public static ChannelDto ToDto(this Channel channel) =>
         new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset(), channel.Kind);
