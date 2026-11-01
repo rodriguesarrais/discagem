@@ -295,12 +295,32 @@ jobs:
               --target "$GITHUB_SHA" "${flags[@]}"
           fi
 
-  # Updates the server on the VPS when the repository is configured for it (see deploy.yml).
-  deploy:
-    name: Deploy
+  # The server updates itself (deploy/updater). With the repository variable DEPLOY_URL set to its
+  # public address, this waits until it runs the new version, so a deployment that did not happen
+  # fails the run and GitHub's notification says so.
+  deployment:
+    name: Check the deployment
     needs: [version, release]
-    if: needs.version.outputs.prerelease == 'false'
-    uses: ./.github/workflows/deploy.yml
-    with:
-      version: ${{ needs.version.outputs.version }}
-    secrets: inherit
+    if: needs.version.outputs.prerelease == 'false' && vars.DEPLOY_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Wait for the server to run the new version
+        env:
+          URL: ${{ vars.DEPLOY_URL }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          expected="Discagem server $VERSION"
+          body=
+          # The updater checks every 5 minutes by default; allow for a slow pull and start-up.
+          deadline=$((SECONDS + 25 * 60))
+          while ((SECONDS < deadline)); do
+            body=$(curl -fsS -m 10 "${URL%/}/" || true)
+            if [[ "$body" == "$expected" ]]; then
+              echo "$URL runs $VERSION."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::$URL answers \"$body\" instead of \"$expected\" 25 minutes after the release. See the updater's log (README, \"Automatic updates\")."
+          exit 1
