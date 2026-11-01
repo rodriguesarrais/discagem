@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Discagem.Client.Services;
 using Discagem.Shared.Text;
 
 namespace Discagem.Client.Controls;
@@ -41,6 +42,19 @@ public sealed class MessageContentView : StackPanel
     {
         get => GetValue(IsEditedProperty);
         set => SetValue(IsEditedProperty, value);
+    }
+
+    // The text is built with the current theme's colours: build it again when the theme changes.
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ThemeManager.Changed += Rebuild;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        ThemeManager.Changed -= Rebuild;
+        base.OnDetachedFromVisualTree(e);
     }
 
     private IBrush Resource(string key, string fallback) =>
@@ -141,12 +155,12 @@ public sealed class MessageContentView : StackPanel
         {
             FontFamily = MonoFont,
             FontSize = 13,
-            Background = Resource("RailBrush", "#17181C"),
+            Background = Resource("CodeBrush", "#17181C"),
         },
         SpanKind.Mention => new Run(span.Text)
         {
             FontWeight = FontWeight.SemiBold,
-            Foreground = new SolidColorBrush(Color.Parse("#C9C3FF")),
+            Foreground = Resource("MentionTextBrush", "#C9C3FF"),
             Background = Resource("MentionBrush", "#337C6CFF"),
         },
         SpanKind.Link => new Run(span.Text) { Foreground = Resource("LinkBrush", "#7FB4FF") },
@@ -157,7 +171,7 @@ public sealed class MessageContentView : StackPanel
     {
         return new Border
         {
-            Background = Resource("RailBrush", "#17181C"),
+            Background = Resource("CodeBrush", "#17181C"),
             BorderBrush = Resource("DividerBrush", "#34363E"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(6),

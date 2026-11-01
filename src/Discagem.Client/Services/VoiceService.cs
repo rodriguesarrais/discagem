@@ -25,6 +25,7 @@ public sealed class VoiceService : IAsyncDisposable
     private Call? _call;
     private MicrophoneTest? _micTest;
     private string? _droppedSessionId;
+    private readonly CuePlayer _cues;
 
     public VoiceService(ChatConnection hub, IReadOnlyList<IceServerConfig> iceServers, ClientSettings settings, IAudioBackend audio, long myUserId)
     {
@@ -33,6 +34,7 @@ public sealed class VoiceService : IAsyncDisposable
         _settings = settings;
         _myUserId = myUserId;
         Audio = audio;
+        _cues = new CuePlayer(audio, () => _settings.VoiceOutputDevice, () => _settings.VoiceOutputVolume);
         _hub.IceCandidate += OnRemoteCandidate;
         _hub.MediaSessionClosed += OnMediaSessionClosed;
     }
@@ -138,7 +140,7 @@ public sealed class VoiceService : IAsyncDisposable
 
             OpenMicrophone(call, attempt: 0);
             OpenSpeakers(call, attempt: 0);
-            engine.Mixer.PlayCue(VoiceCues.Join);
+            engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
         }
         finally
         {
@@ -252,7 +254,7 @@ public sealed class VoiceService : IAsyncDisposable
         if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
         {
             call.Engine.Mixer.RemoveSpeaker((uint)userId);
-            call.Engine.Mixer.PlayCue(VoiceCues.Leave);
+            call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Leave);
         }
     }
 
@@ -261,8 +263,28 @@ public sealed class VoiceService : IAsyncDisposable
     {
         if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
         {
-            call.Engine.Mixer.PlayCue(VoiceCues.Join);
+            call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
         }
+    }
+
+    /// <summary>
+    /// Plays a notification sound: mixed into the call when there is one, otherwise on the voice
+    /// output device. Nothing plays while deafened.
+    /// </summary>
+    public void PlayNotification(float[] sound)
+    {
+        if (_settings.VoiceDeafened)
+        {
+            return;
+        }
+
+        if (_call is { } call)
+        {
+            call.Engine.Mixer.PlayCue(sound);
+            return;
+        }
+
+        _cues.Play(sound);
     }
 
     /// <summary>Opens the microphone outside a call so the settings dialog can show its level.</summary>
@@ -380,9 +402,11 @@ public sealed class VoiceService : IAsyncDisposable
         }
 
         _call = null;
+        var cue = ThemeManager.Sounds.Leave;
+        var cueStarted = Environment.TickCount64;
         if (playCue)
         {
-            call.Engine.Mixer.PlayCue(VoiceCues.Leave);
+            call.Engine.Mixer.PlayCue(cue);
         }
 
         if (notifyServer)
@@ -392,8 +416,13 @@ public sealed class VoiceService : IAsyncDisposable
 
         if (playCue)
         {
-            // Let the cue play before the speakers close.
-            await Task.Delay(220);
+            // Let the cue play out (plus the device's buffering) before the speakers close.
+            var length = (long)(cue.Length * 1000.0 / DiscagemAudio.SampleRate) + 120;
+            var remaining = length - (Environment.TickCount64 - cueStarted);
+            if (remaining > 0)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(remaining));
+            }
         }
 
         var speakers = call.Engine.Mixer.Speakers.Select(s => s.SpeakerId).ToList();
@@ -446,6 +475,7 @@ public sealed class VoiceService : IAsyncDisposable
         _hub.IceCandidate -= OnRemoteCandidate;
         _hub.MediaSessionClosed -= OnMediaSessionClosed;
         StopMicrophoneTest();
+        _cues.Dispose();
         await _gate.WaitAsync();
         try
         {

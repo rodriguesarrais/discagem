@@ -142,6 +142,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _thresholdDb = settings.VoiceThresholdDb;
         _outputVolumePercent = settings.VoiceOutputVolume * 100;
         _closeToTray = settings.CloseToTrayEnabled;
+        _selectedTheme = Themes.FirstOrDefault(t => t.Theme == settings.ThemeValue) ?? Themes[0];
+        _messageSounds = settings.MessageSounds;
 
         // Show the microphone level live (in a call, or while testing), as a guide for the sensitivity slider.
         _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) =>
@@ -272,6 +274,37 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         _settings.CloseToTray = value;
         _settings.Save();
+    }
+
+    public IReadOnlyList<ThemeOption> Themes => ThemeOption.All;
+
+    /// <summary>The theme; picking one applies it at once.</summary>
+    [ObservableProperty]
+    private ThemeOption _selectedTheme;
+
+    partial void OnSelectedThemeChanged(ThemeOption value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        _settings.ThemeValue = value.Theme;
+        _settings.Save();
+        ThemeManager.Apply(value.Theme);
+    }
+
+    [ObservableProperty]
+    private bool _messageSounds;
+
+    partial void OnMessageSoundsChanged(bool value)
+    {
+        _settings.MessageSounds = value;
+        _settings.Save();
+        if (value)
+        {
+            _voice.PlayNotification(ThemeManager.Sounds.Message);
+        }
     }
 
     [ObservableProperty]

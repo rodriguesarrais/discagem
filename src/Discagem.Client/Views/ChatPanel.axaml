@@ -6,18 +6,18 @@
              x:Class="Discagem.Client.Views.ChatPanel"
              x:DataType="vm:ShellViewModel"
              x:Name="Root"
-             Background="{StaticResource ChatBrush}"
+             Background="{DynamicResource ChatBrush}"
              DragDrop.AllowDrop="True">
 
   <Grid x:Name="LayoutRoot" RowDefinitions="52,Auto,0,0,*">
 
     <!-- Channel header -->
-    <Border Grid.Row="0" BorderBrush="{StaticResource RailBrush}" BorderThickness="0,0,0,1" BoxShadow="0 1 2 0 #30000000">
+    <Border Grid.Row="0" Classes="header chat-header">
       <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="16,0,10,0">
-        <c:Icon Data="{StaticResource IconHash}" Width="22" Height="22" Foreground="{StaticResource TextMutedBrush}" StrokeThickness="2.2" />
+        <c:Icon Data="{StaticResource IconHash}" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" StrokeThickness="2.2" />
         <TextBlock Grid.Column="1" Text="{Binding SelectedChannel.Name, FallbackValue=''}" Classes="title" FontSize="16"
                    VerticalAlignment="Center" Margin="8,0,0,0" />
-        <Border Grid.Column="2" Width="1" Height="24" Background="{StaticResource DividerBrush}" Margin="14,0"
+        <Border Grid.Column="2" Width="1" Height="24" Background="{DynamicResource DividerBrush}" Margin="14,0"
                 IsVisible="{Binding SelectedChannel.HasTopic, FallbackValue=False}" />
         <TextBlock Grid.Column="3" Text="{Binding SelectedChannel.Topic, FallbackValue=''}" Classes="muted"
                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -31,7 +31,7 @@
 
     <!-- Banners -->
     <StackPanel Grid.Row="1">
-      <Border Background="{StaticResource AccentBrush}" Padding="16,6,8,6" IsVisible="{Binding HasUpdate}">
+      <Border Background="{DynamicResource AccentBrush}" Padding="16,6,8,6" IsVisible="{Binding HasUpdate}">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
           <c:Icon Data="{StaticResource IconDownload}" Width="18" Height="18" Foreground="White" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding UpdateText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap"
@@ -39,7 +39,7 @@
           <Button Grid.Column="2" Classes="link" Foreground="White" Content="What's new" Command="{Binding ShowReleaseNotesCommand}"
                   VerticalAlignment="Center" Margin="12,0" />
           <Button Grid.Column="3" Content="{Binding UpdateActionText}" Command="{Binding InstallUpdateCommand}"
-                  IsEnabled="{Binding !IsInstallingUpdate}" Background="White" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"
+                  IsEnabled="{Binding !IsInstallingUpdate}" Background="White" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold"
                   Padding="14,5" CornerRadius="6" VerticalAlignment="Center" />
           <Button Grid.Column="4" Classes="icon small" Foreground="White" Command="{Binding DismissUpdateCommand}" ToolTip.Tip="Later"
                   IsVisible="{Binding !IsInstallingUpdate}" Margin="6,0,0,0">
@@ -47,13 +47,13 @@
           </Button>
         </Grid>
       </Border>
-      <Border Background="{StaticResource WarningBrush}" Padding="12,6" IsVisible="{Binding IsReconnecting}">
+      <Border Background="{DynamicResource WarningBrush}" Padding="12,6" IsVisible="{Binding IsReconnecting}">
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <c:Icon Data="{StaticResource IconWifiOff}" Width="16" Height="16" Foreground="#2A1E00" />
-          <TextBlock Text="{Binding ConnectionText}" Foreground="#2A1E00" FontWeight="SemiBold" />
+          <c:Icon Data="{StaticResource IconWifiOff}" Width="16" Height="16" Foreground="{DynamicResource WarningTextBrush}" />
+          <TextBlock Text="{Binding ConnectionText}" Foreground="{DynamicResource WarningTextBrush}" FontWeight="SemiBold" />
         </StackPanel>
       </Border>
-      <Border Background="{Binding BannerIsError, Converter={x:Static views:Converters.BannerBackground}}" Padding="16,8,8,8" IsVisible="{Binding HasBanner}">
+      <Border Classes="banner" Classes.error="{Binding BannerIsError}" Padding="16,8,8,8" IsVisible="{Binding HasBanner}">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <c:Icon Data="{StaticResource IconAlert}" Width="18" Height="18" Foreground="White" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding BannerMessage}" Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" />
@@ -66,20 +66,20 @@
 
     <!-- Stream being watched -->
     <views:StreamView Grid.Row="2" DataContext="{Binding ActiveStream}" IsVisible="{Binding $parent[UserControl].((vm:ShellViewModel)DataContext).IsWatching}" />
-    <GridSplitter Grid.Row="3" Height="5" ResizeDirection="Rows" Background="{StaticResource RailBrush}" x:Name="StreamSplitter" />
+    <GridSplitter Grid.Row="3" Height="5" ResizeDirection="Rows" Background="{DynamicResource RailBrush}" x:Name="StreamSplitter" />
 
     <!-- Messages and composer -->
     <Grid Grid.Row="4" RowDefinitions="*,Auto,Auto">
       <ScrollViewer x:Name="MessageScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,16">
           <!-- IsIndeterminate follows visibility: a hidden indeterminate bar keeps animating (and redrawing). -->
-          <ProgressBar Height="3" MinHeight="3" Margin="16,8" Foreground="{StaticResource AccentBrush}"
+          <ProgressBar Height="3" MinHeight="3" Margin="16,8" Foreground="{DynamicResource AccentBrush}"
                        IsVisible="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}"
                        IsIndeterminate="{Binding SelectedChannel.IsLoadingHistory, FallbackValue=False}" />
 
           <StackPanel Margin="16,24,16,8" Spacing="8" IsVisible="{Binding !SelectedChannel.HasMoreHistory, FallbackValue=False}">
-            <Border Width="68" Height="68" CornerRadius="34" Background="{StaticResource ElevatedBrush}" HorizontalAlignment="Left">
-              <c:Icon Data="{StaticResource IconHash}" Width="38" Height="38" Foreground="{StaticResource TextPrimaryBrush}" />
+            <Border Width="68" Height="68" CornerRadius="34" Background="{DynamicResource ElevatedBrush}" HorizontalAlignment="Left">
+              <c:Icon Data="{StaticResource IconHash}" Width="38" Height="38" Foreground="{DynamicResource TextPrimaryBrush}" />
             </Border>
             <TextBlock Text="{Binding SelectedChannel.Name, StringFormat='Welcome to #{0}!', FallbackValue=''}" Classes="h1" FontSize="30" />
             <TextBlock Text="{Binding SelectedChannel.Name, StringFormat='This is the start of the #{0} channel.', FallbackValue=''}" Classes="secondary" />
@@ -90,30 +90,32 @@
               <DataTemplate x:DataType="vm:MessageItemViewModel">
                 <StackPanel>
                   <Grid ColumnDefinitions="*,Auto,*" Margin="16,18,16,2" IsVisible="{Binding ShowDaySeparator}">
-                    <Border Height="1" Background="{StaticResource DividerBrush}" VerticalAlignment="Center" />
+                    <Border Height="1" Background="{DynamicResource DividerBrush}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding DayLabel}" Classes="caption" FontWeight="SemiBold" Margin="10,0" />
-                    <Border Grid.Column="2" Height="1" Background="{StaticResource DividerBrush}" VerticalAlignment="Center" />
+                    <Border Grid.Column="2" Height="1" Background="{DynamicResource DividerBrush}" VerticalAlignment="Center" />
                   </Grid>
 
                   <Border Classes="message" Classes.mention="{Binding MentionsMe}" Padding="16,2,16,2"
                           Margin="{Binding IsGroupStart, Converter={x:Static views:Converters.GroupMargin}}">
                     <Panel>
-                      <Grid ColumnDefinitions="56,*">
-                        <c:AvatarView Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
-                                      DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}" Image="{Binding Author.AvatarImage}"
-                                      IsVisible="{Binding IsGroupStart}" />
-                        <Panel IsVisible="{Binding IsContinuation}">
-                          <TextBlock Classes="caption hover-only" Text="{Binding ShortTime}" FontSize="10.5"
-                                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,4,0,0"
-                                     ToolTip.Tip="{Binding FullTimestamp}" />
+                      <Grid ColumnDefinitions="Auto,*">
+                        <Panel Classes="message-gutter">
+                          <c:AvatarView Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
+                                        DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}" Image="{Binding Author.AvatarImage}"
+                                        IsVisible="{Binding IsGroupStart}" />
+                          <Panel IsVisible="{Binding IsContinuation}">
+                            <TextBlock Classes="caption hover-only" Text="{Binding ShortTime}" FontSize="10.5"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,4,0,0"
+                                       ToolTip.Tip="{Binding FullTimestamp}" />
+                          </Panel>
                         </Panel>
 
-                        <StackPanel Grid.Column="1" Spacing="2">
-                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGroupStart}">
-                            <TextBlock Text="{Binding Author.DisplayName}" FontWeight="SemiBold" FontSize="15"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
-                            <c:Icon Data="{StaticResource IconCrown}" Width="12" Height="12" Foreground="#F5C542" StrokeThickness="2.4"
+                        <StackPanel Grid.Column="1" Spacing="2" Classes="message-body">
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGroupStart}" Classes="message-header">
+                            <TextBlock Classes="author" Text="{Binding Author.DisplayName}" />
+                            <c:Icon Data="{StaticResource IconCrown}" Width="12" Height="12" Foreground="{DynamicResource CrownBrush}" StrokeThickness="2.4"
                                     IsVisible="{Binding Author.IsAdmin}" VerticalAlignment="Center" />
+                            <TextBlock Classes="author says aero-only" Text="says:" Margin="-4,0,0,0" />
                             <TextBlock Text="{Binding TimestampLabel}" Classes="caption" VerticalAlignment="Center"
                                        ToolTip.Tip="{Binding FullTimestamp}" />
                           </StackPanel>
@@ -132,8 +134,8 @@
                             </TextBox.KeyBindings>
                           </TextBox>
                           <TextBlock Classes="caption" IsVisible="{Binding IsEditing}" Margin="0,2,0,4">
-                            <Run Text="escape to" /> <Run Text="cancel" Foreground="{StaticResource LinkBrush}" />
-                            <Run Text=" • enter to" /> <Run Text="save" Foreground="{StaticResource LinkBrush}" />
+                            <Run Text="escape to" /> <Run Text="cancel" Foreground="{DynamicResource LinkBrush}" />
+                            <Run Text=" • enter to" /> <Run Text="save" Foreground="{DynamicResource LinkBrush}" />
                           </TextBlock>
 
                           <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}">
@@ -147,24 +149,24 @@
                                         <MenuItem Header="Save image…" Command="{Binding SaveCommand}" />
                                       </ContextMenu>
                                     </Button.ContextMenu>
-                                    <Border CornerRadius="8" ClipToBounds="True" Background="{StaticResource RailBrush}"
+                                    <Border CornerRadius="8" ClipToBounds="True" Background="{DynamicResource MediaBackdropBrush}"
                                             MinWidth="120" MinHeight="80" MaxWidth="440" MaxHeight="320">
                                       <Panel>
                                         <Image Source="{Binding Image}" Stretch="Uniform" MaxWidth="440" MaxHeight="320"
                                                RenderOptions.BitmapInterpolationMode="HighQuality" />
                                         <ProgressBar IsIndeterminate="{Binding IsLoading}" Width="60" Height="3" MinHeight="3" IsVisible="{Binding IsLoading}"
-                                                     Foreground="{StaticResource AccentBrush}" />
+                                                     Foreground="{DynamicResource AccentBrush}" />
                                         <TextBlock Text="{Binding Error}" Classes="caption" Margin="12" TextWrapping="Wrap"
                                                    VerticalAlignment="Center" HorizontalAlignment="Center" />
                                       </Panel>
                                     </Border>
                                   </Button>
-                                  <Border IsVisible="{Binding IsFile}" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource DividerBrush}"
+                                  <Border IsVisible="{Binding IsFile}" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource DividerBrush}"
                                           BorderThickness="1" CornerRadius="8" Padding="12,10" Width="380">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
-                                      <c:Icon Data="{StaticResource IconFile}" Width="30" Height="30" Foreground="{StaticResource AccentBrush}" />
+                                      <c:Icon Data="{StaticResource IconFile}" Width="30" Height="30" Foreground="{DynamicResource AccentBrush}" />
                                       <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FileName}" Foreground="{StaticResource LinkBrush}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding FileName}" Foreground="{DynamicResource LinkBrush}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding SizeLabel}" Classes="caption" />
                                       </StackPanel>
                                       <Button Grid.Column="2" Classes="icon" Command="{Binding SaveCommand}" ToolTip.Tip="Download">
@@ -204,7 +206,7 @@
       </ScrollViewer>
 
       <!-- Composer -->
-      <Border Grid.Row="1" Margin="16,0,16,0" CornerRadius="10" Background="{StaticResource InputBrush}">
+      <Border Grid.Row="1" Classes="composer-box">
         <StackPanel>
           <ItemsControl ItemsSource="{Binding PendingAttachments}" IsVisible="{Binding HasPendingAttachments}" Margin="12,12,12,4">
             <ItemsControl.ItemsPanel>
@@ -214,9 +216,9 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:PendingAttachmentViewModel">
-                <Border Background="{StaticResource SidebarBrush}" CornerRadius="8" Padding="10,8" Margin="0,0,8,8" Width="210">
+                <Border Background="{DynamicResource SidebarBrush}" CornerRadius="8" Padding="10,8" Margin="0,0,8,8" Width="210">
                   <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-                    <c:Icon Data="{StaticResource IconFile}" Width="26" Height="26" Foreground="{StaticResource AccentBrush}" Grid.RowSpan="2" />
+                    <c:Icon Data="{StaticResource IconFile}" Width="26" Height="26" Foreground="{DynamicResource AccentBrush}" Grid.RowSpan="2" />
                     <TextBlock Grid.Column="1" Text="{Binding FileName}" Margin="8,0" TextTrimming="CharacterEllipsis" FontSize="13" />
                     <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding SizeLabel}" Margin="8,0" Classes="caption" />
                     <Button Grid.Column="2" Grid.RowSpan="2" Classes="icon small danger-hover" ToolTip.Tip="Remove"
@@ -225,7 +227,7 @@
                     </Button>
                     <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="{Binding IsUploading}" Height="2" MinHeight="2"
                                  VerticalAlignment="Bottom" Margin="0,4,0,-4" IsVisible="{Binding IsUploading}"
-                                 Foreground="{StaticResource AccentBrush}" />
+                                 Foreground="{DynamicResource AccentBrush}" />
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -240,10 +242,14 @@
             <TextBox Grid.Column="1" x:Name="Composer" Classes="composer" Text="{Binding ComposerText}"
                      Watermark="{Binding SelectedChannel.Placeholder, FallbackValue=''}"
                      MaxLength="4000" />
-            <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top" Margin="2,5,0,0" ToolTip.Tip="Send"
-                    Command="{Binding SendCommand}" IsEnabled="{Binding !IsSending}">
-              <c:Icon Data="{StaticResource IconSend}" />
-            </Button>
+            <Panel Grid.Column="2">
+              <Button Classes="icon default-only" VerticalAlignment="Top" Margin="2,5,0,0" ToolTip.Tip="Send"
+                      Command="{Binding SendCommand}" IsEnabled="{Binding !IsSending}">
+                <c:Icon Data="{StaticResource IconSend}" />
+              </Button>
+              <Button Classes="send aero-only" Content="Send" VerticalAlignment="Top" Margin="6,7,2,0"
+                      Command="{Binding SendCommand}" IsEnabled="{Binding !IsSending}" />
+            </Panel>
           </Grid>
         </StackPanel>
       </Border>
@@ -256,14 +262,14 @@
             <Ellipse Classes="typing-dot second" Classes.animated="{Binding HasTyping}" />
             <Ellipse Classes="typing-dot third" Classes.animated="{Binding HasTyping}" />
           </StackPanel>
-          <TextBlock Text="{Binding TypingText}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding TypingText}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
       </Panel>
     </Grid>
 
     <!-- Drop target overlay -->
-    <Border Grid.RowSpan="5" x:Name="DropOverlay" IsVisible="False" Background="#CC17181C" IsHitTestVisible="False">
-      <Border Background="{StaticResource AccentBrush}" CornerRadius="14" Padding="40,28" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Border Grid.RowSpan="5" x:Name="DropOverlay" IsVisible="False" Background="{DynamicResource DropOverlayBrush}" IsHitTestVisible="False">
+      <Border Background="{DynamicResource AccentBrush}" CornerRadius="14" Padding="40,28" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="8" HorizontalAlignment="Center">
           <c:Icon Data="{StaticResource IconDownload}" Width="40" Height="40" Foreground="White" />
           <TextBlock Text="Drop files to upload" Classes="h2" Foreground="White" HorizontalAlignment="Center" />

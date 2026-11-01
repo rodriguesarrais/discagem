@@ -1,0 +1,241 @@
+<!-- Extra styles of the Aero and Aero Dark themes, added after Controls.axaml while one of them is
+     active (see ThemeManager). Colours come from the active palette (AeroPalette or AeroDarkPalette). -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:Discagem.Client.Controls">
+
+  <!-- Typography: Segoe UI, a little smaller, as on Windows 7 -->
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{DynamicResource AeroFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroGroupHeaderBrush}" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="LetterSpacing" Value="0.2" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroGroupHeaderBrush}" />
+  </Style>
+  <Style Selector="TextBlock.h1, TextBlock.h2">
+    <Setter Property="Foreground" Value="{DynamicResource AeroGroupHeaderBrush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+
+  <!-- Theme-specific layout -->
+  <Style Selector=":is(Control).aero-only">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector=":is(Control).default-only">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
+  <!-- Profile band across the top of the main window -->
+  <Style Selector="Border.aero-band">
+    <Setter Property="Height" Value="74" />
+    <Setter Property="Background" Value="{DynamicResource AeroBandBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroBandBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Ellipse.aero-swoosh">
+    <Setter Property="Fill" Value="{DynamicResource AeroSwooshBrush}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Ellipse.aero-swoosh.second">
+    <Setter Property="Fill" Value="{DynamicResource AeroSwoosh2Brush}" />
+  </Style>
+  <Style Selector="TextBlock.band-name">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroBandTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.band-status">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,0,1" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroBandStatusBrush}" />
+  </Style>
+  <Style Selector="TextBlock.band-caption">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroBandCaptionBrush}" />
+  </Style>
+  <Style Selector="TextBlock.band-server">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroBandTextBrush}" />
+  </Style>
+
+  <!-- Avatars: rounded squares in glossy frames coloured by presence -->
+  <Style Selector="c|AvatarView">
+    <Setter Property="Shape" Value="Framed" />
+    <Setter Property="FrameBrush" Value="{DynamicResource AeroFrameBrush}" />
+  </Style>
+
+  <!-- Brand tile and server tile: glossy blue -->
+  <Style Selector="Border.brand-tile">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPrimaryBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 2 8 0 #592A6CB0" />
+  </Style>
+  <Style Selector="Border.server-tile">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPrimaryBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 1 4 0 #402A6CB0" />
+  </Style>
+  <Style Selector="Border.rail-indicator">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+  </Style>
+
+  <!-- Bands at the top of the sidebar and the chat: glossy, with a light top edge -->
+  <Style Selector="Border.header">
+    <Setter Property="BoxShadow" Value="inset 0 1 0 0 #66FFFFFF" />
+  </Style>
+  <Style Selector="Border.header TextBlock.title">
+    <Setter Property="Foreground" Value="{DynamicResource AeroGroupHeaderBrush}" />
+  </Style>
+  <Style Selector="Border.user-panel">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPanelBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.members">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPanelBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+  </Style>
+  <Style Selector="Border.status-card">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.status-card.live-card">
+    <Setter Property="BorderBrush" Value="{DynamicResource LiveCardBorderBrush}" />
+  </Style>
+  <Style Selector="Border.section-card">
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.card">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 6 24 0 #402A4F7A" />
+  </Style>
+
+  <!-- Contact-list style group headers ("Online (3)") -->
+  <Style Selector="TextBlock.group-header">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- Lists: Windows 7 hover and selection (light gradient with a thin border) -->
+  <Style Selector="ListBox.nav ListBoxItem">
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroHoverBorderBrush}" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.nav ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroSelectedBorderBrush}" />
+  </Style>
+
+  <!-- Buttons without chrome keep no border; hovering draws the Windows 7 highlight -->
+  <Style Selector="Button.icon, Button.row, Button.bare, Button.link, ToggleButton.icon">
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+  <Style Selector="Button.icon /template/ ContentPresenter#PART_ContentPresenter, Button.row /template/ ContentPresenter#PART_ContentPresenter, Button.bare /template/ ContentPresenter#PART_ContentPresenter, Button.link /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.icon /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroHoverBorderBrush}" />
+  </Style>
+  <Style Selector="Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.row:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroSelectedBorderBrush}" />
+  </Style>
+  <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.bare:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.voice-channel.connected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroSelectedBorderBrush}" />
+  </Style>
+
+  <!-- Secondary ("ghost") buttons look like ordinary Windows 7 buttons -->
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForeground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrushPointerOver}" />
+  </Style>
+
+  <!-- Primary and danger buttons: glossy, with a darker border -->
+  <Style Selector="Button.primary">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPrimaryBorderBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroPrimaryBorderBrush}" />
+  </Style>
+  <Style Selector="Button.danger, Button.live">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroDangerBorderBrush}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.live:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroDangerBorderBrush}" />
+  </Style>
+
+  <!-- Messages: "Alice says:" above the text, as in instant messengers -->
+  <Style Selector="Panel.message-gutter">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="StackPanel.message-body">
+    <Setter Property="Margin" Value="14,0,0,0" />
+  </Style>
+  <Style Selector="StackPanel.message-header">
+    <Setter Property="Margin" Value="-14,0,0,2" />
+  </Style>
+  <Style Selector="TextBlock.author">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{DynamicResource AeroAuthorBrush}" />
+  </Style>
+
+  <!-- The composer: a white box with a thin border and a "Send" button -->
+  <Style Selector="Border.composer-box">
+    <Setter Property="Margin" Value="12,0,12,0" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroInputBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="inset 0 1 2 0 #1A000000" />
+  </Style>
+  <Style Selector="Button.send">
+    <Setter Property="Padding" Value="16,4" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <!-- Theme picker swatches in the settings -->
+  <Style Selector="RadioButton.choice">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroCardBorderBrush}" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="RadioButton.choice:checked">
+    <Setter Property="BorderBrush" Value="{DynamicResource AeroSelectedBorderBrush}" />
+  </Style>
+</Styles>

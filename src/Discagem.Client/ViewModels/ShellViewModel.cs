@@ -33,6 +33,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly ChatConnection _hub;
     private readonly ScreenShareService _media;
     private readonly VoiceService _voice;
+    private long _lastMessageSound = long.MinValue / 2;
     private readonly AvatarCache _avatars;
     private readonly ImageCache _images;
     private readonly Dictionary<long, MemberViewModel> _members = new();
@@ -579,6 +580,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         var visible = channel == SelectedChannel && _dialogs.IsWindowActive;
         if (!visible)
         {
+            PlayMessageSound();
             channel.UnreadCount++;
             if (item.MentionsMe)
             {
@@ -588,6 +590,19 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
             _dialogs.RequestAttention();
         }
+    }
+
+    /// <summary>The theme's message sound, at most once a second however fast messages come in.</summary>
+    private void PlayMessageSound()
+    {
+        var now = Environment.TickCount64;
+        if (!_session.Settings.MessageSounds || now - _lastMessageSound < 1000)
+        {
+            return;
+        }
+
+        _lastMessageSound = now;
+        _voice.PlayNotification(ThemeManager.Sounds.Message);
     }
 
     private void OnMessageDeleted(long channelId, long messageId)
