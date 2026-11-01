@@ -46,6 +46,13 @@ native Avalonia application for Windows (and Linux/X11).
 - Live statistics (resolution, frame rate, bitrate) for both the streamer and viewers.
 
 **Desktop app**
+- Three themes, switched at once in *Settings → Appearance*: the original dark look, **Aero** (light
+  and glossy, in the style of Windows 7 and the instant messengers of its time: a profile band,
+  framed pictures coloured by presence, "Alice says:" above messages) and **Aero Dark** (the same on
+  dark glass). The Aero themes also bring their own sounds for people joining and leaving a call and
+  for new messages.
+- A sound when a message arrives in another channel or while the window is in the background (an
+  option in *Settings → Appearance*; silent while deafened).
 - Keeps running in the notification area when its window is closed (on by default on Windows, an
   option in *Settings → App*); launching it again brings the window back instead of a second copy.
 - Checks the GitHub releases for new versions at start-up and every six hours. Installed with the
