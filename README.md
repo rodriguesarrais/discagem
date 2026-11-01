@@ -180,45 +180,48 @@ the server (for example `chat.example.com`).
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
    and your details. The first account is the administrator; share the invite code with your friends.
 
-### Automatic deployment
+### Automatic updates
 
-Each stable release can update the server by itself: after publishing, the *Release* workflow runs
-the *Deploy* workflow, which connects to the VPS over SSH and runs
-[`deploy/vps/discagem-update`](deploy/vps/discagem-update). That script backs up the data volume
-(keeping the last five copies), pulls the new image, recreates only the Discagem container and waits
-until it answers. Calls and streams drop for a few seconds and reconnect on their own. The deploy key
-can do nothing but run that script: it is a forced command in `authorized_keys`, with forwarding and
-terminals disabled. *Deploy* can also be run by hand from the Actions tab.
+[`deploy/updater/docker-compose.yml`](deploy/updater/docker-compose.yml) keeps the server on the
+newest stable release. Every five minutes it checks whether the server's image tag (`latest`) points
+to a new image; when it does, it stops the server, backs up the data volume to
+`/var/backups/discagem` (keeping the last five copies), starts the new version and waits until it
+answers. Calls and streams drop for a few seconds and reconnect on their own. If the new version does
+not start, the previous one is put back and the new image is skipped until a newer one is published.
+It only touches the server's service, leaves a server that was stopped by hand alone, and does not
+follow pinned versions or servers built from source.
 
-To set it up:
+Run it next to the server as its own Compose project, pointing `DISCAGEM_DIR` at the folder that holds
+the server's `docker-compose.yml`:
 
-1. On your computer, create a key pair for GitHub Actions (no passphrase):
-   `ssh-keygen -t ed25519 -N "" -C github-actions -f discagem-deploy`.
-2. On the VPS, as root (replace the Compose folder and the public key):
+```bash
+cd discagem/deploy/updater
+echo "DISCAGEM_DIR=$(realpath ..)" > .env
+docker compose up -d
+docker compose logs -f   # every update, backup and rollback is logged here
+```
 
-   ```bash
-   curl -fsSL https://raw.githubusercontent.com/rodriguesarrais/discagem/main/deploy/vps/discagem-update \
-     -o /usr/local/bin/discagem-update && chmod 755 /usr/local/bin/discagem-update
-   printf 'COMPOSE_DIR=/path/to/the/discagem/compose/project\nSERVICE=discagem\n' > /etc/discagem-update.conf
-   useradd -m -s /bin/bash discagem-deploy && usermod -aG docker discagem-deploy
-   install -d -o discagem-deploy -m 750 /var/backups/discagem
-   install -d -o discagem-deploy -g discagem-deploy -m 700 ~discagem-deploy/.ssh
-   echo 'restrict,command="/usr/local/bin/discagem-update" ssh-ed25519 AAAA... github-actions' \
-     > ~discagem-deploy/.ssh/authorized_keys
-   chown discagem-deploy:discagem-deploy ~discagem-deploy/.ssh/authorized_keys
-   chmod 600 ~discagem-deploy/.ssh/authorized_keys
-   ```
+On a panel that manages Compose projects (Hostinger's Docker Manager, Portainer...), create a project
+named `discagem-updater` with the file's contents and set `DISCAGEM_DIR` in its environment. The
+default, `/docker/discagem`, is where Hostinger keeps a project named `discagem`. The other settings
+are listed at the top of the file.
 
-   Members of the `docker` group can control every container on the machine, so keep the private key
-   in GitHub's secrets only.
-3. Get the VPS's SSH host key, from a computer you trust: `ssh-keyscan -p 22 <VPS address>`.
-4. In the repository's *Settings → Secrets and variables → Actions*, add the secrets
-   `DEPLOY_SSH_KEY` (the contents of `discagem-deploy`, the private key) and `DEPLOY_KNOWN_HOSTS` (the
-   `ssh-keyscan` output), and the variables `DEPLOY_HOST` (the VPS address), `DEPLOY_USER`
-   (`discagem-deploy`), `DEPLOY_URL` (for example `https://chat.example.com`, checked after the update)
-   and, if SSH does not listen on 22, `DEPLOY_PORT`.
+The updater controls Docker through its socket, which amounts to root access to the machine, so only
+run the file from this repository. To restore a backup, stop the server and unpack the archive into
+the volume:
 
-Without `DEPLOY_HOST`, releases skip the deployment. Pre-releases are never deployed.
+```bash
+docker compose stop discagem
+docker run --rm -v discagem_discagem-data:/data -v /var/backups/discagem:/backup alpine \
+  sh -c 'rm -rf /data/* && tar xzf /backup/discagem-data-<date>.tar.gz -C /data'
+docker compose start discagem
+```
+
+(The volume name is the Compose project's name followed by `_discagem-data`; `docker volume ls` lists
+it.) To be told when a release did not reach the server, set the repository variable `DEPLOY_URL` to
+its public address (for example `https://chat.example.com`, in *Settings → Secrets and variables →
+Actions → Variables*): the *Release* workflow then waits for the server to report the new version and
+fails if it does not within 25 minutes.
 
 ### Without Docker
 
@@ -342,9 +345,9 @@ they are applied automatically on start-up.
 | `src/Discagem.Server` | ASP.NET Core host: auth, attachments, SignalR hub, SFU, STUN responder, EF Core (SQLite). |
 | `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
-| `deploy/` | Dockerfile, Compose file with Caddy, environment template, systemd unit and the VPS update script. |
+| `deploy/` | Dockerfile, Compose file with Caddy, environment template, systemd unit and the automatic updater. |
 | `installer/windows/` | NSIS script, wizard images and build script of the Windows installer. |
-| `.github/workflows/` | CI (build, tests, Windows client artifact, image build), the release and deploy workflows and the pull request conventions check. |
+| `.github/workflows/` | CI (build, tests, Windows client artifact, image build), the release workflow and the pull request conventions check. |
 
 ## Security notes
 
