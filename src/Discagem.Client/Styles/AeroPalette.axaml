@@ -1,0 +1,249 @@
+<!-- The Aero theme: light, glossy surfaces in the style of Windows 7 and its instant messengers.
+     Defines the same keys as Palette.axaml, plus the Aero* keys used by Aero.axaml. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Base colours -->
+  <Color x:Key="RailColor">#C9DEF4</Color>
+  <Color x:Key="SidebarColor">#F6FAFE</Color>
+  <Color x:Key="ChatColor">#FFFFFF</Color>
+  <Color x:Key="ElevatedColor">#F1F6FC</Color>
+  <Color x:Key="HoverColor">#EAF3FD</Color>
+  <Color x:Key="SelectedColor">#CFE2F9</Color>
+  <Color x:Key="DividerColor">#C9DBEE</Color>
+  <Color x:Key="InputColor">#FFFFFF</Color>
+  <Color x:Key="TextPrimaryColor">#1C1C1C</Color>
+  <Color x:Key="TextSecondaryColor">#3A4E66</Color>
+  <Color x:Key="TextMutedColor">#6A7C92</Color>
+  <Color x:Key="AccentColor">#2C7BD3</Color>
+  <Color x:Key="AccentHoverColor">#1F6CC4</Color>
+  <Color x:Key="AccentPressedColor">#185AA6</Color>
+  <Color x:Key="AccentSoftColor">#262C7BD3</Color>
+  <Color x:Key="OnlineColor">#47B52C</Color>
+  <Color x:Key="OfflineColor">#9AA5B2</Color>
+  <Color x:Key="LiveColor">#E0352B</Color>
+  <Color x:Key="WarningColor">#F0A30F</Color>
+  <Color x:Key="DangerColor">#D23A2E</Color>
+  <Color x:Key="LinkColor">#0066CC</Color>
+  <Color x:Key="MentionColor">#40F5C842</Color>
+
+  <!-- Surfaces -->
+  <LinearGradientBrush x:Key="RailBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#DCEAF8" />
+    <GradientStop Offset="1" Color="#B9D3EF" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FFFFFF" />
+    <GradientStop Offset="1" Color="#EDF4FC" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="ChatBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ElevatedBrush" Color="#F1F6FC" />
+  <LinearGradientBrush x:Key="HoverBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#F8FBFF" />
+    <GradientStop Offset="1" Color="#E6F0FC" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="SelectedBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#E4EFFC" />
+    <GradientStop Offset="1" Color="#C6DCF7" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="DividerBrush" Color="#C9DBEE" />
+  <SolidColorBrush x:Key="InputBrush" Color="#FFFFFF" />
+
+  <!-- Text and accents -->
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="#3A4E66" />
+  <SolidColorBrush x:Key="TextMutedBrush" Color="#6A7C92" />
+  <SolidColorBrush x:Key="AccentBrush" Color="#2C7BD3" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#1F6CC4" />
+  <SolidColorBrush x:Key="AccentPressedBrush" Color="#185AA6" />
+  <SolidColorBrush x:Key="AccentSoftBrush" Color="#262C7BD3" />
+  <SolidColorBrush x:Key="OnlineBrush" Color="#47B52C" />
+  <SolidColorBrush x:Key="OfflineBrush" Color="#9AA5B2" />
+  <SolidColorBrush x:Key="LiveBrush" Color="#E0352B" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#F0A30F" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#D23A2E" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#0066CC" />
+  <SolidColorBrush x:Key="MentionBrush" Color="#40F5C842" />
+
+  <!-- Specific surfaces -->
+  <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FDFEFF" />
+    <GradientStop Offset="0.5" Color="#EEF5FD" />
+    <GradientStop Offset="0.5" Color="#E3EEFA" />
+    <GradientStop Offset="1" Color="#EAF2FC" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="HeaderBorderBrush" Color="#B5CDE7" />
+  <LinearGradientBrush x:Key="UserPanelBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#EEF5FD" />
+    <GradientStop Offset="1" Color="#D5E5F6" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="CodeBrush" Color="#F1F4F8" />
+  <SolidColorBrush x:Key="MediaBackdropBrush" Color="#E8EEF5" />
+  <SolidColorBrush x:Key="MessageHoverBrush" Color="#F3F8FE" />
+  <SolidColorBrush x:Key="MessageMentionBrush" Color="#FFF7D6" />
+  <SolidColorBrush x:Key="MentionTextBrush" Color="#1D4F99" />
+  <SolidColorBrush x:Key="CrownBrush" Color="#E0A10B" />
+  <SolidColorBrush x:Key="LiveCardBrush" Color="#EAF8E4" />
+  <SolidColorBrush x:Key="LiveCardBorderBrush" Color="#9BD48A" />
+  <SolidColorBrush x:Key="DropOverlayBrush" Color="#CCEAF3FC" />
+  <LinearGradientBrush x:Key="ToolTipBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FFFFFF" />
+    <GradientStop Offset="1" Color="#E4E5F0" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#767676" />
+  <SolidColorBrush x:Key="ToolTipTextBrush" Color="#4C4C4C" />
+  <SolidColorBrush x:Key="SelectionHighlightBrush" Color="#803399FF" />
+  <SolidColorBrush x:Key="LogoAccentBrush" Color="#1F6CC4" />
+
+  <!-- Status text and banners -->
+  <SolidColorBrush x:Key="ErrorTextBrush" Color="#C42B1C" />
+  <SolidColorBrush x:Key="SuccessTextBrush" Color="#2E8B1E" />
+  <SolidColorBrush x:Key="ErrorBoxBrush" Color="#FDE7E5" />
+  <LinearGradientBrush x:Key="InfoBannerBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#4D95DF" />
+    <GradientStop Offset="1" Color="#2A6FC0" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="ErrorBannerBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#E0574C" />
+    <GradientStop Offset="1" Color="#BE2F24" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="WarningTextBrush" Color="#3A2900" />
+
+  <!-- Buttons: glossy, split in a light upper and a darker lower half -->
+  <LinearGradientBrush x:Key="PrimaryButtonBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#7DBBF5" />
+    <GradientStop Offset="0.48" Color="#4A98E6" />
+    <GradientStop Offset="0.5" Color="#2E7FD6" />
+    <GradientStop Offset="1" Color="#3D8FE0" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="PrimaryButtonHoverBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#94CBFA" />
+    <GradientStop Offset="0.48" Color="#5FAAF0" />
+    <GradientStop Offset="0.5" Color="#3E92E6" />
+    <GradientStop Offset="1" Color="#58A6F0" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="PrimaryButtonPressedBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#3F86D0" />
+    <GradientStop Offset="0.5" Color="#2A6FBC" />
+    <GradientStop Offset="1" Color="#3A80CC" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="PrimaryButtonDisabledBrush" Color="#AFC8E3" />
+  <SolidColorBrush x:Key="PrimaryButtonDisabledTextBrush" Color="#EEF4FA" />
+  <SolidColorBrush x:Key="DangerHoverBrush" Color="#B92E23" />
+  <SolidColorBrush x:Key="LiveHoverBrush" Color="#C42C23" />
+
+  <LinearGradientBrush x:Key="BrandGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#8CCBFA" />
+    <GradientStop Offset="0.5" Color="#3D95E6" />
+    <GradientStop Offset="0.52" Color="#2478D2" />
+    <GradientStop Offset="1" Color="#3E92E3" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="LoginBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#7FB5E8" />
+    <GradientStop Offset="0.45" Color="#BFDCF6" />
+    <GradientStop Offset="1" Color="#EEF6FD" />
+  </LinearGradientBrush>
+  <RadialGradientBrush x:Key="LoginGlowA">
+    <GradientStop Offset="0" Color="#E6FFFFFF" />
+    <GradientStop Offset="1" Color="#00FFFFFF" />
+  </RadialGradientBrush>
+  <RadialGradientBrush x:Key="LoginGlowB">
+    <GradientStop Offset="0" Color="#B3FFFFFF" />
+    <GradientStop Offset="1" Color="#00FFFFFF" />
+  </RadialGradientBrush>
+
+  <FontFamily x:Key="MonoFont">Consolas, Cascadia Mono, DejaVu Sans Mono, Menlo, monospace</FontFamily>
+
+  <!-- Aero-only parts (Aero.axaml) -->
+  <LinearGradientBrush x:Key="AeroBandBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#8EBDEB" />
+    <GradientStop Offset="0.55" Color="#BCD9F4" />
+    <GradientStop Offset="1" Color="#E4F0FB" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="AeroBandBorderBrush" Color="#9DBEE2" />
+  <RadialGradientBrush x:Key="AeroSwooshBrush">
+    <GradientStop Offset="0" Color="#B3FFFFFF" />
+    <GradientStop Offset="0.7" Color="#33FFFFFF" />
+    <GradientStop Offset="1" Color="#00FFFFFF" />
+  </RadialGradientBrush>
+  <RadialGradientBrush x:Key="AeroSwoosh2Brush">
+    <GradientStop Offset="0" Color="#807FC4F5" />
+    <GradientStop Offset="1" Color="#007FC4F5" />
+  </RadialGradientBrush>
+  <SolidColorBrush x:Key="AeroBandTextBrush" Color="#0E2A52" />
+  <SolidColorBrush x:Key="AeroBandStatusBrush" Color="#2B6A1E" />
+  <SolidColorBrush x:Key="AeroBandCaptionBrush" Color="#36577F" />
+  <SolidColorBrush x:Key="AeroGroupHeaderBrush" Color="#1E3F73" />
+  <SolidColorBrush x:Key="AeroAuthorBrush" Color="#5A6C82" />
+  <SolidColorBrush x:Key="AeroFrameBrush" Color="#8FB2D6" />
+  <SolidColorBrush x:Key="AeroPanelBorderBrush" Color="#B5CDE7" />
+  <SolidColorBrush x:Key="AeroCardBorderBrush" Color="#C3D6EC" />
+  <SolidColorBrush x:Key="AeroHoverBorderBrush" Color="#B8D3F2" />
+  <SolidColorBrush x:Key="AeroSelectedBorderBrush" Color="#84ACDD" />
+  <SolidColorBrush x:Key="AeroInputBorderBrush" Color="#A5B9D2" />
+  <SolidColorBrush x:Key="AeroPrimaryBorderBrush" Color="#1D5DA6" />
+  <SolidColorBrush x:Key="AeroDangerBorderBrush" Color="#9C261C" />
+  <FontFamily x:Key="AeroFont">Segoe UI, Tahoma, Noto Sans, Liberation Sans, DejaVu Sans, sans-serif</FontFamily>
+
+  <!-- Fluent theme overrides: Windows 7 style controls -->
+  <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="TextControlBorderBrush" Color="#ABADB3" />
+  <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#7EB4EA" />
+  <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#3D7BAD" />
+  <SolidColorBrush x:Key="TextControlForeground" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8A96A6" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#8A96A6" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#8A96A6" />
+  <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#3399FF" />
+  <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+  <Thickness x:Key="TextControlThemePadding">9,6,9,6</Thickness>
+
+  <LinearGradientBrush x:Key="ButtonBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#F6F6F6" />
+    <GradientStop Offset="0.5" Color="#EBEBEB" />
+    <GradientStop Offset="0.5" Color="#DDDDDD" />
+    <GradientStop Offset="1" Color="#D1D1D1" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="ButtonBackgroundPointerOver" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#EAF6FD" />
+    <GradientStop Offset="0.5" Color="#D9F0FC" />
+    <GradientStop Offset="0.5" Color="#BEE6FD" />
+    <GradientStop Offset="1" Color="#A7D9F5" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="ButtonBackgroundPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#E5F4FC" />
+    <GradientStop Offset="0.5" Color="#C4E5F6" />
+    <GradientStop Offset="0.5" Color="#98D1EF" />
+    <GradientStop Offset="1" Color="#68B3DB" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="ButtonForeground" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#1C1C1C" />
+  <SolidColorBrush x:Key="ButtonBorderBrush" Color="#707070" />
+  <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#3C7FB1" />
+  <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#2C628B" />
+  <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#F4F4F4" />
+  <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#8D8D8D" />
+  <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#ADB2B5" />
+  <SolidColorBrush x:Key="AccentButtonBackground" Color="#2E7FD6" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#3E92E6" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#2A6FBC" />
+  <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="#AFC8E3" />
+  <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#EEF4FA" />
+  <CornerRadius x:Key="ControlCornerRadius">3</CornerRadius>
+  <CornerRadius x:Key="OverlayCornerRadius">4</CornerRadius>
+
+  <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#3399FF" />
+  <Color x:Key="SystemAccentColor">#3399FF</Color>
+  <Color x:Key="SystemAccentColorLight1">#5CADFF</Color>
+  <Color x:Key="SystemAccentColorLight2">#85C2FF</Color>
+  <Color x:Key="SystemAccentColorDark1">#2B7FD1</Color>
+</ResourceDictionary>

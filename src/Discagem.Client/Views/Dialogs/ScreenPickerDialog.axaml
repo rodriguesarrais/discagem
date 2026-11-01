@@ -6,7 +6,7 @@
         x:Class="Discagem.Client.Views.Dialogs.ScreenPickerDialog"
         x:DataType="vm:ScreenPickerViewModel"
         Width="780" Height="640" MinWidth="560" MinHeight="480" ShowInTaskbar="False"
-        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
         Title="Share your screen">
 
   <Window.Resources>
@@ -15,11 +15,11 @@
         <Border Width="208" Height="117" CornerRadius="6" Background="#0B0B0E" ClipToBounds="True">
           <Panel>
             <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
-            <c:Icon Data="{StaticResource IconMonitor}" Width="34" Height="34" Foreground="{StaticResource TextMutedBrush}"
+            <c:Icon Data="{StaticResource IconMonitor}" Width="34" Height="34" Foreground="{DynamicResource TextMutedBrush}"
                     IsVisible="{Binding !HasThumbnail}" />
           </Panel>
         </Border>
-        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}" />
         <TextBlock Text="{Binding SizeLabel}" Classes="caption" />
       </StackPanel>
     </DataTemplate>
@@ -56,16 +56,16 @@
         </TabItem>
       </TabControl>
 
-      <ProgressBar IsIndeterminate="{Binding IsLoading}" Width="160" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}"
+      <ProgressBar IsIndeterminate="{Binding IsLoading}" Width="160" Height="3" MinHeight="3" Foreground="{DynamicResource AccentBrush}"
                    IsVisible="{Binding IsLoading}" VerticalAlignment="Center" />
 
       <StackPanel IsVisible="{Binding !IsSupported}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="420">
-        <c:Icon Data="{StaticResource IconMonitor}" Width="48" Height="48" Foreground="{StaticResource TextMutedBrush}" />
+        <c:Icon Data="{StaticResource IconMonitor}" Width="48" Height="48" Foreground="{DynamicResource TextMutedBrush}" />
         <TextBlock Text="{Binding UnsupportedReason}" Classes="secondary" TextWrapping="Wrap" TextAlignment="Center" />
       </StackPanel>
     </Panel>
 
-    <Border Grid.Row="2" Background="{StaticResource SidebarBrush}" Padding="24,16">
+    <Border Grid.Row="2" Background="{DynamicResource SidebarBrush}" Padding="24,16">
       <Grid ColumnDefinitions="*,16,200" RowDefinitions="Auto,Auto,Auto">
         <TextBlock Text="STREAM TITLE" Classes="label" />
         <TextBox Grid.Row="1" Text="{Binding Title}" MaxLength="64" />

@@ -21,6 +21,7 @@ public sealed class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var settings = ClientSettings.Load();
+            ThemeManager.Apply(settings.ThemeValue);
             var window = new MainWindow();
             var dialogs = new DialogService(window);
             var viewModel = new MainWindowViewModel(settings, dialogs);

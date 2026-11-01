@@ -7,22 +7,55 @@
              x:DataType="vm:ShellViewModel"
              x:Name="Root">
 
+  <DockPanel>
+
+  <!-- ========== Aero: profile band across the top ========== -->
+  <Border DockPanel.Dock="Top" Classes="aero-only aero-band">
+    <Panel>
+      <Ellipse Classes="aero-swoosh" Width="900" Height="160" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-96,-260,0" />
+      <Ellipse Classes="aero-swoosh second" Width="520" Height="120" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-120,-82" />
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,0,16,0">
+        <c:AvatarView Width="50" Height="50" DisplayName="{Binding Me.DisplayName}" Color="{Binding Me.AvatarColor}" Image="{Binding Me.AvatarImage}"
+                      Status="Online" IsSpeaking="{Binding IsMeSpeaking}" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="1">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding Me.DisplayName}" Classes="band-name" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="(Online)" Classes="band-status" IsVisible="{Binding !IsReconnecting}" />
+            <TextBlock Text="(Reconnecting…)" Classes="band-status" IsVisible="{Binding IsReconnecting}" />
+          </StackPanel>
+          <TextBlock Text="{Binding Me.Username, StringFormat='@{0}'}" Classes="band-caption" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="{Binding ServerName}" Classes="band-server" VerticalAlignment="Center" />
+          <Border Classes="brand-tile" Width="38" Height="38" CornerRadius="9">
+            <Viewbox Margin="6">
+              <Canvas Width="24" Height="24">
+                <Path Data="{StaticResource LogoBubble}" Fill="White" />
+                <Path Data="{StaticResource LogoPlay}" Fill="{DynamicResource LogoAccentBrush}" />
+              </Canvas>
+            </Viewbox>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </Panel>
+  </Border>
+
   <Grid ColumnDefinitions="72,248,*,Auto">
 
     <!-- ========== Server rail ========== -->
-    <Border Grid.Column="0" Background="{StaticResource RailBrush}">
+    <Border Grid.Column="0" Background="{DynamicResource RailBrush}">
       <StackPanel Margin="0,12,0,0" Spacing="10">
         <Panel HorizontalAlignment="Stretch">
-          <Border Width="4" Height="40" CornerRadius="0,4,4,0" Background="White" HorizontalAlignment="Left" />
-          <Border Width="48" Height="48" CornerRadius="16" Background="{StaticResource BrandGradient}" HorizontalAlignment="Center"
+          <Border Classes="rail-indicator" Width="4" Height="40" CornerRadius="0,4,4,0" HorizontalAlignment="Left" />
+          <Border Classes="server-tile" Width="48" Height="48" CornerRadius="16" Background="{DynamicResource BrandGradient}" HorizontalAlignment="Center"
                   ToolTip.Tip="{Binding ServerName}" ToolTip.Placement="Right">
             <TextBlock Text="{Binding ServerInitials}" FontSize="17" FontWeight="Bold" Foreground="White"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
         </Panel>
-        <Border Height="2" Width="32" CornerRadius="1" Background="{StaticResource DividerBrush}" />
-        <Button Classes="icon" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center"
-                Background="{StaticResource SidebarBrush}" Foreground="{StaticResource OnlineBrush}"
+        <Border Height="2" Width="32" CornerRadius="1" Background="{DynamicResource DividerBrush}" />
+        <Button Classes="icon go-live" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center"
+                Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource OnlineBrush}"
                 ToolTip.Tip="Share your screen" ToolTip.Placement="Right" Command="{Binding GoLiveCommand}">
           <c:Icon Data="{StaticResource IconScreenShare}" Width="22" Height="22" />
         </Button>
@@ -30,11 +63,11 @@
     </Border>
 
     <!-- ========== Channel sidebar ========== -->
-    <Border Grid.Column="1" Background="{StaticResource SidebarBrush}">
+    <Border Grid.Column="1" Background="{DynamicResource SidebarBrush}">
       <Grid RowDefinitions="52,*,Auto,Auto">
 
         <!-- Server header -->
-        <Border BorderBrush="{StaticResource RailBrush}" BorderThickness="0,0,0,1" BoxShadow="0 1 2 0 #40000000">
+        <Border Classes="header sidebar-header">
           <Grid ColumnDefinitions="*,Auto" Margin="16,0,8,0">
             <TextBlock Text="{Binding ServerName}" Classes="title" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
             <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Server options">
@@ -53,7 +86,8 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="0,12,0,12">
             <Grid ColumnDefinitions="*,Auto" Margin="16,4,10,4">
-              <TextBlock Text="TEXT CHANNELS" Classes="section" VerticalAlignment="Center" />
+              <TextBlock Text="TEXT CHANNELS" Classes="section default-only" VerticalAlignment="Center" />
+              <TextBlock Text="Text channels" Classes="section aero-only" VerticalAlignment="Center" />
               <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Create channel"
                       Command="{Binding CreateChannelCommand}">
                 <c:Icon Data="{StaticResource IconPlus}" />
@@ -69,16 +103,14 @@
                         <MenuItem Header="Edit channel"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).EditChannelCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Delete channel" Foreground="#FF8A8F"
+                        <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteChannelCommand}"
                                   CommandParameter="{Binding}" />
                       </ContextMenu>
                     </Grid.ContextMenu>
                     <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Margin="0,0,8,0" StrokeThickness="2.2" />
                     <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"
-                               FontWeight="{Binding HasUnread, Converter={x:Static views:Converters.BoolToSemiBold}}"
-                               Foreground="{Binding HasUnread, Converter={x:Static views:Converters.UnreadForeground}}" />
+                               TextTrimming="CharacterEllipsis" Classes="channel-name" Classes.unread="{Binding HasUnread}" />
                     <Border Grid.Column="2" Classes="count-badge" IsVisible="{Binding HasMentions}">
                       <TextBlock Text="{Binding MentionCount}" />
                     </Border>
@@ -89,7 +121,8 @@
 
             <!-- Voice channels -->
             <Grid ColumnDefinitions="*,Auto" Margin="16,18,10,4">
-              <TextBlock Text="VOICE CHANNELS" Classes="section" VerticalAlignment="Center" />
+              <TextBlock Text="VOICE CHANNELS" Classes="section default-only" VerticalAlignment="Center" />
+              <TextBlock Text="Voice channels" Classes="section aero-only" VerticalAlignment="Center" />
               <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Create voice channel"
                       Command="{Binding CreateVoiceChannelCommand}">
                 <c:Icon Data="{StaticResource IconPlus}" />
@@ -101,13 +134,14 @@
                   <StackPanel>
                     <Button Classes="row voice-channel" Classes.connected="{Binding IsConnected}"
                             Command="{Binding #Root.((vm:ShellViewModel)DataContext).JoinVoiceCommand}"
-                            CommandParameter="{Binding}" ToolTip.Tip="{Binding Topic}">
+                            CommandParameter="{Binding}" ToolTip.Tip="{Binding Topic}"
+                            ToolTip.ServiceEnabled="{Binding Topic, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                       <Button.ContextMenu>
                         <ContextMenu IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).IsAdmin}">
                           <MenuItem Header="Edit channel"
                                     Command="{Binding #Root.((vm:ShellViewModel)DataContext).EditVoiceChannelCommand}"
                                     CommandParameter="{Binding}" />
-                          <MenuItem Header="Delete channel" Foreground="#FF8A8F"
+                          <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}"
                                     Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteVoiceChannelCommand}"
                                     CommandParameter="{Binding}" />
                         </ContextMenu>
@@ -145,10 +179,10 @@
                                          VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                          Classes="voice-name" Classes.speaking="{Binding IsSpeaking}" />
                               <c:Icon Grid.Column="2" Data="{StaticResource IconMicOff}" Width="15" Height="15" Margin="4,0,0,0"
-                                      Foreground="{StaticResource TextMutedBrush}" IsVisible="{Binding ShowMuted}"
+                                      Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding ShowMuted}"
                                       ToolTip.Tip="Muted" />
                               <c:Icon Grid.Column="3" Data="{StaticResource IconHeadphonesOff}" Width="15" Height="15" Margin="4,0,0,0"
-                                      Foreground="{StaticResource TextMutedBrush}" IsVisible="{Binding IsDeafened}"
+                                      Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsDeafened}"
                                       ToolTip.Tip="Deafened" />
                             </Grid>
                           </Border>
@@ -162,9 +196,10 @@
 
             <StackPanel IsVisible="{Binding HasLiveStreams}" Margin="0,18,0,0">
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="16,4,10,6">
-                <Ellipse Width="8" Height="8" Fill="{StaticResource LiveBrush}" Classes="pulse"
+                <Ellipse Width="8" Height="8" Fill="{DynamicResource LiveBrush}" Classes="pulse"
                          Classes.animated="{Binding HasLiveStreams}" VerticalAlignment="Center" />
-                <TextBlock Text="LIVE NOW" Classes="section" VerticalAlignment="Center" />
+                <TextBlock Text="LIVE NOW" Classes="section default-only" VerticalAlignment="Center" />
+                <TextBlock Text="Live now" Classes="section aero-only" VerticalAlignment="Center" />
               </StackPanel>
               <ItemsControl ItemsSource="{Binding LiveStreams}">
                 <ItemsControl.ItemTemplate>
@@ -184,7 +219,7 @@
                             <TextBlock Text="LIVE" />
                           </Border>
                           <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right" IsVisible="{Binding HasViewers}">
-                            <c:Icon Data="{StaticResource IconEye}" Width="12" Height="12" Foreground="{StaticResource TextMutedBrush}" />
+                            <c:Icon Data="{StaticResource IconEye}" Width="12" Height="12" Foreground="{DynamicResource TextMutedBrush}" />
                             <TextBlock Text="{Binding ViewerCount}" Classes="caption" FontSize="11" />
                           </StackPanel>
                         </StackPanel>
@@ -199,18 +234,18 @@
 
         <StackPanel Grid.Row="2">
           <!-- Voice connection card -->
-          <Border Margin="8,0,8,8" Padding="12,10" CornerRadius="8" Background="{StaticResource ElevatedBrush}"
+          <Border Classes="status-card" Margin="8,0,8,8" Padding="12,10" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
                   IsVisible="{Binding IsInVoice}">
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
               <StackPanel Orientation="Horizontal" Spacing="7" IsVisible="{Binding IsVoiceConnected}">
                 <c:Icon Data="{StaticResource IconSignal}" Width="16" Height="16" StrokeThickness="2.6"
-                        Foreground="{StaticResource OnlineBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="Voice connected" FontWeight="Bold" Foreground="{StaticResource OnlineBrush}" />
+                        Foreground="{DynamicResource OnlineBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="Voice connected" FontWeight="Bold" Foreground="{DynamicResource OnlineBrush}" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="7" IsVisible="{Binding IsJoiningVoice}">
                 <c:Icon Data="{StaticResource IconSignal}" Width="16" Height="16" StrokeThickness="2.6"
-                        Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="Connecting…" FontWeight="Bold" Foreground="{StaticResource WarningBrush}" />
+                        Foreground="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="Connecting…" FontWeight="Bold" Foreground="{DynamicResource WarningBrush}" />
               </StackPanel>
               <TextBlock Grid.Row="1" Text="{Binding ConnectedVoiceChannel.Name, FallbackValue=''}" Classes="caption"
                          Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
@@ -222,37 +257,37 @@
           </Border>
 
           <!-- Live status card -->
-          <Border Margin="8,0,8,8" Padding="12,10" CornerRadius="8" Background="#1A3DBE73"
-                  BorderBrush="#553DBE73" BorderThickness="1" IsVisible="{Binding IsLive}">
+          <Border Classes="status-card live-card" Margin="8,0,8,8" Padding="12,10" CornerRadius="8" Background="{DynamicResource LiveCardBrush}"
+                  BorderBrush="{DynamicResource LiveCardBorderBrush}" BorderThickness="1" IsVisible="{Binding IsLive}">
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Ellipse Width="9" Height="9" Fill="{StaticResource OnlineBrush}" Classes="pulse"
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource OnlineBrush}" Classes="pulse"
                            Classes.animated="{Binding IsLive}" VerticalAlignment="Center" />
-                <TextBlock Text="You're live" FontWeight="Bold" Foreground="{StaticResource OnlineBrush}" />
+                <TextBlock Text="You're live" FontWeight="Bold" Foreground="{DynamicResource OnlineBrush}" />
               </StackPanel>
               <TextBlock Grid.Row="1" Text="{Binding LiveStatsText}" Classes="caption" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
               <TextBlock Grid.Row="2" Text="{Binding LiveSoundText}" Classes="caption" Margin="0,2,0,0" TextWrapping="Wrap"
                          IsVisible="{Binding LiveSoundText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               <Button Grid.Column="1" Grid.RowSpan="3" Classes="icon danger-hover" ToolTip.Tip="Stop sharing"
                       Command="{Binding StopLiveCommand}" VerticalAlignment="Center">
-                <c:Icon Data="{StaticResource IconStop}" Fill="{StaticResource LiveBrush}" Foreground="{StaticResource LiveBrush}" />
+                <c:Icon Data="{StaticResource IconStop}" Fill="{DynamicResource LiveBrush}" Foreground="{DynamicResource LiveBrush}" />
               </Button>
             </Grid>
           </Border>
-          <Border Margin="8,0,8,8" Padding="12,12" CornerRadius="8" Background="{StaticResource ElevatedBrush}"
+          <Border Classes="status-card" Margin="8,0,8,8" Padding="12,12" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
                   IsVisible="{Binding IsStartingStream}">
             <StackPanel Spacing="8">
               <TextBlock Text="Starting your stream…" Classes="secondary" />
-              <ProgressBar IsIndeterminate="{Binding IsStartingStream}" Height="3" MinHeight="3" Foreground="{StaticResource AccentBrush}" />
+              <ProgressBar IsIndeterminate="{Binding IsStartingStream}" Height="3" MinHeight="3" Foreground="{DynamicResource AccentBrush}" />
             </StackPanel>
           </Border>
         </StackPanel>
 
         <!-- User panel -->
-        <Border Grid.Row="3" Background="#1A1B20" Height="58" Padding="8,0">
+        <Border Grid.Row="3" Classes="user-panel" Height="58" Padding="8,0">
           <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
             <c:AvatarView Width="36" Height="36" DisplayName="{Binding Me.DisplayName}" Color="{Binding Me.AvatarColor}" Image="{Binding Me.AvatarImage}"
-                          Status="Online" RingBrush="#1A1B20" VerticalAlignment="Center" IsSpeaking="{Binding IsMeSpeaking}" />
+                          Status="Online" RingBrush="{DynamicResource UserPanelBrush}" VerticalAlignment="Center" IsSpeaking="{Binding IsMeSpeaking}" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,4,0">
               <TextBlock Text="{Binding Me.DisplayName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />
               <TextBlock Text="{Binding Me.Username, StringFormat='@{0}'}" Classes="caption" TextTrimming="CharacterEllipsis" />
@@ -261,14 +296,14 @@
                     ToolTip.Tip="{Binding IsMicrophoneOff, Converter={x:Static views:Converters.MuteTooltip}}">
               <Panel>
                 <c:Icon Data="{StaticResource IconMic}" IsVisible="{Binding !IsMicrophoneOff}" />
-                <c:Icon Data="{StaticResource IconMicOff}" IsVisible="{Binding IsMicrophoneOff}" Foreground="{StaticResource LiveBrush}" />
+                <c:Icon Data="{StaticResource IconMicOff}" IsVisible="{Binding IsMicrophoneOff}" Foreground="{DynamicResource LiveBrush}" />
               </Panel>
             </Button>
             <Button Grid.Column="3" Classes="icon panel" Command="{Binding ToggleDeafenCommand}"
                     ToolTip.Tip="{Binding IsDeafened, Converter={x:Static views:Converters.DeafenTooltip}}">
               <Panel>
                 <c:Icon Data="{StaticResource IconHeadphones}" IsVisible="{Binding !IsDeafened}" />
-                <c:Icon Data="{StaticResource IconHeadphonesOff}" IsVisible="{Binding IsDeafened}" Foreground="{StaticResource LiveBrush}" />
+                <c:Icon Data="{StaticResource IconHeadphonesOff}" IsVisible="{Binding IsDeafened}" Foreground="{DynamicResource LiveBrush}" />
               </Panel>
             </Button>
             <Button Grid.Column="4" Classes="icon panel" ToolTip.Tip="User settings" Command="{Binding OpenSettingsCommand}">
@@ -283,10 +318,11 @@
     <views:ChatPanel Grid.Column="2" />
 
     <!-- ========== Members ========== -->
-    <Border Grid.Column="3" Width="244" Background="{StaticResource SidebarBrush}" IsVisible="{Binding ShowMembers}">
+    <Border Grid.Column="3" Width="244" Classes="members" Background="{DynamicResource SidebarBrush}" IsVisible="{Binding ShowMembers}">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,16,0,16">
-          <TextBlock Text="{Binding OnlineHeader}" Classes="section" Margin="18,4,8,6" />
+          <TextBlock Text="{Binding OnlineHeader}" Classes="section default-only" Margin="18,4,8,6" />
+          <TextBlock Text="{Binding OnlineMembers.Count, StringFormat='Online ({0})'}" Classes="section group-header aero-only" Margin="14,0,8,4" />
           <ItemsControl ItemsSource="{Binding OnlineMembers}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MemberViewModel">
@@ -295,8 +331,10 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <TextBlock Text="{Binding OfflineHeader}" Classes="section" Margin="18,18,8,6"
-                     IsVisible="{Binding HasOfflineMembers}" />
+          <Panel IsVisible="{Binding HasOfflineMembers}">
+            <TextBlock Text="{Binding OfflineHeader}" Classes="section default-only" Margin="18,18,8,6" />
+            <TextBlock Text="{Binding OfflineMembers.Count, StringFormat='Offline ({0})'}" Classes="section group-header aero-only" Margin="14,14,8,4" />
+          </Panel>
           <ItemsControl ItemsSource="{Binding OfflineMembers}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MemberViewModel">
@@ -308,4 +346,5 @@
       </ScrollViewer>
     </Border>
   </Grid>
+  </DockPanel>
 </UserControl>

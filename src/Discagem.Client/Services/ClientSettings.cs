@@ -60,6 +60,22 @@ public sealed class ClientSettings
     /// <summary>Whether to look for new releases at start-up and every few hours.</summary>
     public bool CheckForUpdates { get; set; } = true;
 
+    /// <summary>
+    /// The theme's name (see <see cref="AppTheme"/>). Kept as text so that a name this version does
+    /// not know, written by a newer one, falls back to the default instead of failing to load.
+    /// </summary>
+    public string Theme { get; set; } = nameof(AppTheme.Discagem);
+
+    [JsonIgnore]
+    public AppTheme ThemeValue
+    {
+        get => Enum.TryParse<AppTheme>(Theme, ignoreCase: true, out var theme) && Enum.IsDefined(theme) ? theme : AppTheme.Discagem;
+        set => Theme = value.ToString();
+    }
+
+    /// <summary>Play a sound when a message arrives that is not in view.</summary>
+    public bool MessageSounds { get; set; } = true;
+
     public double WindowWidth { get; set; } = 1280;
 
     public double WindowHeight { get; set; } = 800;

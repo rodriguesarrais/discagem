@@ -1,3 +1,5 @@
+<!-- The default (dark) theme. Every theme palette defines the same keys; views refer to them with
+     DynamicResource so that switching themes in the settings applies at once. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -22,6 +24,7 @@
   <Color x:Key="AccentPressedColor">#5B4CD9</Color>
   <Color x:Key="AccentSoftColor">#2C7C6CFF</Color>
   <Color x:Key="OnlineColor">#3DBE73</Color>
+  <Color x:Key="OfflineColor">#80848E</Color>
   <Color x:Key="LiveColor">#F04452</Color>
   <Color x:Key="WarningColor">#F5A524</Color>
   <Color x:Key="DangerColor">#E5484D</Color>
@@ -44,11 +47,48 @@
   <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
   <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
   <SolidColorBrush x:Key="OnlineBrush" Color="{StaticResource OnlineColor}" />
+  <SolidColorBrush x:Key="OfflineBrush" Color="{StaticResource OfflineColor}" />
   <SolidColorBrush x:Key="LiveBrush" Color="{StaticResource LiveColor}" />
   <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
   <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
   <SolidColorBrush x:Key="LinkBrush" Color="{StaticResource LinkColor}" />
   <SolidColorBrush x:Key="MentionBrush" Color="{StaticResource MentionColor}" />
+
+  <!-- Specific surfaces -->
+  <SolidColorBrush x:Key="HeaderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="HeaderBorderBrush" Color="#17181C" />
+  <SolidColorBrush x:Key="UserPanelBrush" Color="#1A1B20" />
+  <SolidColorBrush x:Key="CodeBrush" Color="#17181C" />
+  <SolidColorBrush x:Key="MediaBackdropBrush" Color="#17181C" />
+  <SolidColorBrush x:Key="MessageHoverBrush" Color="#202127" />
+  <SolidColorBrush x:Key="MessageMentionBrush" Color="#1F7C6CFF" />
+  <SolidColorBrush x:Key="MentionTextBrush" Color="#C9C3FF" />
+  <SolidColorBrush x:Key="CrownBrush" Color="#F5C542" />
+  <SolidColorBrush x:Key="LiveCardBrush" Color="#1A3DBE73" />
+  <SolidColorBrush x:Key="LiveCardBorderBrush" Color="#553DBE73" />
+  <SolidColorBrush x:Key="DropOverlayBrush" Color="#CC17181C" />
+  <SolidColorBrush x:Key="ToolTipBrush" Color="#111214" />
+  <SolidColorBrush x:Key="ToolTipBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="ToolTipTextBrush" Color="#ECEDF1" />
+  <SolidColorBrush x:Key="SelectionHighlightBrush" Color="#807C6CFF" />
+  <SolidColorBrush x:Key="LogoAccentBrush" Color="#7B5CFA" />
+
+  <!-- Status text and banners -->
+  <SolidColorBrush x:Key="ErrorTextBrush" Color="#FF8A8F" />
+  <SolidColorBrush x:Key="SuccessTextBrush" Color="#3DBE73" />
+  <SolidColorBrush x:Key="ErrorBoxBrush" Color="#33E5484D" />
+  <SolidColorBrush x:Key="InfoBannerBrush" Color="#4A44A8" />
+  <SolidColorBrush x:Key="ErrorBannerBrush" Color="#C93A3F" />
+  <SolidColorBrush x:Key="WarningTextBrush" Color="#2A1E00" />
+
+  <!-- Buttons -->
+  <SolidColorBrush x:Key="PrimaryButtonBrush" Color="#7C6CFF" />
+  <SolidColorBrush x:Key="PrimaryButtonHoverBrush" Color="#6B5BF0" />
+  <SolidColorBrush x:Key="PrimaryButtonPressedBrush" Color="#5B4CD9" />
+  <SolidColorBrush x:Key="PrimaryButtonDisabledBrush" Color="#4A4580" />
+  <SolidColorBrush x:Key="PrimaryButtonDisabledTextBrush" Color="#B8B3E6" />
+  <SolidColorBrush x:Key="DangerHoverBrush" Color="#C93A3F" />
+  <SolidColorBrush x:Key="LiveHoverBrush" Color="#D93644" />
 
   <LinearGradientBrush x:Key="BrandGradient" StartPoint="0%,0%" EndPoint="100%,100%">
     <GradientStop Offset="0" Color="#6C63FF" />
@@ -59,6 +99,14 @@
     <GradientStop Offset="0" Color="#2E2667" />
     <GradientStop Offset="0.55" Color="#1B1B24" />
     <GradientStop Offset="1" Color="#121216" />
+  </RadialGradientBrush>
+  <RadialGradientBrush x:Key="LoginGlowA">
+    <GradientStop Offset="0" Color="#B455F7" />
+    <GradientStop Offset="1" Color="#00B455F7" />
+  </RadialGradientBrush>
+  <RadialGradientBrush x:Key="LoginGlowB">
+    <GradientStop Offset="0" Color="#6C63FF" />
+    <GradientStop Offset="1" Color="#006C63FF" />
   </RadialGradientBrush>
 
   <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, DejaVu Sans Mono, Menlo, monospace</FontFamily>

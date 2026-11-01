@@ -8,7 +8,7 @@
         x:Class="Discagem.Client.Views.Dialogs.SettingsDialog"
         x:DataType="vm:SettingsViewModel"
         Width="620" Height="680" MinWidth="520" MinHeight="480" ShowInTaskbar="False"
-        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
         Title="User settings">
   <Grid RowDefinitions="*,Auto">
     <ScrollViewer>
@@ -17,7 +17,7 @@
         <!-- Profile -->
         <StackPanel Spacing="14">
           <TextBlock Text="My account" Classes="h2" />
-          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+          <Border Classes="section-card">
             <StackPanel Spacing="16">
               <Grid ColumnDefinitions="Auto,*">
                 <c:AvatarView Width="72" Height="72" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" Image="{Binding Me.AvatarImage}" />
@@ -34,7 +34,7 @@
                     <Button Classes="link" Content="Remove photo" Command="{Binding RemovePhotoCommand}" VerticalAlignment="Center"
                             IsVisible="{Binding Me.AvatarImage, Converter={x:Static ObjectConverters.IsNotNull}}" IsEnabled="{Binding !IsBusy}" />
                     <TextBlock Text="{Binding PhotoMessage}" VerticalAlignment="Center" FontSize="12.5"
-                               Foreground="{Binding PhotoError, Converter={x:Static views:Converters.StatusForeground}}" />
+                               Classes="status" Classes.error="{Binding PhotoError}" />
                   </StackPanel>
                 </StackPanel>
               </Grid>
@@ -64,8 +64,48 @@
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Classes="primary" Content="Save profile" Command="{Binding SaveProfileCommand}" IsEnabled="{Binding !IsBusy}" />
                 <TextBlock Text="{Binding ProfileMessage}" VerticalAlignment="Center"
-                           Foreground="{Binding ProfileError, Converter={x:Static views:Converters.StatusForeground}}" />
+                           Classes="status" Classes.error="{Binding ProfileError}" />
               </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Appearance -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Appearance" Classes="h2" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="THEME" Classes="label" Margin="0" />
+              <ListBox Classes="tiles" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" Margin="-6,0">
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ThemeOption">
+                    <StackPanel Width="134" Spacing="6">
+                      <Border Height="74" CornerRadius="4" ClipToBounds="True" Background="{Binding Window}"
+                              BorderBrush="{Binding Border}" BorderThickness="1">
+                        <Grid RowDefinitions="16,*" ColumnDefinitions="36,*">
+                          <Border Grid.ColumnSpan="2" Background="{Binding Header}" />
+                          <Border Grid.Row="1" Background="{Binding Sidebar}" />
+                          <StackPanel Grid.Row="1" Grid.Column="1" Margin="7,7,7,6" Spacing="5">
+                            <Border Height="5" Width="64" HorizontalAlignment="Left" CornerRadius="2.5" Background="{Binding Text}" Opacity="0.85" />
+                            <Border Height="5" Width="44" HorizontalAlignment="Left" CornerRadius="2.5" Background="{Binding Text}" Opacity="0.5" />
+                            <Border Height="13" Width="38" HorizontalAlignment="Right" CornerRadius="3" Background="{Binding Accent}" Margin="0,4,0,0" />
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Description}" Classes="caption" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <CheckBox IsChecked="{Binding MessageSounds}" Content="Play a sound when a message arrives" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,-6,0,0"
+                         Text="When Discagem is in the background or the message is in another channel. Not while deafened." />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -73,7 +113,7 @@
         <!-- Password -->
         <StackPanel Spacing="14">
           <TextBlock Text="Password" Classes="h2" />
-          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+          <Border Classes="section-card">
             <StackPanel Spacing="12">
               <StackPanel>
                 <TextBlock Text="CURRENT PASSWORD" Classes="label" />
@@ -92,7 +132,7 @@
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="Change password" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding !IsBusy}" />
                 <TextBlock Text="{Binding PasswordMessage}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"
-                           Foreground="{Binding PasswordError, Converter={x:Static views:Converters.StatusForeground}}" />
+                           Classes="status" Classes.error="{Binding PasswordError}" />
               </StackPanel>
             </StackPanel>
           </Border>
@@ -101,7 +141,7 @@
         <!-- Voice -->
         <StackPanel Spacing="14">
           <TextBlock Text="Voice &amp; audio" Classes="h2" />
-          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+          <Border Classes="section-card">
             <StackPanel Spacing="16">
               <Grid ColumnDefinitions="*,12,*">
                 <StackPanel>
@@ -161,7 +201,7 @@
         <!-- Streaming -->
         <StackPanel Spacing="14">
           <TextBlock Text="Screen sharing" Classes="h2" />
-          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+          <Border Classes="section-card">
             <StackPanel Spacing="12">
               <StackPanel>
                 <TextBlock Text="DEFAULT QUALITY" Classes="label" />
@@ -181,7 +221,7 @@
         <!-- App -->
         <StackPanel Spacing="14">
           <TextBlock Text="App" Classes="h2" />
-          <Border Background="{StaticResource SidebarBrush}" CornerRadius="10" Padding="18">
+          <Border Classes="section-card">
             <StackPanel Spacing="6">
               <CheckBox IsChecked="{Binding CloseToTray}" Content="Keep running in the notification area when the window is closed" />
               <TextBlock Text="{Binding TrayHint}" Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0" />
@@ -210,7 +250,7 @@
       </StackPanel>
     </ScrollViewer>
 
-    <Border Grid.Row="1" Background="{StaticResource SidebarBrush}" Padding="20,14">
+    <Border Grid.Row="1" Background="{DynamicResource SidebarBrush}" Padding="20,14">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <Button Classes="danger" Command="{Binding LogoutCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">

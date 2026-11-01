@@ -5,7 +5,7 @@
         x:Class="Discagem.Client.Views.Dialogs.ChannelEditorDialog"
         x:DataType="vm:ChannelEditorViewModel"
         Width="460" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
-        WindowStartupLocation="CenterOwner" Background="{StaticResource ChatBrush}"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
         Title="{Binding Heading}">
   <StackPanel>
     <StackPanel Margin="20,20,20,24" Spacing="18">
@@ -40,9 +40,9 @@
         <TextBox Text="{Binding Name}" x:Name="NameBox" MaxLength="48" Watermark="{Binding Watermark}">
           <TextBox.InnerLeftContent>
             <Panel Margin="12,0,0,0">
-              <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Foreground="{StaticResource TextMutedBrush}"
+              <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Foreground="{DynamicResource TextMutedBrush}"
                       IsVisible="{Binding IsText}" />
-              <c:Icon Data="{StaticResource IconVolume}" Width="18" Height="18" Foreground="{StaticResource TextMutedBrush}"
+              <c:Icon Data="{StaticResource IconVolume}" Width="18" Height="18" Foreground="{DynamicResource TextMutedBrush}"
                       IsVisible="{Binding IsVoice}" />
             </Panel>
           </TextBox.InnerLeftContent>
@@ -54,7 +54,7 @@
         <TextBox Text="{Binding Topic}" MaxLength="256" Watermark="Let everyone know what this channel is about" />
       </StackPanel>
     </StackPanel>
-    <Border Background="{StaticResource SidebarBrush}" Padding="16,14">
+    <Border Background="{DynamicResource SidebarBrush}" Padding="16,14">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
         <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
         <Button Classes="primary" Content="{Binding ConfirmText}" Click="OnConfirm" IsDefault="True" IsEnabled="{Binding CanConfirm}" />

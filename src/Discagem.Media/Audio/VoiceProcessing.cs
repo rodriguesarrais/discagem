@@ -163,7 +163,7 @@ public sealed class LinearResampler
     }
 }
 
-/// <summary>Short synthesised notification sounds (someone joined or left the voice channel).</summary>
+/// <summary>Short synthesised notification sounds (someone joined or left the voice channel, a message arrived).</summary>
 public static class VoiceCues
 {
     public static float[] Join { get; } = Chime([523.25, 783.99]);
@@ -173,6 +173,9 @@ public static class VoiceCues
     public static float[] Mute { get; } = Chime([440.0], noteSeconds: 0.06);
 
     public static float[] Unmute { get; } = Chime([659.25], noteSeconds: 0.06);
+
+    /// <summary>A new message arrived.</summary>
+    public static float[] Message { get; } = Chime([880.0, 1174.66], noteSeconds: 0.07, volume: 0.12f);
 
     private static float[] Chime(double[] notes, double noteSeconds = 0.09, float volume = 0.18f)
     {
