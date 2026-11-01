@@ -184,6 +184,49 @@ the server (for example `chat.example.com`).
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
    and your details. The first account is the administrator; share the invite code with your friends.
 
+### Automatic updates
+
+[`deploy/updater/docker-compose.yml`](deploy/updater/docker-compose.yml) keeps the server on the
+newest stable release. Every five minutes it checks whether the server's image tag (`latest`) points
+to a new image; when it does, it stops the server, backs up the data volume to
+`/var/backups/discagem` (keeping the last five copies), starts the new version and waits until it
+answers. Calls and streams drop for a few seconds and reconnect on their own. If the new version does
+not start, the previous one is put back and the new image is skipped until a newer one is published.
+It only touches the server's service, leaves a server that was stopped by hand alone, and does not
+follow pinned versions or servers built from source.
+
+Run it next to the server as its own Compose project, pointing `DISCAGEM_DIR` at the folder that holds
+the server's `docker-compose.yml`:
+
+```bash
+cd discagem/deploy/updater
+echo "DISCAGEM_DIR=$(realpath ..)" > .env
+docker compose up -d
+docker compose logs -f   # every update, backup and rollback is logged here
+```
+
+On a panel that manages Compose projects (Hostinger's Docker Manager, Portainer...), create a project
+named `discagem-updater` with the file's contents and set `DISCAGEM_DIR` in its environment. The
+default, `/docker/discagem`, is where Hostinger keeps a project named `discagem`. The other settings
+are listed at the top of the file.
+
+The updater controls Docker through its socket, which amounts to root access to the machine, so only
+run the file from this repository. To restore a backup, stop the server and unpack the archive into
+the volume:
+
+```bash
+docker compose stop discagem
+docker run --rm -v discagem_discagem-data:/data -v /var/backups/discagem:/backup alpine \
+  sh -c 'rm -rf /data/* && tar xzf /backup/discagem-data-<date>.tar.gz -C /data'
+docker compose start discagem
+```
+
+(The volume name is the Compose project's name followed by `_discagem-data`; `docker volume ls` lists
+it.) To be told when a release did not reach the server, set the repository variable `DEPLOY_URL` to
+its public address (for example `https://chat.example.com`, in *Settings → Secrets and variables →
+Actions → Variables*): the *Release* workflow then waits for the server to report the new version and
+fails if it does not within 25 minutes.
+
 ### Without Docker
 
 Extract `discagem-server-<version>-linux-x64.tar.gz` (or `-linux-arm64`) from a release into
@@ -309,9 +352,9 @@ they are applied automatically on start-up.
 | `src/Discagem.Server` | ASP.NET Core host: auth, attachments, SignalR hub, SFU, STUN responder, EF Core (SQLite). |
 | `src/Discagem.Client` | Avalonia desktop app (MVVM with CommunityToolkit.Mvvm), screen capture for Windows and X11, audio devices (WASAPI, PulseAudio). |
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
-| `deploy/` | Dockerfile, Compose file with Caddy, environment template and systemd unit. |
+| `deploy/` | Dockerfile, Compose file with Caddy, environment template, systemd unit and the automatic updater. |
 | `installer/windows/` | NSIS script, wizard images and build script of the Windows installer. |
-| `.github/workflows/` | CI (build, tests, Windows client artifact, image build) and the release workflow. |
+| `.github/workflows/` | CI (build, tests, Windows client artifact, image build), the release workflow and the pull request conventions check. |
 
 ## Security notes
 
