@@ -1,28 +1,15 @@
-# Keeps a Discagem server running the newest published image.
+# Keeps a Discagem server on the newest published image (see README, "Automatic updates").
 #
-# Every few minutes it asks the registry whether the server's image tag (for example
-# ghcr.io/rodriguesarrais/discagem-server:latest) points to a new image. When it does, it stops the
-# server, backs up its data volume, starts the server on the new image and waits until it answers.
-# If the new version does not start, the previous image is put back and the new one is skipped until
-# a newer one is published. Calls and streams drop for a few seconds and reconnect on their own.
+# Every few minutes it checks whether the server's image tag points to a new image. If so, it stops
+# the server, backs up its data volume, starts the new version and waits until it answers; a version
+# that does not start is rolled back and skipped. Only the server's service is touched, and a server
+# stopped by hand is left alone.
 #
-# Run it as its own Compose project on the machine that runs the server. Set DISCAGEM_DIR to the
-# folder holding the server's Compose file (in a .env file next to this one, or in the environment):
-#
-#   DISCAGEM_DIR=/root/discagem/deploy docker compose up -d
-#   docker compose logs -f          # what it did, and why
-#
-# Only the server's service is touched; a server that was stopped by hand is left alone. A server
-# pinned to a version tag stays on it, and one built from source (no registry image) is not updated.
-# The container controls Docker through its socket, which amounts to root access to the machine.
-#
-# Settings (all optional; DISCAGEM_DIR defaults to Hostinger's folder for a project named "discagem"):
-#   DISCAGEM_DIR              folder of the server's Compose project
-#   DISCAGEM_SERVICE          the server's service name in that project (discagem)
-#   DISCAGEM_HEALTH_URL       health endpoint (http://127.0.0.1:5080/health)
-#   DISCAGEM_BACKUP_DIR       where data backups go (/var/backups/discagem)
-#   DISCAGEM_BACKUPS_TO_KEEP  newest backups to keep; 0 disables them (5)
-#   DISCAGEM_CHECK_EVERY      seconds between checks (300)
+# Run it as its own Compose project next to the server, with DISCAGEM_DIR set to the folder of the
+# server's Compose file (default /docker/discagem: Hostinger's folder for a project named discagem).
+# Optional: DISCAGEM_SERVICE (discagem), DISCAGEM_HEALTH_URL (http://127.0.0.1:5080/health),
+# DISCAGEM_BACKUP_DIR (/var/backups/discagem), DISCAGEM_BACKUPS_TO_KEEP (5; 0 disables backups) and
+# DISCAGEM_CHECK_EVERY (300 seconds). It controls Docker through its socket, i.e. as root.
 
 name: discagem-updater
 
@@ -32,7 +19,7 @@ services:
   updater:
     image: *image
     restart: unless-stopped
-    # Reaches the server's health endpoint on the loopback interface.
+    # For the server's health endpoint on loopback.
     network_mode: host
     environment:
       DISCAGEM_DIR: ${DISCAGEM_DIR:-/docker/discagem}
@@ -41,11 +28,11 @@ services:
       BACKUP_DIR: ${DISCAGEM_BACKUP_DIR:-/var/backups/discagem}
       BACKUPS_TO_KEEP: ${DISCAGEM_BACKUPS_TO_KEEP:-5}
       CHECK_EVERY: ${DISCAGEM_CHECK_EVERY:-300}
-      # Runs the backups (it has tar), so they do not depend on what the server's image contains.
+      # Runs the backups, so they do not depend on the server's image.
       HELPER_IMAGE: *image
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Mounted at the same paths as on the host: Compose and the backup container resolve them there.
+      # Same paths as on the host, where Compose and docker run resolve them.
       - ${DISCAGEM_DIR:-/docker/discagem}:${DISCAGEM_DIR:-/docker/discagem}:ro
       - ${DISCAGEM_BACKUP_DIR:-/var/backups/discagem}:${DISCAGEM_BACKUP_DIR:-/var/backups/discagem}
     logging:
@@ -53,10 +40,10 @@ services:
       options:
         max-size: 1m
         max-file: "3"
-    # Lets an update in progress finish when the updater is stopped.
+    # Lets an update in progress finish.
     stop_grace_period: 5m
     entrypoint: ["/bin/sh", "-c"]
-    # Compose replaces $VARIABLES in this file, so the script writes $$ for each $.
+    # Compose replaces $VARIABLES here, so the script writes $$ for $.
     command:
       - |
         set -u
@@ -64,8 +51,7 @@ services:
         short() { echo "$$1" | sed 's/^sha256://' | cut -c1-12; }
         skip_file="$$BACKUP_DIR/.skip-image"
 
-        # The project as Compose started it: its name, its files ("-f path" options, split on purpose)
-        # and its folder.
+        # The project as Compose started it ($$files holds "-f path" options, split on purpose).
         compose() {
           (cd "$$DISCAGEM_DIR" && docker compose -p "$$project" $$files --project-directory "$$DISCAGEM_DIR" "$$@")
         }
@@ -97,7 +83,7 @@ services:
         update() {
           log "New image $$(short "$$new") for $$ref (running $$(short "$$old")); updating $$SERVICE"
           compose stop "$$SERVICE" || return 1
-          # The server is stopped, so the database is not being written while it is copied.
+          # The database is copied while the server is stopped.
           if ! backup; then
             backup_failed=$$new
             log "The backup failed; starting the current version again. Fix the cause and restart the updater to try again"
@@ -106,7 +92,7 @@ services:
           fi
           if compose up -d --no-deps --no-build --force-recreate "$$SERVICE" && healthy; then
             log "Updated: $$(wget -q -O - -T 5 "$${HEALTH_URL%/health}/" 2> /dev/null || echo "$$SERVICE answers")"
-            # Drop the previous image and the one that failed before, if any (other tags keep them).
+            # Drop the previous image and any that failed (other tags keep them).
             for image in "$$rollback" "$$(cat "$$skip_file" 2> /dev/null)"; do
               [ -z "$$image" ] || docker image rm "$$image" > /dev/null 2>&1 || true
             done
@@ -148,8 +134,8 @@ services:
             state=$$cid
           fi
 
-          # Pulling moves the tag (and, with the containerd image store, forgets the image it left), so
-          # keep the running image under a local tag first, to back up from and to go back to.
+          # A pull moves the tag (and the containerd image store then forgets the old image), so keep
+          # the running image under a local tag to go back to.
           repo=$$ref
           case "$${ref##*/}" in *:*) repo=$${ref%:*} ;; esac
           rollback="$$repo:updater-rollback"
