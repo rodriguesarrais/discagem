@@ -25,6 +25,9 @@ public sealed class DiscagemFactory : WebApplicationFactory<Program>
 
     public string DataDirectory { get; }
 
+    /// <summary>Folder of client packages the server offers (absent unless a test creates it).</summary>
+    public string ClientDownloadsDirectory => Path.Combine(DataDirectory, "client");
+
     public int RtpPortStart { get; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -35,6 +38,7 @@ public sealed class DiscagemFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Discagem:DataDirectory"] = DataDirectory,
+                ["Discagem:ClientDownloadsDirectory"] = ClientDownloadsDirectory,
                 ["Discagem:InviteCode"] = InviteCode,
                 ["Discagem:Media:StunPort"] = "0",
                 ["Discagem:Media:RtpPortStart"] = RtpPortStart.ToString(),

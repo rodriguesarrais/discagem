@@ -32,6 +32,7 @@ builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<PeerConnectionFactory>();
 builder.Services.AddSingleton<SfuService>();
 builder.Services.AddSingleton<VoiceService>();
+builder.Services.AddSingleton<ClientDownloads>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SfuService>());
 builder.Services.AddHostedService<StunResponder>();
 builder.Services.AddHostedService<AttachmentCleanupService>();
@@ -149,6 +150,7 @@ app.MapGet("/api/server", async (IOptions<DiscagemOptions> options, AppDbContext
 app.MapAuthEndpoints();
 app.MapAttachmentEndpoints();
 app.MapAvatarEndpoints();
+app.MapClientDownloadEndpoints();
 app.MapHub<ChatHub>(HubPaths.Chat, o => o.CloseOnAuthenticationExpiration = true);
 
 app.Run();
