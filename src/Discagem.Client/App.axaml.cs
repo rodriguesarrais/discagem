@@ -61,6 +61,17 @@ public sealed class App : Application
 
     private void CreateTrayIcon(IClassicDesktopStyleApplicationLifetime desktop, Window window)
     {
+        // On Linux the icon is registered with the desktop over D-Bus, and Avalonia reports a refusal
+        // (a desktop or sandbox that does not allow it) as an unhandled exception: run without the icon.
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            if (e.Exception.StackTrace?.Contains("DBusTrayIconImpl", StringComparison.Ordinal) == true)
+            {
+                ClientLog.Error($"The notification area icon is not available: {e.Exception.Message}");
+                e.Handled = true;
+            }
+        };
+
         var open = new NativeMenuItem("Open Discagem");
         open.Click += (_, _) => ShowWindow(window);
         var quit = new NativeMenuItem("Quit Discagem");

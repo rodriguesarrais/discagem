@@ -9,21 +9,29 @@ namespace Discagem.Client.Services;
 /// the first one sits in the notification area) asks the running client to show its window and exits.
 /// </summary>
 /// <remarks>
-/// A named mutex tells whether a client is running; a named pipe, restricted to the current user,
-/// carries the request to show the window. The pipe alone cannot be used for detection: on Unix a
-/// second server silently takes the name over.
+/// <para>
+/// The claim is a named mutex on Windows and, elsewhere, an exclusive lock on a file next to the
+/// settings (which the system releases when the process ends, even after a crash). .NET keeps named
+/// mutexes under the home folder on Linux, which a Flatpak sandbox does not let it write. A named
+/// pipe, restricted to the current user, carries the request to show the window; it cannot be used
+/// for detection, because on Unix a second server silently takes the name over.
+/// </para>
+/// <para>
+/// When the claim cannot be made at all (an unwritable settings folder, for instance), the client
+/// runs anyway: running twice is better than not running.
+/// </para>
 /// </remarks>
 internal sealed class SingleInstance : IDisposable
 {
     private const string ShowCommand = "show";
 
-    private readonly Mutex _mutex;
+    private readonly IDisposable? _claim;
     private readonly string _pipeName;
     private readonly CancellationTokenSource _stop = new();
 
-    private SingleInstance(Mutex mutex, string pipeName)
+    private SingleInstance(IDisposable? claim, string pipeName)
     {
-        _mutex = mutex;
+        _claim = claim;
         _pipeName = pipeName;
     }
 
@@ -37,9 +45,39 @@ internal sealed class SingleInstance : IDisposable
     public static SingleInstance? TryClaim()
     {
         var name = InstanceName();
+        IDisposable? claim;
+        try
+        {
+            claim = OperatingSystem.IsWindows() ? ClaimMutex(name) : ClaimLockFile();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or WaitHandleCannotBeOpenedException)
+        {
+            ClientLog.Error($"Cannot tell whether Discagem is already running ({ex.Message}); starting anyway.");
+            return new SingleInstance(null, name);
+        }
 
-        // Unix scopes plain mutex names to the login session; "Global\" covers every terminal and launcher.
-        var mutex = new Mutex(false, OperatingSystem.IsWindows() ? name : @"Global\" + name);
+        if (claim is not null)
+        {
+            return new SingleInstance(claim, name);
+        }
+
+        AskRunningInstanceToShow(name);
+        return null;
+    }
+
+    /// <summary>One name per user and profile, so that test profiles can still run side by side.</summary>
+    private static string InstanceName()
+    {
+        var profile = Environment.GetEnvironmentVariable("DISCAGEM_PROFILE");
+        var key = $"{Environment.UserName}|{(string.IsNullOrWhiteSpace(profile) ? "" : profile)}";
+        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16];
+        return "Discagem-" + hash;
+    }
+
+    /// <summary>Windows: a named mutex, or null when another process owns it.</summary>
+    private static IDisposable? ClaimMutex(string name)
+    {
+        var mutex = new Mutex(false, name);
         bool owned;
         try
         {
@@ -53,22 +91,37 @@ internal sealed class SingleInstance : IDisposable
 
         if (owned)
         {
-            return new SingleInstance(mutex, name);
+            return new OwnedMutex(mutex);
         }
 
         mutex.Dispose();
-        AskRunningInstanceToShow(name);
         return null;
     }
 
-    /// <summary>One name per user and profile, so that test profiles can still run side by side.</summary>
-    private static string InstanceName()
+    /// <summary>
+    /// Elsewhere: an exclusive lock (flock) on a file in the settings folder, which is per user and
+    /// profile, or null when another process holds it.
+    /// </summary>
+    private static FileStream? ClaimLockFile()
     {
-        var profile = Environment.GetEnvironmentVariable("DISCAGEM_PROFILE");
-        var key = $"{Environment.UserName}|{(string.IsNullOrWhiteSpace(profile) ? "" : profile)}";
-        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16];
-        return "Discagem-" + hash;
+        Directory.CreateDirectory(ClientSettings.Directory);
+        try
+        {
+            return new FileStream(Path.Combine(ClientSettings.Directory, "instance.lock"),
+                FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException ex) when (IsHeldByAnotherProcess(ex))
+        {
+            return null;
+        }
     }
+
+    /// <summary>
+    /// Whether opening the lock file failed because another process holds the lock: .NET reports
+    /// the errno of flock (EWOULDBLOCK: 11 on Linux, 35 on macOS) as the HRESULT on Unix.
+    /// </summary>
+    private static bool IsHeldByAnotherProcess(IOException ex) =>
+        ex.HResult is 11 or 35 or unchecked((int)0x80070020);
 
     private static void AskRunningInstanceToShow(string pipeName)
     {
@@ -132,18 +185,27 @@ internal sealed class SingleInstance : IDisposable
     public void Dispose()
     {
         _stop.Cancel();
-        try
-        {
-            _mutex.ReleaseMutex();
-        }
-        catch (ApplicationException)
-        {
-            // Not owned by this thread; the operating system releases it when the process exits.
-        }
-
-        _mutex.Dispose();
+        _claim?.Dispose();
     }
 
     [DllImport("user32.dll")]
     private static extern bool AllowSetForegroundWindow(int processId);
+
+    /// <summary>A mutex this process owns: released, then closed.</summary>
+    private sealed class OwnedMutex(Mutex mutex) : IDisposable
+    {
+        public void Dispose()
+        {
+            try
+            {
+                mutex.ReleaseMutex();
+            }
+            catch (ApplicationException)
+            {
+                // Not owned by this thread; the operating system releases it when the process exits.
+            }
+
+            mutex.Dispose();
+        }
+    }
 }
