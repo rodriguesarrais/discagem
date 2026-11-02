@@ -141,7 +141,8 @@ framing, jitter buffering and device buffers.
 ## Releases
 
 Every [release](https://github.com/rodriguesarrais/discagem/releases) contains the Windows client
-(installer and portable zip), the Linux client, self-contained server builds for x64 and ARM64 Linux,
+(installer and portable zip), the Linux client (.deb, Flatpak and portable archive), self-contained
+server builds for x64 and ARM64 Linux,
 and a `SHA256SUMS` file; the server image is published as `ghcr.io/rodriguesarrais/discagem-server`
 (`latest` is the newest stable release).
 
@@ -313,15 +314,32 @@ Communications* and choose *Do nothing*.
 
 ### Linux
 
-Install libvpx (`sudo apt install libvpx9` on Ubuntu 24.04, `libvpx7` on older releases), then run
-`Discagem` from `Discagem-<version>-linux-x64.tar.gz` in the latest release, or
-`dotnet run --project src/Discagem.Client` from source. Screen sharing requires an X11 session; Wayland capture is
-not implemented yet. Voice uses PulseAudio, or PipeWire's PulseAudio service, which desktop
-distributions ship by default; there is no echo cancellation on Linux, so use headphones.
+Each release has three Linux builds of the client (x64); none needs .NET installed:
+
+- **Debian, Ubuntu and derivatives** (Debian 11+, Ubuntu 20.04+, Mint, Pop!\_OS...): install
+  `discagem_<version>_amd64.deb` with `sudo apt install ./discagem_<version>_amd64.deb`, which also
+  installs libvpx and the other libraries it needs. Discagem then appears in the applications menu
+  and is started with `discagem`. Install a newer release the same way.
+- **Any distribution with Flatpak** (Fedora, Arch, openSUSE, Steam Deck...):
+  `flatpak install --user Discagem-<version>-x86_64.flatpak`. The first installation also downloads
+  the freedesktop runtime from Flathub. The app runs sandboxed, with access to the network, the
+  display (X11), the sound server and the notification area, and opens files through the desktop's
+  file picker.
+- **Portable**: extract `Discagem-<version>-linux-x64.tar.gz` and run `Discagem`; install libvpx
+  first (`sudo apt install libvpx9` on Ubuntu 24.04, `libvpx7` on older releases).
+
+To build the packages yourself: `installer/linux/build.sh <version> <output folder> [deb] [flatpak]`
+(it needs `dpkg-deb`, and `flatpak-builder` with the Flathub remote for the Flatpak). From source,
+`dotnet run --project src/Discagem.Client`.
+
+Screen sharing requires an X11 session (or captures only X11 applications under Wayland); Wayland
+capture is not implemented yet. Voice uses PulseAudio, or PipeWire's PulseAudio service, which
+desktop distributions ship by default; there is no echo cancellation on Linux, so use headphones.
 
 Settings and the saved session are stored in `%APPDATA%\Discagem` (Windows, with the session token
-encrypted by DPAPI) or `~/.config/Discagem` (Linux). Set `DISCAGEM_PROFILE=name` to run several
-clients side by side with separate profiles.
+encrypted by DPAPI), `~/.config/Discagem` (Linux) or
+`~/.var/app/io.github.rodriguesarrais.Discagem/config/Discagem` (Flatpak). Set
+`DISCAGEM_PROFILE=name` to run several clients side by side with separate profiles.
 
 If something does not work (a stream without sound, say), *Settings → About → Open log folder* shows
 `discagem.log`, which records how audio and streams were set up and any errors.
@@ -361,6 +379,7 @@ they are applied automatically on start-up.
 | `tests/Discagem.Tests` | xUnit tests for media, voice, markup, REST, hub and end-to-end streaming and voice. |
 | `deploy/` | Dockerfile, Compose file with Caddy, environment template, systemd unit and the automatic updater. |
 | `installer/windows/` | NSIS script, wizard images and build script of the Windows installer. |
+| `installer/linux/` | Build script of the .deb and the Flatpak, with the Flatpak manifest, desktop entry, AppStream metadata and icons. |
 | `.github/workflows/` | CI (build, tests, Windows client artifact, image build), the release workflow and the pull request conventions check. |
 
 ## Security notes

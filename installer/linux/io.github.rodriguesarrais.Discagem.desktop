@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Discagem
+GenericName=Voice and Text Chat
+Comment=Self-hosted text chat, voice channels and screen sharing
+Exec=discagem
+Icon=io.github.rodriguesarrais.Discagem
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+Keywords=chat;voice;call;screen;share;stream;
+StartupNotify=true
+StartupWMClass=Discagem
+SingleMainWindow=true

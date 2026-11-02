@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata for software centres. installer/linux/build.sh fills in @VERSION@ and @DATE@. -->
+<component type="desktop-application">
+  <id>io.github.rodriguesarrais.Discagem</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>Discagem</name>
+  <summary>Self-hosted text chat, voice channels and screen sharing</summary>
+  <developer id="io.github.rodriguesarrais">
+    <name>Discagem contributors</name>
+  </developer>
+  <description>
+    <p>
+      Discagem is the desktop client of a chat server you run yourself, for a group of friends or a
+      small team. Nothing goes through third-party services.
+    </p>
+    <ul>
+      <li>Text channels with formatting, mentions, images, files and profile photos</li>
+      <li>Voice channels with Opus audio, per-person volume, mute and deafen</li>
+      <li>Screen and window sharing with sound, watched by any number of people</li>
+      <li>Light and dark themes, including a glossy Aero look</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.rodriguesarrais.Discagem.desktop</launchable>
+  <url type="homepage">https://github.com/rodriguesarrais/discagem</url>
+  <categories>
+    <category>Network</category>
+    <category>InstantMessaging</category>
+    <category>Chat</category>
+  </categories>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <releases>
+    <release version="@VERSION@" date="@DATE@" />
+  </releases>
+</component>

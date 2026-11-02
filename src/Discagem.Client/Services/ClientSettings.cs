@@ -97,7 +97,9 @@ public sealed class ClientSettings
     {
         get
         {
-            var root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            // Create: without it the path is empty when the folder (~/.config) does not exist yet,
+            // and the settings would end up in the current directory.
+            var root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create);
             var profile = Environment.GetEnvironmentVariable("DISCAGEM_PROFILE");
             var name = string.IsNullOrWhiteSpace(profile) ? "Discagem" : $"Discagem-{profile}";
             return Path.Combine(root, name);

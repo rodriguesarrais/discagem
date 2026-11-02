@@ -119,7 +119,12 @@ internal static unsafe class VpxNative
         }
         else
         {
+            // Newest first: 12 is libvpx 1.17 (Flatpak's freedesktop runtime 26.08), 9 is 1.14-1.15
+            // (Ubuntu 24.04, Debian 13), 7 is 1.11-1.12 (Ubuntu 22.04, Debian 12).
             yield return "libvpx.so";
+            yield return "libvpx.so.12";
+            yield return "libvpx.so.11";
+            yield return "libvpx.so.10";
             yield return "libvpx.so.9";
             yield return "libvpx.so.8";
             yield return "libvpx.so.7";
