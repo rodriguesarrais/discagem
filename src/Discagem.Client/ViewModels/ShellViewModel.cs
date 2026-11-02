@@ -40,7 +40,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
     private readonly DispatcherTimer _typingTimer;
     private readonly DispatcherTimer _tokenRefreshTimer;
-    private readonly UpdateService _updates = new();
+    private readonly UpdateService _updates;
     private readonly DispatcherTimer _updateTimer;
     private ReleaseVersion? _dismissedUpdate;
     private DateTime _lastTypingSent = DateTime.MinValue;
@@ -52,6 +52,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         _session = session;
         _dialogs = dialogs;
+        _updates = new UpdateService(session.Api.BaseAddress);
         _images = new ImageCache(session.Api);
         _avatars = new AvatarCache(session.Api);
         _me = GetOrAddMember(session.User, isMe: true);

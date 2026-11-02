@@ -97,6 +97,26 @@ public sealed record MediaSessionAnswer(
     string SessionId,
     string AnswerSdp);
 
+/// <summary>
+/// The desktop client of the server's release (the server image carries it), which clients update to
+/// and people can download from the server.
+/// </summary>
+public sealed record ClientReleaseDto(string Version, IReadOnlyList<ClientDownloadDto> Downloads);
+
+/// <param name="Platform">One of <see cref="ClientPlatforms"/>.</param>
+/// <param name="Url">Where to download it, relative to the server's address.</param>
+public sealed record ClientDownloadDto(string Platform, string FileName, long Size, string Sha256, string Url);
+
+public static class ClientPlatforms
+{
+    /// <summary>The Windows installer, which installed clients run to update themselves.</summary>
+    public const string WindowsInstaller = "windows-installer";
+
+    public const string Deb = "deb";
+
+    public const string Flatpak = "flatpak";
+}
+
 /// <summary>Public, unauthenticated information about the server.</summary>
 public sealed record ServerInfoDto(
     string Name,

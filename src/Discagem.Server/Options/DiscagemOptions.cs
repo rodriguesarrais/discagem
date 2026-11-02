@@ -20,6 +20,12 @@ public sealed class DiscagemOptions
     /// <summary>Maximum size of a single uploaded file, in bytes.</summary>
     public long MaxUploadBytes { get; set; } = 25 * 1024 * 1024;
 
+    /// <summary>
+    /// Folder with the desktop client's packages to offer for download and as updates (the server
+    /// image carries those of its release). Relative paths are relative to the server's folder.
+    /// </summary>
+    public string ClientDownloadsDirectory { get; set; } = "client";
+
     public JwtOptions Jwt { get; set; } = new();
 
     public MediaOptions Media { get; set; } = new();

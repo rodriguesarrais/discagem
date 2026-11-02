@@ -233,15 +233,33 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # The image carries the release's client packages: the server offers them for download and as
+  # updates to installed clients, which works although the repository (and its releases) are private.
   image:
     name: Server image
     runs-on: ubuntu-24.04
-    needs: [version, test]
+    needs: [version, test, installer, linux-packages]
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Get the Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-Discagem-*-win-x64-setup.exe
+          path: deploy/client
+          merge-multiple: true
+
+      - name: Get the Linux packages
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux-packages
+          path: deploy/client
+
+      - name: List the client packages
+        run: ls -la deploy/client
 
       # The Dockerfile cross-compiles, so building the arm64 image needs no emulation.
       - uses: docker/setup-buildx-action@v3

@@ -55,10 +55,14 @@ native Avalonia application for Windows (and Linux/X11).
   option in *Settings → Appearance*; silent while deafened).
 - Keeps running in the notification area when its window is closed (on by default on Windows, an
   option in *Settings → App*); launching it again brings the window back instead of a second copy.
-- Checks the GitHub releases for new versions at start-up and every six hours. Installed with the
-  Windows installer, it updates itself in one click: it downloads the new installer, verifies it
-  against the release's `SHA256SUMS`, installs it silently and restarts. Other builds link to the
-  release page.
+- Checks for new versions at start-up and every six hours, asking the server it is signed in to:
+  the server image carries the client of its release, so updates reach everyone as soon as the
+  server updates, without access to GitHub (the repository can stay private). Installed with the
+  Windows installer, the app updates itself in one click: it downloads the new installer from the
+  server, verifies its SHA-256, installs it silently and restarts. Other builds open the server's
+  download page. Servers that offer no client (built from source) fall back to the GitHub releases.
+- The server's `/download` page offers the Windows installer, the .deb and the Flatpak to new
+  members, with installation steps.
 
 **Private by design**
 - Accounts require an invite code; the first account becomes the administrator.
@@ -142,9 +146,10 @@ framing, jitter buffering and device buffers.
 
 Every [release](https://github.com/rodriguesarrais/discagem/releases) contains the Windows client
 (installer and portable zip), the Linux client (.deb, Flatpak and portable archive), self-contained
-server builds for x64 and ARM64 Linux,
-and a `SHA256SUMS` file; the server image is published as `ghcr.io/rodriguesarrais/discagem-server`
-(`latest` is the newest stable release).
+server builds for x64 and ARM64 Linux, and a `SHA256SUMS` file; the server image is published as
+`ghcr.io/rodriguesarrais/discagem-server` (`latest` is the newest stable release) and carries the
+release's Windows installer, .deb and Flatpak, which the server offers on its `/download` page and
+as updates to its clients.
 
 To publish a release, push a version tag, or run the *Release* workflow from the Actions tab and
 enter the version:
@@ -263,6 +268,7 @@ variables (`Section__Key`, as in `.env.example`).
 | `Discagem:InviteCode` | *(empty)* | Required to register. When empty only the first account can be created. |
 | `Discagem:DataDirectory` | `data` | Database, uploads and generated signing key. |
 | `Discagem:MaxUploadBytes` | `26214400` | Maximum attachment size. |
+| `Discagem:ClientDownloadsDirectory` | `client` | Folder with the desktop client's packages, offered on `/download` and as updates to clients (the image carries those of its release; see `deploy/client/README.md`). |
 | `Discagem:Jwt:Key` | *(generated)* | Token signing key (32+ characters). Generated and stored in the data directory when empty. |
 | `Discagem:Jwt:LifetimeDays` | `30` | Session lifetime; clients refresh their token on start-up. |
 | `Discagem:Media:PublicIpAddress` | *(empty)* | Public IP to announce when behind 1:1 NAT. |
@@ -393,6 +399,10 @@ they are applied automatically on start-up.
   common image types are served inline.
 - Profile photos are only served to signed-in users; the server accepts PNG and JPEG files of at most
   1 MB (the client uploads a 256 × 256 PNG) and serves them with the type their contents show.
+- Clients take updates from the server they are signed in to (only from that server's own address,
+  verified against the SHA-256 it publishes, and only when the user clicks *Update now*). Whoever
+  runs a server can therefore ship its members an installer: sign in only to servers whose owner you
+  trust with the app itself. The client packages on `/download` are public, like the server's address.
 
 ## Limitations and ideas
 
