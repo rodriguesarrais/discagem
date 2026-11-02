@@ -25,6 +25,9 @@ RUN dotnet publish src/Discagem.Server/Discagem.Server.csproj -c Release ${TARGE
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app .
+# The desktop client's packages, which the server offers for download and as updates (the Release
+# workflow puts its packages in deploy/client before building; otherwise the folder has only its README).
+COPY deploy/client/ /app/client/
 # Created in the build stage so that no command has to run on the target architecture.
 COPY --from=build --chown=$APP_UID:$APP_UID /data /data
 
