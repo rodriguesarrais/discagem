@@ -20,3 +20,6 @@ data/
 
 # Deployment secrets
 deploy/.env
+
+# Personal notes for Claude Code (server addresses, hosting details): never committed
+CLAUDE.local.md
