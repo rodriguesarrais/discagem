@@ -1,7 +1,7 @@
 name: Release
 
-# Publishes a GitHub release with the desktop clients, the Windows installer and the server builds,
-# and pushes the server image to the GitHub Container Registry.
+# Publishes a GitHub release with the desktop clients, the Windows installer, the Linux packages
+# (.deb and Flatpak) and the server builds, and pushes the server image to the GitHub Container Registry.
 #
 # Start a release either by pushing a version tag:
 #   git tag v0.2.0 && git push origin v0.2.0
@@ -199,6 +199,40 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  linux-packages:
+    name: Linux packages
+    runs-on: ubuntu-24.04
+    needs: [version, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Flatpak tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          # Ubuntu 24.04 restricts unprivileged user namespaces, which flatpak-builder's sandbox needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Build the .deb and the Flatpak
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          FLATPAK_BUILDER_ARGS: --disable-rofiles-fuse
+        run: |
+          installer/linux/build.sh "$VERSION" dist deb flatpak
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux-packages
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
   image:
     name: Server image
     runs-on: ubuntu-24.04
@@ -245,7 +279,7 @@ jobs:
   release:
     name: Publish release
     runs-on: ubuntu-24.04
-    needs: [version, package, installer, image]
+    needs: [version, package, installer, linux-packages, image]
     if: needs.version.outputs.publish == 'true'
     permissions:
       contents: write
@@ -271,6 +305,7 @@ jobs:
           PRERELEASE: ${{ needs.version.outputs.prerelease }}
           IMAGE: ghcr.io/${{ github.repository_owner }}/discagem-server
         run: |
+          DEB_VERSION=${VERSION/-/\~}
           cat > notes.md <<EOF
           ## Downloads
 
@@ -278,7 +313,9 @@ jobs:
           | --- | --- |
           | \`Discagem-$VERSION-win-x64-setup.exe\` | Installer for the Windows 10/11 (x64) client. Installs for the current user, without administrator rights, and upgrades earlier installs. |
           | \`Discagem-$VERSION-win-x64.zip\` | Portable Windows client (no installation). Keep \`Discagem.exe\` and \`vpxmd.dll\` together. |
-          | \`Discagem-$VERSION-linux-x64.tar.gz\` | Desktop client for Linux/X11 (x64). Needs libvpx and PulseAudio or PipeWire. |
+          | \`discagem_${DEB_VERSION}_amd64.deb\` | Linux client for Debian 11+, Ubuntu 20.04+ and derivatives (x64): \`sudo apt install ./discagem_${DEB_VERSION}_amd64.deb\`. |
+          | \`Discagem-$VERSION-x86_64.flatpak\` | Linux client for any distribution with Flatpak (x64): \`flatpak install --user Discagem-$VERSION-x86_64.flatpak\`. |
+          | \`Discagem-$VERSION-linux-x64.tar.gz\` | Portable Linux client (x64), no installation. Needs libvpx and PulseAudio or PipeWire. |
           | \`discagem-server-$VERSION-linux-x64.tar.gz\` | Self-contained server for x64 VPSes, with the systemd unit and Caddyfile. |
           | \`discagem-server-$VERSION-linux-arm64.tar.gz\` | The same for ARM64 VPSes. |
           | \`SHA256SUMS\` | Checksums of the files above. |
