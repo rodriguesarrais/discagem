@@ -51,10 +51,14 @@ native Avalonia application for Windows (and Linux/X11).
   framed pictures coloured by presence, "Alice says:" above messages) and **Aero Dark** (the same on
   dark glass). The Aero themes also bring their own sounds for people joining and leaving a call and
   for new messages.
-- A sound when a message arrives in another channel or while the window is in the background (an
-  option in *Settings → Appearance*; silent while deafened).
-- Keeps running in the notification area when its window is closed (on by default on Windows, an
-  option in *Settings → App*); launching it again brings the window back instead of a second copy.
+- In English or Brazilian Portuguese (*Settings → Language*; by default the system's language).
+- A sound when a message arrives in another channel or while the window is in the background, with
+  its own volume, optionally only for mentions or silenced while deafened (*Settings →
+  Notifications*, which also turns the taskbar flash and the call join/leave sounds on or off).
+- Keeps running in the notification area when its window is closed (on by default on Windows) and
+  can minimize there too, start with Windows or the desktop session and start hidden in the
+  notification area (*Settings → Window & start-up*); launching it again brings the window back
+  instead of a second copy.
 - Checks for new versions at start-up and every six hours, asking the server it is signed in to:
   the server image carries the client of its release, so updates reach everyone as soon as the
   server updates, without access to GitHub (the repository can stay private). Installed with the
@@ -364,6 +368,10 @@ dotnet run --project src/Discagem.Client
 # Tests: unit tests plus integration tests that stream video and voice through the SFU over real UDP sockets
 dotnet test
 ```
+
+The client's text lives in `src/Discagem.Client/Resources/Strings.resx` (English) and
+`Strings.pt-BR.resx`: add each new string to both, and use it as `Strings.Name` in C# or
+`{x:Static r:Strings.Name}` in AXAML. The build generates the `Strings` class.
 
 Without audio hardware, `DISCAGEM_TEST_TONE=440` replaces the microphone with a tone and
 `DISCAGEM_TEST_RECORD=/tmp/out.f32` writes what would be played to a raw 48 kHz mono float file.
