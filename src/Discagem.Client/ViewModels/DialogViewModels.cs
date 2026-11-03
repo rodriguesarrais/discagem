@@ -2,6 +2,7 @@ using System.Reflection;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Client.Services.Audio;
 using Discagem.Media.Pipeline;
@@ -24,10 +25,10 @@ public sealed partial class ChannelEditorViewModel : ObservableObject
     }
 
     public static ChannelEditorViewModel ForCreate(ChannelKind kind) =>
-        new("Create channel", "Create channel", canChooseKind: true, kind, "", "");
+        new(Strings.ChannelVm_CreateHeading, Strings.ChannelVm_CreateConfirm, canChooseKind: true, kind, "", "");
 
     public static ChannelEditorViewModel ForEdit(ChannelKind kind, string name, string topic) =>
-        new("Edit channel", "Save changes", canChooseKind: false, kind, name, topic);
+        new(Strings.ChannelVm_EditHeading, Strings.ChannelVm_EditConfirm, canChooseKind: false, kind, name, topic);
 
     public string Heading { get; }
 
@@ -71,7 +72,7 @@ public sealed partial class ChannelEditorViewModel : ObservableObject
         }
     }
 
-    public string Watermark => IsVoice ? "Hangout" : "new-channel";
+    public string Watermark => IsVoice ? Strings.ChannelVm_VoiceWatermark : Strings.ChannelVm_TextWatermark;
 
     public bool CanConfirm => !string.IsNullOrWhiteSpace(Name);
 
@@ -95,7 +96,8 @@ public sealed partial class ChannelEditorViewModel : ObservableObject
     }
 }
 
-/// <summary>Account and app settings.</summary>
+
+/// <summary>Account and app settings, in pages chosen from a list on the left.</summary>
 public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 {
     /// <summary>Lowest level shown on the input meter and sensitivity slider, in dBFS.</summary>
@@ -142,8 +144,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _thresholdDb = settings.VoiceThresholdDb;
         _outputVolumePercent = settings.VoiceOutputVolume * 100;
         _closeToTray = settings.CloseToTrayEnabled;
+        _minimizeToTray = settings.MinimizeToTray;
+        _startWithSystem = Autostart.IsEnabled;
+        _startMinimized = settings.StartMinimized;
         _selectedTheme = Themes.FirstOrDefault(t => t.Theme == settings.ThemeValue) ?? Themes[0];
         _messageSounds = settings.MessageSounds;
+        _messageSoundMentionsOnly = settings.MessageSoundMentionsOnly;
+        _silenceSoundsWhileDeafened = settings.SilenceSoundsWhileDeafened;
+        _notificationVolumePercent = settings.NotificationVolume * 100;
+        _flashTaskbar = settings.FlashTaskbar;
+        _callSounds = settings.CallSounds;
+        _selectedLanguage = Languages.FirstOrDefault(l => l.Code == settings.Language) ?? Languages[0];
 
         // Show the microphone level live (in a call, or while testing), as a guide for the sensitivity slider.
         _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) =>
@@ -155,15 +166,36 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _meterTimer.Start();
     }
 
+    // ---- Pages ----
+
+    /// <summary>The pages in the list on the left, in the order of the panels in the dialog.</summary>
+    public IReadOnlyList<string> Pages { get; } =
+    [
+        Strings.Settings_PageAccount,
+        Strings.Settings_PageAppearance,
+        Strings.Settings_PageNotifications,
+        Strings.Settings_PageVoice,
+        Strings.Settings_PageStreaming,
+        Strings.Settings_PageWindow,
+        Strings.Settings_PageLanguage,
+        Strings.Settings_PageAbout,
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageTitle))]
+    private int _selectedPageIndex;
+
+    public string PageTitle => Pages[Math.Clamp(SelectedPageIndex, 0, Pages.Count - 1)];
+
+    // ---- Voice & audio ----
+
     public IReadOnlyList<AudioDeviceInfo> InputDevices { get; }
 
     public IReadOnlyList<AudioDeviceInfo> OutputDevices { get; }
 
-    public string AudioSystem => $"Audio: {_voice.Audio.Name}";
+    public string AudioSystem => string.Format(Strings.Settings_AudioSystem, _voice.Audio.Name);
 
-    public string EchoAdvice => OperatingSystem.IsWindows()
-        ? "Windows echo cancellation and noise suppression are used where your microphone supports them."
-        : "Use headphones to keep others from hearing themselves through your microphone.";
+    public string EchoAdvice => OperatingSystem.IsWindows() ? Strings.Settings_EchoAdviceWindows : Strings.Settings_EchoAdviceOther;
 
     [ObservableProperty]
     private AudioDeviceInfo _inputDevice;
@@ -195,7 +227,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(MicrophoneTestText))]
     private bool _isTestingMicrophone;
 
-    public string MicrophoneTestText => IsTestingMicrophone ? "Stop test" : "Test microphone";
+    public string MicrophoneTestText => IsTestingMicrophone ? Strings.Settings_StopMicTest : Strings.Settings_StartMicTest;
 
     [RelayCommand]
     private void ToggleMicrophoneTest()
@@ -248,6 +280,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _settings.Save();
     }
 
+    // ---- Account ----
+
     public MemberViewModel Me { get; }
 
     public string ServerName { get; }
@@ -262,19 +296,85 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<StreamQuality> Qualities => StreamQuality.Presets;
 
+    // ---- Window & start-up ----
+
     /// <summary>Whether closing the window keeps Discagem running in the notification area.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CloseQuits))]
     private bool _closeToTray;
 
-    public string TrayHint => OperatingSystem.IsWindows()
-        ? "Open it again from its icon in the notification area (you may find it under the ^ arrow), or from the Start menu. Quit it from the icon's menu."
-        : "Your desktop must show tray icons (on GNOME, the AppIndicator extension). Launching Discagem again brings the window back.";
+    /// <summary>The other choice for the close button (two radio buttons share one setting).</summary>
+    public bool CloseQuits
+    {
+        get => !CloseToTray;
+        set
+        {
+            if (value)
+            {
+                CloseToTray = false;
+            }
+        }
+    }
+
+    public string TrayHint => OperatingSystem.IsWindows() ? Strings.Settings_TrayHintWindows : Strings.Settings_TrayHintOther;
 
     partial void OnCloseToTrayChanged(bool value)
     {
         _settings.CloseToTray = value;
         _settings.Save();
     }
+
+    /// <summary>Whether minimizing the window puts it in the notification area instead of the taskbar.</summary>
+    [ObservableProperty]
+    private bool _minimizeToTray;
+
+    partial void OnMinimizeToTrayChanged(bool value)
+    {
+        _settings.MinimizeToTray = value;
+        _settings.Save();
+    }
+
+    public bool CanStartWithSystem => Autostart.IsSupported;
+
+    public string StartWithSystemText => OperatingSystem.IsWindows() ? Strings.Settings_StartWithWindows : Strings.Settings_StartWithSession;
+
+    public string StartWithSystemHint => Autostart.IsSupported ? Strings.Settings_StartWithSystemHint : Strings.Settings_StartWithSystemUnsupported;
+
+    /// <summary>Whether the system starts Discagem as the user signs in (read from the system's own entry).</summary>
+    [ObservableProperty]
+    private bool _startWithSystem;
+
+    [ObservableProperty]
+    private string? _startWithSystemError;
+
+    partial void OnStartWithSystemChanged(bool value)
+    {
+        if (Autostart.IsEnabled == value)
+        {
+            return;
+        }
+
+        if (Autostart.SetEnabled(value))
+        {
+            StartWithSystemError = null;
+            return;
+        }
+
+        StartWithSystemError = Strings.Settings_StartWithSystemFailed;
+        Dispatcher.UIThread.Post(() => StartWithSystem = !value);
+    }
+
+    /// <summary>Whether Discagem started with the computer stays in the notification area.</summary>
+    [ObservableProperty]
+    private bool _startMinimized;
+
+    partial void OnStartMinimizedChanged(bool value)
+    {
+        _settings.StartMinimized = value;
+        _settings.Save();
+    }
+
+    // ---- Appearance ----
 
     public IReadOnlyList<ThemeOption> Themes => ThemeOption.All;
 
@@ -294,6 +394,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ThemeManager.Apply(value.Theme);
     }
 
+    // ---- Notifications ----
+
     [ObservableProperty]
     private bool _messageSounds;
 
@@ -306,6 +408,91 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             _voice.PlayNotification(ThemeManager.Sounds.Message);
         }
     }
+
+    [ObservableProperty]
+    private bool _messageSoundMentionsOnly;
+
+    partial void OnMessageSoundMentionsOnlyChanged(bool value)
+    {
+        _settings.MessageSoundMentionsOnly = value;
+        _settings.Save();
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeafenedNotice))]
+    private bool _silenceSoundsWhileDeafened;
+
+    partial void OnSilenceSoundsWhileDeafenedChanged(bool value)
+    {
+        _settings.SilenceSoundsWhileDeafened = value;
+        _settings.Save();
+    }
+
+    /// <summary>Says why no sound plays right now, when that is the case.</summary>
+    public string? DeafenedNotice => _voice.IsDeafened && SilenceSoundsWhileDeafened ? Strings.Settings_DeafenedNotice : null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NotificationVolumeText))]
+    private double _notificationVolumePercent;
+
+    public string NotificationVolumeText => $"{NotificationVolumePercent:0} %";
+
+    partial void OnNotificationVolumePercentChanged(double value) => _settings.NotificationVolume = (float)(value / 100);
+
+    [ObservableProperty]
+    private bool _flashTaskbar;
+
+    partial void OnFlashTaskbarChanged(bool value)
+    {
+        _settings.FlashTaskbar = value;
+        _settings.Save();
+    }
+
+    [ObservableProperty]
+    private bool _callSounds;
+
+    partial void OnCallSoundsChanged(bool value)
+    {
+        _settings.CallSounds = value;
+        _settings.Save();
+    }
+
+    /// <summary>Plays the message sound at the chosen volume, also while deafened.</summary>
+    [RelayCommand]
+    private void TestSound() => _voice.PlayNotification(ThemeManager.Sounds.Message, evenWhileDeafened: true);
+
+    // ---- Language ----
+
+    public IReadOnlyList<LanguageOption> Languages { get; } = Localization.Options;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NeedsRestart))]
+    private LanguageOption _selectedLanguage;
+
+    partial void OnSelectedLanguageChanged(LanguageOption value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        _settings.Language = value.Code;
+        _settings.Save();
+    }
+
+    /// <summary>The language is applied at start-up, so a different one waits for a restart.</summary>
+    public bool NeedsRestart => SelectedLanguage is { } language && Localization.Resolve(language.Code) != Localization.Current;
+
+    public bool CanRestart => App.CanRestart;
+
+    [RelayCommand]
+    private void Restart()
+    {
+        _settings.Save();
+        App.Restart();
+    }
+
+    // ---- About & updates ----
 
     [ObservableProperty]
     private bool _checkForUpdatesAutomatically;
@@ -326,7 +513,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private async Task CheckForUpdatesAsync()
     {
         IsCheckingForUpdates = true;
-        UpdateStatus = "Checking…";
+        UpdateStatus = Strings.Settings_CheckingForUpdates;
         try
         {
             UpdateStatus = await _checkForUpdates();
@@ -357,10 +544,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public string AppVersion =>
         typeof(SettingsViewModel).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0] ?? "0.0.0";
 
-    public string CodecInfo => VpxLibrary.IsAvailable ? $"VP8 via libvpx {VpxLibrary.Version}" : "libvpx not found — screen sharing unavailable";
+    public string AppVersionText => string.Format(Strings.Settings_AppVersion, AppVersion);
+
+    public string CodecInfo => VpxLibrary.IsAvailable
+        ? string.Format(Strings.Settings_CodecInfo, VpxLibrary.Version)
+        : Strings.Settings_CodecMissing;
 
     /// <summary>Raised when the user chooses to sign out.</summary>
     public event Action? LogoutRequested;
+
+    // ---- Profile and password ----
 
     [ObservableProperty]
     private string _displayName;
@@ -414,7 +607,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             var updated = await _api.UpdateProfileAsync(DisplayName.Trim(), AvatarColor);
             Me.Update(updated);
             ProfileError = false;
-            ProfileMessage = "Profile saved.";
+            ProfileMessage = Strings.Settings_ProfileSaved;
         }
         catch (ApiException ex)
         {
@@ -436,7 +629,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ChangePhotoAsync()
     {
-        var file = await _dialogs.PickImageAsync("Choose a profile photo");
+        var file = await _dialogs.PickImageAsync(Strings.Settings_ChoosePhotoTitle);
         if (file is null)
         {
             return;
@@ -454,7 +647,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
             Me.Update(await _api.UploadAvatarAsync(png));
             PhotoError = false;
-            PhotoMessage = "Photo updated.";
+            PhotoMessage = Strings.Settings_PhotoUpdated;
         }
         catch (Exception ex) when (ex is ApiException or IOException or UnauthorizedAccessException)
         {
@@ -465,7 +658,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             // Avalonia could not decode the file.
             PhotoError = true;
-            PhotoMessage = "That file is not an image Discagem can read.";
+            PhotoMessage = Strings.Settings_PhotoUnreadable;
         }
         finally
         {
@@ -482,7 +675,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Me.Update(await _api.RemoveAvatarAsync());
             PhotoError = false;
-            PhotoMessage = "Photo removed.";
+            PhotoMessage = Strings.Settings_PhotoRemoved;
         }
         catch (ApiException ex)
         {
@@ -502,14 +695,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         if (NewPassword != ConfirmPassword)
         {
             PasswordError = true;
-            PasswordMessage = "The new passwords do not match.";
+            PasswordMessage = Strings.Settings_PasswordsDoNotMatch;
             return;
         }
 
         if (NewPassword.Length < Limits.MinPasswordLength)
         {
             PasswordError = true;
-            PasswordMessage = $"Use at least {Limits.MinPasswordLength} characters.";
+            PasswordMessage = string.Format(Strings.Settings_PasswordTooShort, Limits.MinPasswordLength);
             return;
         }
 
@@ -520,7 +713,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             _tokenChanged(auth);
             CurrentPassword = NewPassword = ConfirmPassword = "";
             PasswordError = false;
-            PasswordMessage = "Password changed. Other devices have been signed out.";
+            PasswordMessage = Strings.Settings_PasswordChanged;
         }
         catch (ApiException ex)
         {

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 
 namespace Discagem.Client.ViewModels;
@@ -40,11 +41,11 @@ public sealed class ThemeOption
 
     public static IReadOnlyList<ThemeOption> All { get; } =
     [
-        new(AppTheme.Discagem, "Discagem", "The original dark look.",
+        new(AppTheme.Discagem, "Discagem", Strings.Theme_DiscagemDescription,
             Solid("#26272D"), Solid("#1F2025"), Solid("#30323A"), Solid("#ECEDF1"), Solid("#7C6CFF"), Solid("#17181C")),
-        new(AppTheme.Aero, "Aero", "Light and glossy, in the style of Windows 7. Messenger sounds.",
+        new(AppTheme.Aero, "Aero", Strings.Theme_AeroDescription,
             Solid("#FFFFFF"), Vertical("#DCEAF8", "#B9D3EF"), Vertical("#8EBDEB", "#E4F0FB"), Solid("#1C1C1C"), Glossy("#7DBBF5", "#2E7FD6"), Solid("#9DBEE2")),
-        new(AppTheme.AeroDark, "Aero Dark", "Aero on dark glass. Messenger sounds.",
+        new(AppTheme.AeroDark, Strings.Theme_AeroDarkName, Strings.Theme_AeroDarkDescription,
             Solid("#0F1B2B"), Vertical("#172942", "#111F33"), Vertical("#2C5486", "#0E1F36"), Solid("#E6EEF8"), Glossy("#6FB3F2", "#2470C4"), Solid("#06101C")),
     ];
 

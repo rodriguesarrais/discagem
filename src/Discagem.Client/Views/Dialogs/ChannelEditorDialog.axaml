@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Discagem.Client.ViewModels"
         xmlns:c="using:Discagem.Client.Controls"
+        xmlns:r="using:Discagem.Client.Resources"
         x:Class="Discagem.Client.Views.Dialogs.ChannelEditorDialog"
         x:DataType="vm:ChannelEditorViewModel"
         Width="460" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
@@ -12,14 +13,14 @@
       <TextBlock Text="{Binding Heading}" Classes="h2" />
 
       <StackPanel IsVisible="{Binding CanChooseKind}">
-        <TextBlock Text="CHANNEL TYPE" Classes="label" />
+        <TextBlock Text="{x:Static r:Strings.ChannelEditor_ChannelTypeLabel}" Classes="label" />
         <StackPanel Spacing="8">
           <RadioButton Classes="choice" GroupName="kind" IsChecked="{Binding IsText}">
             <Grid ColumnDefinitions="Auto,*">
               <c:Icon Data="{StaticResource IconHash}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1">
-                <TextBlock Text="Text" FontWeight="SemiBold" />
-                <TextBlock Text="Send messages, images, files and links" Classes="caption" />
+                <TextBlock Text="{x:Static r:Strings.ChannelEditor_TextKind}" FontWeight="SemiBold" />
+                <TextBlock Text="{x:Static r:Strings.ChannelEditor_TextKindDescription}" Classes="caption" />
               </StackPanel>
             </Grid>
           </RadioButton>
@@ -27,8 +28,8 @@
             <Grid ColumnDefinitions="Auto,*">
               <c:Icon Data="{StaticResource IconVolume}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1">
-                <TextBlock Text="Voice" FontWeight="SemiBold" />
-                <TextBlock Text="Hang out together with voice" Classes="caption" />
+                <TextBlock Text="{x:Static r:Strings.ChannelEditor_VoiceKind}" FontWeight="SemiBold" />
+                <TextBlock Text="{x:Static r:Strings.ChannelEditor_VoiceKindDescription}" Classes="caption" />
               </StackPanel>
             </Grid>
           </RadioButton>
@@ -36,7 +37,7 @@
       </StackPanel>
 
       <StackPanel>
-        <TextBlock Text="CHANNEL NAME" Classes="label" />
+        <TextBlock Text="{x:Static r:Strings.ChannelEditor_ChannelNameLabel}" Classes="label" />
         <TextBox Text="{Binding Name}" x:Name="NameBox" MaxLength="48" Watermark="{Binding Watermark}">
           <TextBox.InnerLeftContent>
             <Panel Margin="12,0,0,0">
@@ -50,13 +51,13 @@
         <TextBlock Text="{Binding Preview}" Classes="caption" Margin="2,6,0,0" />
       </StackPanel>
       <StackPanel>
-        <TextBlock Text="TOPIC" Classes="label" />
-        <TextBox Text="{Binding Topic}" MaxLength="256" Watermark="Let everyone know what this channel is about" />
+        <TextBlock Text="{x:Static r:Strings.ChannelEditor_TopicLabel}" Classes="label" />
+        <TextBox Text="{Binding Topic}" MaxLength="256" Watermark="{x:Static r:Strings.ChannelEditor_TopicWatermark}" />
       </StackPanel>
     </StackPanel>
     <Border Background="{DynamicResource SidebarBrush}" Padding="16,14">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-        <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
+        <Button Classes="ghost" Content="{x:Static r:Strings.Dialog_Cancel}" Click="OnCancel" IsCancel="True" />
         <Button Classes="primary" Content="{Binding ConfirmText}" Click="OnConfirm" IsDefault="True" IsEnabled="{Binding CanConfirm}" />
       </StackPanel>
     </Border>

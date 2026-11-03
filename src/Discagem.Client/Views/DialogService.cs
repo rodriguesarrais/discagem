@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Client.ViewModels;
 using Discagem.Client.Views.Dialogs;
@@ -42,7 +43,7 @@ public sealed class DialogService(Window owner) : IDialogService
     {
         var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Upload files",
+            Title = Strings.Dialog_UploadFilesTitle,
             AllowMultiple = true,
         });
         return files;
@@ -56,7 +57,7 @@ public sealed class DialogService(Window owner) : IDialogService
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Images")
+                new FilePickerFileType(Strings.Dialog_ImagesFileType)
                 {
                     Patterns = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.bmp"],
                     MimeTypes = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"],
@@ -69,7 +70,7 @@ public sealed class DialogService(Window owner) : IDialogService
     public Task<IStorageFile?> SaveFileAsync(string suggestedName) =>
         owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Save file",
+            Title = Strings.Dialog_SaveFileTitle,
             SuggestedFileName = suggestedName,
             ShowOverwritePrompt = true,
         });

@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Shared.Text;
 
@@ -121,7 +122,7 @@ public sealed class MessageContentView : StackPanel
 
         if (IsEdited && isLast)
         {
-            inlines.Add(new Run(" (edited)")
+            inlines.Add(new Run(" " + Strings.Chat_Edited)
             {
                 FontSize = 11,
                 Foreground = Resource("TextMutedBrush", "#868A96"),

@@ -1,5 +1,6 @@
 using System.Net;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 
 namespace Discagem.Client.ViewModels;
@@ -28,7 +29,7 @@ public sealed partial class MainWindowViewModel(ClientSettings settings, IDialog
             return;
         }
 
-        CurrentView = new SplashViewModel("Connecting to your server…");
+        CurrentView = new SplashViewModel(Strings.App_ConnectingToServer);
         var api = new ApiClient(address) { Token = token };
         try
         {
@@ -47,7 +48,7 @@ public sealed partial class MainWindowViewModel(ClientSettings settings, IDialog
             {
                 settings.Token = null;
                 settings.Save();
-                ShowLogin("Your session has expired. Please log in again.");
+                ShowLogin(Strings.App_SessionExpired);
             }
             else
             {

@@ -57,6 +57,21 @@ public sealed class ClientSettings
     [JsonIgnore]
     public bool CloseToTrayEnabled => CloseToTray ?? OperatingSystem.IsWindows();
 
+    /// <summary>Whether minimizing the window hides it in the notification area instead of the taskbar.</summary>
+    public bool MinimizeToTray { get; set; }
+
+    /// <summary>
+    /// Whether Discagem, when started with the computer, stays in the notification area (or
+    /// minimized, when there is no tray icon) instead of opening its window.
+    /// </summary>
+    public bool StartMinimized { get; set; } = true;
+
+    /// <summary>
+    /// The interface language as a culture name ("en", "pt-BR"), or "" to follow the system. Takes
+    /// effect at the next start.
+    /// </summary>
+    public string Language { get; set; } = "";
+
     /// <summary>Whether to look for new releases at start-up and every few hours.</summary>
     public bool CheckForUpdates { get; set; } = true;
 
@@ -75,6 +90,24 @@ public sealed class ClientSettings
 
     /// <summary>Play a sound when a message arrives that is not in view.</summary>
     public bool MessageSounds { get; set; } = true;
+
+    /// <summary>Play the message sound only for messages that mention the user.</summary>
+    public bool MessageSoundMentionsOnly { get; set; }
+
+    /// <summary>
+    /// Keep message sounds quiet while deafened. Off by default: deafening is remembered between
+    /// calls, and silencing messages with it surprised people.
+    /// </summary>
+    public bool SilenceSoundsWhileDeafened { get; set; }
+
+    /// <summary>Volume of message sounds, 1 = 100 %.</summary>
+    public float NotificationVolume { get; set; } = 1f;
+
+    /// <summary>Flash the taskbar button when a message arrives that is not in view.</summary>
+    public bool FlashTaskbar { get; set; } = true;
+
+    /// <summary>Play the sounds for joining and leaving calls, and for others joining and leaving.</summary>
+    public bool CallSounds { get; set; } = true;
 
     public double WindowWidth { get; set; } = 1280;
 

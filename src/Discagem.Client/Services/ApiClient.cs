@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Discagem.Client.Resources;
 using Discagem.Shared;
 
 namespace Discagem.Client.Services;
@@ -122,7 +123,7 @@ public sealed class ApiClient : IDisposable
         }
         catch (HttpRequestException ex)
         {
-            throw new ApiException("Could not reach the server.", ex.StatusCode, ex);
+            throw new ApiException(Strings.Error_CouldNotReachServer, ex.StatusCode, ex);
         }
     }
 
@@ -136,7 +137,7 @@ public sealed class ApiClient : IDisposable
         }
         catch (HttpRequestException ex)
         {
-            throw new ApiException("Could not reach the server.", ex.StatusCode, ex);
+            throw new ApiException(Strings.Error_CouldNotReachServer, ex.StatusCode, ex);
         }
     }
 
@@ -164,19 +165,19 @@ public sealed class ApiClient : IDisposable
             using var response = await _http.SendAsync(request, timeoutSource.Token);
             await EnsureSuccessAsync(response);
             return (await response.Content.ReadFromJsonAsync<T>(cancellationToken: timeoutSource.Token))
-                ?? throw new ApiException("The server sent an empty response.");
+                ?? throw new ApiException(Strings.Error_EmptyResponse);
         }
         catch (HttpRequestException ex)
         {
-            throw new ApiException($"Could not reach the server ({ex.Message.TrimEnd('.')}).", ex.StatusCode, ex);
+            throw new ApiException(string.Format(Strings.Error_CouldNotReachServerDetail, ex.Message.TrimEnd('.')), ex.StatusCode, ex);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new ApiException("The server did not respond in time.", null, ex);
+            throw new ApiException(Strings.Error_Timeout, null, ex);
         }
         catch (JsonException ex)
         {
-            throw new ApiException("The server sent an unexpected response. Is this a Discagem server?", null, ex);
+            throw new ApiException(Strings.Error_UnexpectedResponse, null, ex);
         }
     }
 
@@ -191,7 +192,7 @@ public sealed class ApiClient : IDisposable
         try
         {
             var error = await response.Content.ReadFromJsonAsync<ApiError>();
-            message = error?.Error;
+            message = error?.Error is { } text ? ServerMessages.Translate(text) : null;
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException or InvalidOperationException)
         {
@@ -199,11 +200,11 @@ public sealed class ApiClient : IDisposable
 
         message ??= response.StatusCode switch
         {
-            HttpStatusCode.Unauthorized => "Your session has expired. Please sign in again.",
-            HttpStatusCode.TooManyRequests => "Too many attempts. Please wait a minute and try again.",
-            HttpStatusCode.RequestEntityTooLarge => "That file is too large.",
-            HttpStatusCode.NotFound => "Not found. Check the server address.",
-            _ => $"The server returned an error ({(int)response.StatusCode}).",
+            HttpStatusCode.Unauthorized => Strings.Error_SessionExpired,
+            HttpStatusCode.TooManyRequests => Strings.Error_TooManyAttempts,
+            HttpStatusCode.RequestEntityTooLarge => Strings.Error_FileTooLarge,
+            HttpStatusCode.NotFound => Strings.Error_NotFound,
+            _ => string.Format(Strings.Error_ServerError, (int)response.StatusCode),
         };
         throw new ApiException(message, response.StatusCode);
     }

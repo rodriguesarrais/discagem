@@ -4,19 +4,50 @@
         xmlns:c="using:Discagem.Client.Controls"
         xmlns:media="using:Discagem.Media.Pipeline"
         xmlns:audio="using:Discagem.Client.Services.Audio"
+        xmlns:services="using:Discagem.Client.Services"
         xmlns:views="using:Discagem.Client.Views"
+        xmlns:r="using:Discagem.Client.Resources"
         x:Class="Discagem.Client.Views.Dialogs.SettingsDialog"
         x:DataType="vm:SettingsViewModel"
-        Width="620" Height="680" MinWidth="520" MinHeight="480" ShowInTaskbar="False"
+        Width="900" Height="680" MinWidth="720" MinHeight="480" ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
-        Title="User settings">
-  <Grid RowDefinitions="*,Auto">
-    <ScrollViewer>
-      <StackPanel Margin="28,24,28,24" Spacing="28">
+        Title="{x:Static r:Strings.Settings_Title}">
+  <Window.Styles>
+    <!-- Each page is shown only while it is selected in the list on the left. -->
+    <Style Selector="ScrollViewer.page">
+      <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+    <Style Selector="ScrollViewer.page > StackPanel">
+      <Setter Property="Margin" Value="32,24,32,28" />
+      <Setter Property="Spacing" Value="22" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="Margin" Value="28,-4,0,0" />
+    </Style>
+  </Window.Styles>
 
-        <!-- Profile -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="My account" Classes="h2" />
+  <Grid RowDefinitions="*,Auto" ColumnDefinitions="210,*">
+
+    <!-- Pages -->
+    <Border Grid.RowSpan="2" Background="{DynamicResource SidebarBrush}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:Strings.Settings_NavHeading}" Classes="label" Margin="20,24,16,8" />
+        <ListBox Classes="nav" ItemsSource="{Binding Pages}" SelectedIndex="{Binding SelectedPageIndex}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}" FontWeight="SemiBold" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Grid Grid.Column="1">
+
+      <!-- My account -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=0}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageAccount}" Classes="h1" />
           <Border Classes="section-card">
             <StackPanel Spacing="16">
               <Grid ColumnDefinitions="Auto,*">
@@ -28,10 +59,10 @@
                     <Button Classes="ghost" Command="{Binding ChangePhotoCommand}" IsEnabled="{Binding !IsBusy}">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <c:Icon Data="{StaticResource IconImage}" Width="15" Height="15" />
-                        <TextBlock Text="Change photo" />
+                        <TextBlock Text="{x:Static r:Strings.Settings_ChangePhoto}" />
                       </StackPanel>
                     </Button>
-                    <Button Classes="link" Content="Remove photo" Command="{Binding RemovePhotoCommand}" VerticalAlignment="Center"
+                    <Button Classes="link" Content="{x:Static r:Strings.Settings_RemovePhoto}" Command="{Binding RemovePhotoCommand}" VerticalAlignment="Center"
                             IsVisible="{Binding Me.AvatarImage, Converter={x:Static ObjectConverters.IsNotNull}}" IsEnabled="{Binding !IsBusy}" />
                     <TextBlock Text="{Binding PhotoMessage}" VerticalAlignment="Center" FontSize="12.5"
                                Classes="status" Classes.error="{Binding PhotoError}" />
@@ -39,11 +70,11 @@
                 </StackPanel>
               </Grid>
               <StackPanel>
-                <TextBlock Text="DISPLAY NAME" Classes="label" />
+                <TextBlock Text="{x:Static r:Strings.Settings_DisplayNameLabel}" Classes="label" />
                 <TextBox Text="{Binding DisplayName}" MaxLength="32" />
               </StackPanel>
               <StackPanel>
-                <TextBlock Text="AVATAR COLOUR" Classes="label" />
+                <TextBlock Text="{x:Static r:Strings.Settings_AvatarColorLabel}" Classes="label" />
                 <ItemsControl ItemsSource="{Binding Palette}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -62,20 +93,47 @@
                 </ItemsControl>
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="12">
-                <Button Classes="primary" Content="Save profile" Command="{Binding SaveProfileCommand}" IsEnabled="{Binding !IsBusy}" />
+                <Button Classes="primary" Content="{x:Static r:Strings.Settings_SaveProfile}" Command="{Binding SaveProfileCommand}" IsEnabled="{Binding !IsBusy}" />
                 <TextBlock Text="{Binding ProfileMessage}" VerticalAlignment="Center"
                            Classes="status" Classes.error="{Binding ProfileError}" />
               </StackPanel>
             </StackPanel>
           </Border>
-        </StackPanel>
 
-        <!-- Appearance -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="Appearance" Classes="h2" />
+          <TextBlock Text="{x:Static r:Strings.Settings_PasswordHeading}" Classes="h2" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="12">
+              <StackPanel>
+                <TextBlock Text="{x:Static r:Strings.Settings_CurrentPasswordLabel}" Classes="label" />
+                <TextBox Text="{Binding CurrentPassword}" PasswordChar="•" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,12,*">
+                <StackPanel>
+                  <TextBlock Text="{x:Static r:Strings.Settings_NewPasswordLabel}" Classes="label" />
+                  <TextBox Text="{Binding NewPassword}" PasswordChar="•" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="{x:Static r:Strings.Settings_ConfirmPasswordLabel}" Classes="label" />
+                  <TextBox Text="{Binding ConfirmPassword}" PasswordChar="•" />
+                </StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="{x:Static r:Strings.Settings_ChangePassword}" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding !IsBusy}" />
+                <TextBlock Text="{Binding PasswordMessage}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="360"
+                           Classes="status" Classes.error="{Binding PasswordError}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Appearance -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=1}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageAppearance}" Classes="h1" />
           <Border Classes="section-card">
             <StackPanel Spacing="10">
-              <TextBlock Text="THEME" Classes="label" Margin="0" />
+              <TextBlock Text="{x:Static r:Strings.Settings_ThemeLabel}" Classes="label" Margin="0" />
               <ListBox Classes="tiles" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" Margin="-6,0">
                 <ListBox.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -103,49 +161,66 @@
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
-              <CheckBox IsChecked="{Binding MessageSounds}" Content="Play a sound when a message arrives" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,-6,0,0"
-                         Text="When Discagem is in the background or the message is in another channel. Not while deafened." />
+              <TextBlock Text="{x:Static r:Strings.Settings_ThemeHint}" Classes="caption" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
         </StackPanel>
+      </ScrollViewer>
 
-        <!-- Password -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="Password" Classes="h2" />
+      <!-- Notifications -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=2}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageNotifications}" Classes="h1" />
           <Border Classes="section-card">
-            <StackPanel Spacing="12">
-              <StackPanel>
-                <TextBlock Text="CURRENT PASSWORD" Classes="label" />
-                <TextBox Text="{Binding CurrentPassword}" PasswordChar="•" />
-              </StackPanel>
-              <Grid ColumnDefinitions="*,12,*">
-                <StackPanel>
-                  <TextBlock Text="NEW PASSWORD" Classes="label" />
-                  <TextBox Text="{Binding NewPassword}" PasswordChar="•" />
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="CONFIRM NEW PASSWORD" Classes="label" />
-                  <TextBox Text="{Binding ConfirmPassword}" PasswordChar="•" />
-                </StackPanel>
-              </Grid>
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <Button Content="Change password" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding !IsBusy}" />
-                <TextBlock Text="{Binding PasswordMessage}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"
-                           Classes="status" Classes.error="{Binding PasswordError}" />
+            <StackPanel Spacing="10">
+              <TextBlock Text="{x:Static r:Strings.Settings_MessagesLabel}" Classes="label" Margin="0" />
+              <CheckBox IsChecked="{Binding MessageSounds}" Content="{x:Static r:Strings.Settings_MessageSounds}" />
+              <TextBlock Classes="caption hint" TextWrapping="Wrap" Text="{x:Static r:Strings.Settings_MessageSoundsHint}" />
+              <CheckBox IsChecked="{Binding MessageSoundMentionsOnly}" IsEnabled="{Binding MessageSounds}"
+                        Content="{x:Static r:Strings.Settings_MentionsOnly}" />
+              <CheckBox IsChecked="{Binding SilenceSoundsWhileDeafened}" IsEnabled="{Binding MessageSounds}"
+                        Content="{x:Static r:Strings.Settings_SilenceWhileDeafened}" />
+              <TextBlock Classes="caption hint" TextWrapping="Wrap" Text="{x:Static r:Strings.Settings_SilenceWhileDeafenedHint}" />
+              <TextBlock Classes="caption hint error" TextWrapping="Wrap" Text="{Binding DeafenedNotice}"
+                         IsVisible="{Binding DeafenedNotice, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <CheckBox IsChecked="{Binding FlashTaskbar}" Content="{x:Static r:Strings.Settings_FlashTaskbar}" />
+
+              <StackPanel Spacing="4" Margin="0,8,0,0">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{x:Static r:Strings.Settings_NotificationVolumeLabel}" Classes="label" />
+                  <TextBlock Grid.Column="1" Text="{Binding NotificationVolumeText}" Classes="caption" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <Slider Minimum="0" Maximum="200" Value="{Binding NotificationVolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
+                  <Button Grid.Column="1" Classes="ghost" Margin="12,0,0,0" Command="{Binding TestSoundCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <c:Icon Data="{StaticResource IconVolume}" Width="15" Height="15" />
+                      <TextBlock Text="{x:Static r:Strings.Settings_TestSound}" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
               </StackPanel>
             </StackPanel>
           </Border>
-        </StackPanel>
 
-        <!-- Voice -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="Voice &amp; audio" Classes="h2" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{x:Static r:Strings.Settings_CallsLabel}" Classes="label" Margin="0" />
+              <CheckBox IsChecked="{Binding CallSounds}" Content="{x:Static r:Strings.Settings_CallSounds}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Voice & audio -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=3}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageVoice}" Classes="h1" />
           <Border Classes="section-card">
             <StackPanel Spacing="16">
               <Grid ColumnDefinitions="*,12,*">
                 <StackPanel>
-                  <TextBlock Text="INPUT DEVICE" Classes="label" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_InputDeviceLabel}" Classes="label" />
                   <ComboBox ItemsSource="{Binding InputDevices}" SelectedItem="{Binding InputDevice}" HorizontalAlignment="Stretch">
                     <ComboBox.ItemTemplate>
                       <DataTemplate x:DataType="audio:AudioDeviceInfo">
@@ -155,7 +230,7 @@
                   </ComboBox>
                 </StackPanel>
                 <StackPanel Grid.Column="2">
-                  <TextBlock Text="OUTPUT DEVICE" Classes="label" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_OutputDeviceLabel}" Classes="label" />
                   <ComboBox ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding OutputDevice}" HorizontalAlignment="Stretch">
                     <ComboBox.ItemTemplate>
                       <DataTemplate x:DataType="audio:AudioDeviceInfo">
@@ -168,7 +243,7 @@
 
               <StackPanel Spacing="4">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="INPUT SENSITIVITY" Classes="label" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_InputSensitivityLabel}" Classes="label" />
                   <TextBlock Grid.Column="1" Text="{Binding ThresholdText}" Classes="caption" />
                 </Grid>
                 <ProgressBar Minimum="0" Maximum="100" Value="{Binding InputLevelPercent}" Height="6" MinHeight="6"
@@ -176,7 +251,7 @@
                 <Slider Minimum="-80" Maximum="0" Value="{Binding ThresholdDb}" />
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
-                             Text="Speak normally: the bar turns green when others would hear you. Move the slider right if background noise turns it green." />
+                             Text="{x:Static r:Strings.Settings_InputSensitivityHint}" />
                   <Button Grid.Column="1" Content="{Binding MicrophoneTestText}" Command="{Binding ToggleMicrophoneTestCommand}"
                           IsVisible="{Binding CanTestMicrophone}" />
                 </Grid>
@@ -184,7 +259,7 @@
 
               <StackPanel Spacing="4">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="OUTPUT VOLUME" Classes="label" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_OutputVolumeLabel}" Classes="label" />
                   <TextBlock Grid.Column="1" Text="{Binding OutputVolumeText}" Classes="caption" />
                 </Grid>
                 <Slider Minimum="0" Maximum="200" Value="{Binding OutputVolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
@@ -197,14 +272,16 @@
             </StackPanel>
           </Border>
         </StackPanel>
+      </ScrollViewer>
 
-        <!-- Streaming -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="Screen sharing" Classes="h2" />
+      <!-- Screen sharing -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=4}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageStreaming}" Classes="h1" />
           <Border Classes="section-card">
             <StackPanel Spacing="12">
               <StackPanel>
-                <TextBlock Text="DEFAULT QUALITY" Classes="label" />
+                <TextBlock Text="{x:Static r:Strings.Settings_DefaultQualityLabel}" Classes="label" />
                 <ComboBox ItemsSource="{Binding Qualities}" SelectedItem="{Binding DefaultQuality}" Width="240">
                   <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="media:StreamQuality">
@@ -213,52 +290,122 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
               </StackPanel>
+              <TextBlock Text="{x:Static r:Strings.Settings_DefaultQualityHint}" Classes="caption" TextWrapping="Wrap" />
               <TextBlock Text="{Binding CodecInfo}" Classes="caption" />
             </StackPanel>
           </Border>
         </StackPanel>
+      </ScrollViewer>
 
-        <!-- App -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="App" Classes="h2" />
+      <!-- Window & start-up -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=5}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageWindow}" Classes="h1" />
           <Border Classes="section-card">
-            <StackPanel Spacing="6">
-              <CheckBox IsChecked="{Binding CloseToTray}" Content="Keep running in the notification area when the window is closed" />
-              <TextBlock Text="{Binding TrayHint}" Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0" />
-              <CheckBox IsChecked="{Binding CheckForUpdatesAutomatically}" Content="Check for updates automatically" Margin="0,10,0,0" />
-              <StackPanel Orientation="Horizontal" Spacing="12" Margin="28,2,0,0">
-                <Button Classes="ghost" Content="Check now" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdates}" />
-                <TextBlock Text="{Binding UpdateStatus}" Classes="caption" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="360" />
+            <StackPanel Spacing="8">
+              <TextBlock Text="{x:Static r:Strings.Settings_CloseButtonLabel}" Classes="label" Margin="0" />
+              <RadioButton Classes="choice" GroupName="close" IsChecked="{Binding CloseToTray}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{x:Static r:Strings.Settings_CloseToTray}" FontWeight="SemiBold" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_CloseToTrayHint}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Classes="choice" GroupName="close" IsChecked="{Binding CloseQuits}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{x:Static r:Strings.Settings_CloseQuits}" FontWeight="SemiBold" />
+                  <TextBlock Text="{x:Static r:Strings.Settings_CloseQuitsHint}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+              </RadioButton>
+              <CheckBox IsChecked="{Binding MinimizeToTray}" Content="{x:Static r:Strings.Settings_MinimizeToTray}" Margin="0,8,0,0" />
+              <TextBlock Text="{Binding TrayHint}" Classes="caption" TextWrapping="Wrap" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="section-card">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{x:Static r:Strings.Settings_StartupLabel}" Classes="label" Margin="0" />
+              <CheckBox IsChecked="{Binding StartWithSystem}" Content="{Binding StartWithSystemText}" IsEnabled="{Binding CanStartWithSystem}" />
+              <TextBlock Text="{Binding StartWithSystemHint}" Classes="caption hint" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding StartWithSystemError}" Classes="caption hint error" TextWrapping="Wrap"
+                         IsVisible="{Binding StartWithSystemError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <CheckBox IsChecked="{Binding StartMinimized}" Content="{x:Static r:Strings.Settings_StartMinimized}"
+                        IsEnabled="{Binding StartWithSystem}" Margin="28,0,0,0" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Language -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=6}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageLanguage}" Classes="h1" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{x:Static r:Strings.Settings_LanguageLabel}" Classes="label" Margin="0" />
+              <ListBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" Background="Transparent">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="services:LanguageOption">
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding NeedsRestart}">
+                <TextBlock Text="{x:Static r:Strings.Settings_LanguageRestart}" Classes="caption" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
+                <Button Classes="primary" Content="{x:Static r:Strings.Settings_RestartNow}" Command="{Binding RestartCommand}" IsVisible="{Binding CanRestart}" />
               </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
+      </ScrollViewer>
 
-        <!-- About -->
-        <StackPanel Spacing="6">
-          <TextBlock Text="About" Classes="h2" Margin="0,0,0,8" />
-          <TextBlock Classes="secondary">
-            <Run Text="Server: " /><Run Text="{Binding ServerName}" FontWeight="SemiBold" />
-          </TextBlock>
-          <TextBlock Text="{Binding ServerAddress}" Classes="caption" />
-          <TextBlock Text="{Binding AppVersion, StringFormat='Discagem desktop {0}'}" Classes="caption" />
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-            <Button Classes="link" Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
-            <TextBlock Text="{Binding LogFolder}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
+      <!-- About -->
+      <ScrollViewer Classes="page" IsVisible="{Binding SelectedPageIndex, Converter={x:Static views:Converters.IsIndex}, ConverterParameter=7}">
+        <StackPanel>
+          <TextBlock Text="{x:Static r:Strings.Settings_PageAbout}" Classes="h1" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{Binding AppVersionText}" Classes="h2" />
+              <TextBlock Classes="secondary">
+                <Run Text="{x:Static r:Strings.Settings_ServerPrefix}" /><Run Text="{Binding ServerName}" FontWeight="SemiBold" />
+              </TextBlock>
+              <TextBlock Text="{Binding ServerAddress}" Classes="caption" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="section-card">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{x:Static r:Strings.Settings_UpdatesLabel}" Classes="label" Margin="0" />
+              <CheckBox IsChecked="{Binding CheckForUpdatesAutomatically}" Content="{x:Static r:Strings.Settings_CheckForUpdatesAutomatically}" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Classes="ghost" Content="{x:Static r:Strings.Settings_CheckNow}" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdates}" />
+                <TextBlock Text="{Binding UpdateStatus}" Classes="caption" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="400" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="section-card">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{x:Static r:Strings.Settings_DiagnosticsLabel}" Classes="label" Margin="0" />
+              <TextBlock Text="{x:Static r:Strings.Settings_DiagnosticsHint}" Classes="caption" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="link" Content="{x:Static r:Strings.Settings_OpenLogFolder}" Command="{Binding OpenLogFolderCommand}" />
+                <TextBlock Text="{Binding LogFolder}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
         </StackPanel>
-      </StackPanel>
-    </ScrollViewer>
+      </ScrollViewer>
+    </Grid>
 
-    <Border Grid.Row="1" Background="{DynamicResource SidebarBrush}" Padding="20,14">
+    <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource SidebarBrush}" Padding="20,14">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <Button Classes="danger" Command="{Binding LogoutCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Data="{StaticResource IconLogout}" Width="16" Height="16" />
-            <TextBlock Text="Log out" />
+            <TextBlock Text="{x:Static r:Strings.Settings_Logout}" />
           </StackPanel>
         </Button>
-        <Button Grid.Column="2" Classes="ghost" Content="Close" Click="OnClose" IsCancel="True" />
+        <Button Grid.Column="2" Classes="ghost" Content="{x:Static r:Strings.Settings_Close}" Click="OnClose" IsCancel="True" />
       </Grid>
     </Border>
   </Grid>

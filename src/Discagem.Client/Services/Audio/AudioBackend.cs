@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Discagem.Client.Resources;
 using Discagem.Media.Audio;
 using Discagem.Media.WebRtc;
 
@@ -7,7 +8,7 @@ namespace Discagem.Client.Services.Audio;
 /// <summary>A microphone or speaker device. An empty id means "the system default".</summary>
 public sealed record AudioDeviceInfo(string Id, string Name)
 {
-    public static AudioDeviceInfo Default { get; } = new("", "System default");
+    public static AudioDeviceInfo Default { get; } = new("", Strings.Audio_SystemDefault);
 
     public override string ToString() => Name;
 }
@@ -76,24 +77,24 @@ public static class AudioBackends
 /// <summary>No usable audio system: voice works without a microphone or speakers.</summary>
 internal sealed class UnavailableAudioBackend : IAudioBackend
 {
-    public string Name => "None";
+    public string Name => Strings.Audio_NoBackend;
 
     public IReadOnlyList<AudioDeviceInfo> InputDevices() => [AudioDeviceInfo.Default];
 
     public IReadOnlyList<AudioDeviceInfo> OutputDevices() => [AudioDeviceInfo.Default];
 
     public IAudioStream OpenInput(string? deviceId, AudioSink sink) =>
-        throw new AudioDeviceException("No audio system was found (PulseAudio or PipeWire is required on Linux).");
+        throw new AudioDeviceException(Strings.Audio_NoAudioSystem);
 
     public IAudioStream OpenOutput(string? deviceId, AudioSource source, int channels = 1) =>
-        throw new AudioDeviceException("No audio system was found (PulseAudio or PipeWire is required on Linux).");
+        throw new AudioDeviceException(Strings.Audio_NoAudioSystem);
 
     public bool SupportsSystemCapture => false;
 
     public bool SupportsApplicationCapture => false;
 
     public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) =>
-        throw new AudioDeviceException("No audio system was found (PulseAudio or PipeWire is required on Linux).");
+        throw new AudioDeviceException(Strings.Audio_NoAudioSystem);
 }
 
 /// <summary>

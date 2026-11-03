@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="App_ConnectingToServer" xml:space="preserve"><value>Conectando ao seu servidor…</value></data>
+  <data name="App_SessionExpired" xml:space="preserve"><value>Sua sessão expirou. Entre novamente.</value></data>
+  <data name="Attach_DownloadTip" xml:space="preserve"><value>Baixar</value></data>
+  <data name="Attach_DropSubtitle" xml:space="preserve"><value>Eles serão anexados à sua próxima mensagem em #{0}</value></data>
+  <data name="Attach_DropTitle" xml:space="preserve"><value>Solte arquivos para enviar</value></data>
+  <data name="Attach_RemoveTip" xml:space="preserve"><value>Remover</value></data>
+  <data name="Attach_UploadTip" xml:space="preserve"><value>Enviar um arquivo</value></data>
+  <data name="Audio_ApplicationSound" xml:space="preserve"><value>Som do aplicativo</value></data>
+  <data name="Audio_ApplicationsSoundWithoutDiscagem" xml:space="preserve"><value>Som dos aplicativos (sem o Discagem)</value></data>
+  <data name="Audio_CouldNotCaptureComputerSound" xml:space="preserve"><value>não foi possível capturar o som do computador ({0}).</value></data>
+  <data name="Audio_CouldNotOpenComputerAudio" xml:space="preserve"><value>Não foi possível abrir o áudio do computador ({0}).</value></data>
+  <data name="Audio_CouldNotOpenMicrophone" xml:space="preserve"><value>Não foi possível abrir o microfone ({0}).</value></data>
+  <data name="Audio_CouldNotOpenSpeakers" xml:space="preserve"><value>Não foi possível abrir a saída de áudio ({0}).</value></data>
+  <data name="Audio_DisconnectedFromVoice" xml:space="preserve"><value>Desconectado da voz: {0}.</value></data>
+  <data name="Audio_EverythingExceptDiscagem" xml:space="preserve"><value>tudo, menos o Discagem</value></data>
+  <data name="Audio_EverythingExceptDiscagemFallback" xml:space="preserve"><value>tudo, menos o Discagem (não foi possível capturar só o aplicativo da janela)</value></data>
+  <data name="Audio_MicrophoneStopped" xml:space="preserve"><value>O microfone parou de funcionar: {0}</value></data>
+  <data name="Audio_NoAudioSystem" xml:space="preserve"><value>Nenhum sistema de áudio foi encontrado (o Linux precisa do PulseAudio ou do PipeWire).</value></data>
+  <data name="Audio_NoBackend" xml:space="preserve"><value>Nenhum</value></data>
+  <data name="Audio_NoMicrophoneFound" xml:space="preserve"><value>Nenhum microfone foi encontrado.</value></data>
+  <data name="Audio_NoSpeakersFound" xml:space="preserve"><value>Nenhum alto-falante ou fone de ouvido foi encontrado.</value></data>
+  <data name="Audio_OthersWillNotHearYou" xml:space="preserve"><value>{0} Os outros não vão ouvir você.</value></data>
+  <data name="Audio_OutputStopped" xml:space="preserve"><value>A saída de áudio parou de funcionar: {0}</value></data>
+  <data name="Audio_PulseConnectFailed" xml:space="preserve"><value>Não foi possível conectar ao PulseAudio: {0}.</value></data>
+  <data name="Audio_PulseConnectionLost" xml:space="preserve"><value>Conexão com o PulseAudio perdida ({0})</value></data>
+  <data name="Audio_PulseMainLoopFailed" xml:space="preserve"><value>Não foi possível iniciar o loop principal do PulseAudio.</value></data>
+  <data name="Audio_SharedWindowApplication" xml:space="preserve"><value>o aplicativo da janela compartilhada</value></data>
+  <data name="Audio_SystemCaptureNeedsWindows2004" xml:space="preserve"><value>compartilhar o som sem o seu chat de voz requer o Windows 10 versão 2004 ou mais recente.</value></data>
+  <data name="Audio_SystemDefault" xml:space="preserve"><value>Padrão do sistema</value></data>
+  <data name="Audio_UnsupportedDeviceFormat" xml:space="preserve"><value>Formato de dispositivo não suportado: {0}.</value></data>
+  <data name="Audio_VoiceConnectionFailed" xml:space="preserve"><value>Não foi possível estabelecer a conexão de voz. Verifique se as portas UDP de mídia do servidor estão acessíveis.</value></data>
+  <data name="Audio_VoiceConnectionLost" xml:space="preserve"><value>A conexão de voz caiu.</value></data>
+  <data name="Audio_WindowsAudioUnavailable" xml:space="preserve"><value>O serviço de áudio do Windows não está disponível ({0}).</value></data>
+  <data name="Audio_YouWillNotHearOthers" xml:space="preserve"><value>{0} Você não vai ouvir os outros.</value></data>
+  <data name="ChannelEditor_ChannelNameLabel" xml:space="preserve"><value>NOME DO CANAL</value></data>
+  <data name="ChannelEditor_ChannelTypeLabel" xml:space="preserve"><value>TIPO DE CANAL</value></data>
+  <data name="ChannelEditor_TextKind" xml:space="preserve"><value>Texto</value></data>
+  <data name="ChannelEditor_TextKindDescription" xml:space="preserve"><value>Envie mensagens, imagens, arquivos e links</value></data>
+  <data name="ChannelEditor_TopicLabel" xml:space="preserve"><value>TÓPICO</value></data>
+  <data name="ChannelEditor_TopicWatermark" xml:space="preserve"><value>Conte a todos sobre o que é este canal</value></data>
+  <data name="ChannelEditor_VoiceKind" xml:space="preserve"><value>Voz</value></data>
+  <data name="ChannelEditor_VoiceKindDescription" xml:space="preserve"><value>Passe um tempo junto com a galera por voz</value></data>
+  <data name="ChannelVm_CreateConfirm" xml:space="preserve"><value>Criar canal</value></data>
+  <data name="ChannelVm_CreateHeading" xml:space="preserve"><value>Criar canal</value></data>
+  <data name="ChannelVm_EditConfirm" xml:space="preserve"><value>Salvar alterações</value></data>
+  <data name="ChannelVm_EditHeading" xml:space="preserve"><value>Editar canal</value></data>
+  <data name="ChannelVm_TextWatermark" xml:space="preserve"><value>novo-canal</value></data>
+  <data name="ChannelVm_VoiceWatermark" xml:space="preserve"><value>Bate-papo</value></data>
+  <data name="Chat_DeleteTip" xml:space="preserve"><value>Excluir</value></data>
+  <data name="Chat_DismissTip" xml:space="preserve"><value>Dispensar</value></data>
+  <data name="Chat_EditHintCancel" xml:space="preserve"><value>cancelar</value></data>
+  <data name="Chat_EditHintEnter" xml:space="preserve"><value>enter para</value></data>
+  <data name="Chat_EditHintEscape" xml:space="preserve"><value>esc para</value></data>
+  <data name="Chat_EditHintSave" xml:space="preserve"><value>salvar</value></data>
+  <data name="Chat_EditTip" xml:space="preserve"><value>Editar</value></data>
+  <data name="Chat_Edited" xml:space="preserve"><value>(editada)</value></data>
+  <data name="Chat_MemberListTip" xml:space="preserve"><value>Lista de membros</value></data>
+  <data name="Chat_Says" xml:space="preserve"><value>diz:</value></data>
+  <data name="Chat_Send" xml:space="preserve"><value>Enviar</value></data>
+  <data name="Chat_TimestampDate" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="Chat_TimestampToday" xml:space="preserve"><value>Hoje às {0}</value></data>
+  <data name="Chat_TimestampYesterday" xml:space="preserve"><value>Ontem às {0}</value></data>
+  <data name="Chat_UpdateLaterTip" xml:space="preserve"><value>Mais tarde</value></data>
+  <data name="Chat_UpdateWhatsNew" xml:space="preserve"><value>Novidades</value></data>
+  <data name="Chat_WelcomeSubtitle" xml:space="preserve"><value>Este é o começo do canal #{0}.</value></data>
+  <data name="Chat_WelcomeTitle" xml:space="preserve"><value>Boas-vindas a #{0}!</value></data>
+  <data name="Conv_ComposerPlaceholder" xml:space="preserve"><value>Conversar em #{0}</value></data>
+  <data name="Conv_DeleteMessageButton" xml:space="preserve"><value>Excluir</value></data>
+  <data name="Conv_DeleteMessageConfirm" xml:space="preserve"><value>Tem certeza de que deseja excluir esta mensagem? Essa ação não pode ser desfeita.</value></data>
+  <data name="Conv_DeleteMessageFailed" xml:space="preserve"><value>Não foi possível excluir a mensagem</value></data>
+  <data name="Conv_DeleteMessageTitle" xml:space="preserve"><value>Excluir mensagem</value></data>
+  <data name="Conv_EditMessageFailed" xml:space="preserve"><value>Não foi possível editar a mensagem</value></data>
+  <data name="Conv_LoadMessagesFailed" xml:space="preserve"><value>Não foi possível carregar as mensagens: {0}</value></data>
+  <data name="Conv_LoadOlderMessagesFailed" xml:space="preserve"><value>Não foi possível carregar as mensagens anteriores: {0}</value></data>
+  <data name="Conv_MessageNotSent" xml:space="preserve"><value>Mensagem não enviada: {0}</value></data>
+  <data name="Conv_MessageTooLong" xml:space="preserve"><value>As mensagens podem ter no máximo {0} caracteres.</value></data>
+  <data name="Conv_TooManyAttachments" xml:space="preserve"><value>Você pode anexar no máximo {0} arquivos por mensagem.</value></data>
+  <data name="Conv_TypingOne" xml:space="preserve"><value>{0} está digitando…</value></data>
+  <data name="Conv_TypingSeveral" xml:space="preserve"><value>Várias pessoas estão digitando…</value></data>
+  <data name="Conv_TypingThree" xml:space="preserve"><value>{0}, {1} e {2} estão digitando…</value></data>
+  <data name="Conv_TypingTwo" xml:space="preserve"><value>{0} e {1} estão digitando…</value></data>
+  <data name="Dialog_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Dialog_ImagesFileType" xml:space="preserve"><value>Imagens</value></data>
+  <data name="Dialog_SaveFileTitle" xml:space="preserve"><value>Salvar arquivo</value></data>
+  <data name="Dialog_UploadFilesTitle" xml:space="preserve"><value>Enviar arquivos</value></data>
+  <data name="Error_CouldNotReachServer" xml:space="preserve"><value>Não foi possível acessar o servidor.</value></data>
+  <data name="Error_CouldNotReachServerDetail" xml:space="preserve"><value>Não foi possível acessar o servidor ({0}).</value></data>
+  <data name="Error_EmptyResponse" xml:space="preserve"><value>O servidor enviou uma resposta vazia.</value></data>
+  <data name="Error_FileTooLarge" xml:space="preserve"><value>Esse arquivo é grande demais.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>Não encontrado. Confira o endereço do servidor.</value></data>
+  <data name="Error_ServerError" xml:space="preserve"><value>O servidor retornou um erro ({0}).</value></data>
+  <data name="Error_SessionExpired" xml:space="preserve"><value>Sua sessão expirou. Entre novamente.</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>O servidor não respondeu a tempo.</value></data>
+  <data name="Error_TooManyAttempts" xml:space="preserve"><value>Muitas tentativas. Aguarde um minuto e tente novamente.</value></data>
+  <data name="Error_UnexpectedResponse" xml:space="preserve"><value>O servidor enviou uma resposta inesperada. Este é mesmo um servidor Discagem?</value></data>
+  <data name="Image_LoadFailed" xml:space="preserve"><value>Não foi possível carregar a imagem.</value></data>
+  <data name="Image_SaveImage" xml:space="preserve"><value>Salvar imagem…</value></data>
+  <data name="Login_CreateAccount" xml:space="preserve"><value>Criar conta</value></data>
+  <data name="Login_DisplayNameLabel" xml:space="preserve"><value>NOME DE EXIBIÇÃO</value></data>
+  <data name="Login_DisplayNameWatermark" xml:space="preserve"><value>Como os outros veem você (opcional)</value></data>
+  <data name="Login_EnterCredentials" xml:space="preserve"><value>Digite seu nome de usuário e sua senha.</value></data>
+  <data name="Login_EnterServerAddress" xml:space="preserve"><value>Digite o endereço do seu servidor Discagem, por exemplo chat.example.com.</value></data>
+  <data name="Login_HaveAccountPrompt" xml:space="preserve"><value>Já tem uma conta?</value></data>
+  <data name="Login_InviteCodeLabel" xml:space="preserve"><value>CÓDIGO DE CONVITE</value></data>
+  <data name="Login_InviteCodeWatermark" xml:space="preserve"><value>Peça ao dono do servidor</value></data>
+  <data name="Login_LogIn" xml:space="preserve"><value>Entrar</value></data>
+  <data name="Login_NeedAccountPrompt" xml:space="preserve"><value>Precisa de uma conta?</value></data>
+  <data name="Login_PasswordLabel" xml:space="preserve"><value>SENHA</value></data>
+  <data name="Login_Register" xml:space="preserve"><value>Criar conta</value></data>
+  <data name="Login_RegisterHeading" xml:space="preserve"><value>Criar uma conta</value></data>
+  <data name="Login_RegisterSubheading" xml:space="preserve"><value>Junte-se aos seus amigos no seu servidor privado.</value></data>
+  <data name="Login_ServerAddressLabel" xml:space="preserve"><value>ENDEREÇO DO SERVIDOR</value></data>
+  <data name="Login_ServerStatusRegistrationClosed" xml:space="preserve"><value>{0} · cadastro fechado</value></data>
+  <data name="Login_ServerUnreachable" xml:space="preserve"><value>Servidor inacessível</value></data>
+  <data name="Login_SignInHeading" xml:space="preserve"><value>Boas-vindas de volta!</value></data>
+  <data name="Login_SignInSubheading" xml:space="preserve"><value>Estamos muito animados em ver você de novo!</value></data>
+  <data name="Login_UsernameLabel" xml:space="preserve"><value>NOME DE USUÁRIO</value></data>
+  <data name="Members_LiveBadge" xml:space="preserve"><value>AO VIVO</value></data>
+  <data name="Members_OfflineCountAero" xml:space="preserve"><value>Offline ({0})</value></data>
+  <data name="Members_OfflineHeader" xml:space="preserve"><value>OFFLINE — {0}</value></data>
+  <data name="Members_OnlineCountAero" xml:space="preserve"><value>Online ({0})</value></data>
+  <data name="Members_OnlineHeader" xml:space="preserve"><value>ONLINE — {0}</value></data>
+  <data name="Members_ServerAdmin" xml:space="preserve"><value>Administrador do servidor</value></data>
+  <data name="Members_Streaming" xml:space="preserve"><value>Transmitindo</value></data>
+  <data name="Members_UnknownUser" xml:space="preserve"><value>Usuário desconhecido</value></data>
+  <data name="Picker_AllScreens" xml:space="preserve"><value>Todas as telas</value></data>
+  <data name="Picker_ApplicationsTab" xml:space="preserve"><value>Aplicativos</value></data>
+  <data name="Picker_AudioHintEverything" xml:space="preserve"><value>Os espectadores ouvem tudo o que o seu computador reproduz, incluindo o chat de voz do Discagem. Desative esta opção se eles estiverem no seu canal de voz.</value></data>
+  <data name="Picker_AudioHintExceptDiscagem" xml:space="preserve"><value>Os espectadores ouvem tudo o que o seu computador reproduz, exceto o Discagem: o seu chat de voz fica fora da transmissão.</value></data>
+  <data name="Picker_AudioHintOff" xml:space="preserve"><value>Os espectadores não vão ouvir nada.</value></data>
+  <data name="Picker_AudioHintWindow" xml:space="preserve"><value>Os espectadores ouvem apenas o aplicativo desta janela.</value></data>
+  <data name="Picker_AudioNeedsPulse" xml:space="preserve"><value>Compartilhar o som requer PulseAudio ou PipeWire.</value></data>
+  <data name="Picker_AudioNeedsWindows" xml:space="preserve"><value>Compartilhar o som requer o Windows 10 versão 2004 ou posterior.</value></data>
+  <data name="Picker_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Picker_EntireScreen" xml:space="preserve"><value>Tela inteira</value></data>
+  <data name="Picker_GoLive" xml:space="preserve"><value>Transmitir</value></data>
+  <data name="Picker_QualityLabel" xml:space="preserve"><value>QUALIDADE</value></data>
+  <data name="Picker_ScreenNumber" xml:space="preserve"><value>Tela {0}</value></data>
+  <data name="Picker_ScreenNumberPrimary" xml:space="preserve"><value>Tela {0} (principal)</value></data>
+  <data name="Picker_ScreensTab" xml:space="preserve"><value>Telas</value></data>
+  <data name="Picker_ShareAudio" xml:space="preserve"><value>Compartilhar áudio</value></data>
+  <data name="Picker_StreamTitleLabel" xml:space="preserve"><value>TÍTULO DA TRANSMISSÃO</value></data>
+  <data name="Picker_Subtitle" xml:space="preserve"><value>Escolha uma tela ou uma janela de aplicativo. Todos no servidor poderão assistir.</value></data>
+  <data name="Picker_Title" xml:space="preserve"><value>Compartilhar sua tela</value></data>
+  <data name="Picker_UnsupportedLinux" xml:space="preserve"><value>No Linux, o compartilhamento de tela requer no momento uma sessão X11 (o Wayland ainda não é suportado).</value></data>
+  <data name="Picker_UnsupportedPlatform" xml:space="preserve"><value>O compartilhamento de tela ainda não é suportado nesta plataforma.</value></data>
+  <data name="Server_AccountGone" xml:space="preserve"><value>Sua conta não existe mais.</value></data>
+  <data name="Server_AdminsOnly" xml:space="preserve"><value>Só administradores podem gerenciar canais.</value></data>
+  <data name="Server_AttachmentsInvalid" xml:space="preserve"><value>Um ou mais anexos são inválidos.</value></data>
+  <data name="Server_AvatarColorFormat" xml:space="preserve"><value>A cor do avatar deve estar no formato #RRGGBB.</value></data>
+  <data name="Server_AvatarFormat" xml:space="preserve"><value>As fotos de perfil devem ser imagens PNG ou JPEG.</value></data>
+  <data name="Server_AvatarTooLarge" xml:space="preserve"><value>As fotos de perfil podem ter no máximo {0} MB.</value></data>
+  <data name="Server_ChannelNameCharacters" xml:space="preserve"><value>O nome do canal deve conter letras ou números.</value></data>
+  <data name="Server_ChannelNameEmpty" xml:space="preserve"><value>O nome do canal não pode ficar vazio.</value></data>
+  <data name="Server_ChannelNotFound" xml:space="preserve"><value>Esse canal não existe.</value></data>
+  <data name="Server_CredentialsRequired" xml:space="preserve"><value>O nome de usuário e a senha são obrigatórios.</value></data>
+  <data name="Server_CurrentPasswordIncorrect" xml:space="preserve"><value>A senha atual está incorreta.</value></data>
+  <data name="Server_DeleteOwnMessagesOnly" xml:space="preserve"><value>Você só pode excluir as suas próprias mensagens.</value></data>
+  <data name="Server_DisplayNameEmpty" xml:space="preserve"><value>O nome de exibição não pode ficar vazio.</value></data>
+  <data name="Server_EditOwnMessagesOnly" xml:space="preserve"><value>Você só pode editar as suas próprias mensagens.</value></data>
+  <data name="Server_ExpectedMultipart" xml:space="preserve"><value>Era esperada uma requisição multipart/form-data.</value></data>
+  <data name="Server_FileTooLarge" xml:space="preserve"><value>Os arquivos podem ter no máximo {0} MB.</value></data>
+  <data name="Server_InvalidCredentials" xml:space="preserve"><value>Nome de usuário ou senha inválidos.</value></data>
+  <data name="Server_InvalidInviteCode" xml:space="preserve"><value>Código de convite inválido.</value></data>
+  <data name="Server_LastTextChannel" xml:space="preserve"><value>O último canal de texto não pode ser excluído.</value></data>
+  <data name="Server_MessageEmpty" xml:space="preserve"><value>A mensagem não pode ficar vazia.</value></data>
+  <data name="Server_MessageNotFound" xml:space="preserve"><value>Essa mensagem não existe.</value></data>
+  <data name="Server_MessageTooLong" xml:space="preserve"><value>As mensagens podem ter no máximo {0} caracteres.</value></data>
+  <data name="Server_MissingSessionDescription" xml:space="preserve"><value>A descrição da sessão está faltando.</value></data>
+  <data name="Server_NoFileUploaded" xml:space="preserve"><value>Nenhum arquivo foi enviado.</value></data>
+  <data name="Server_NoPhotoUploaded" xml:space="preserve"><value>Nenhuma foto foi enviada.</value></data>
+  <data name="Server_PasswordLength" xml:space="preserve"><value>A senha deve ter pelo menos {0} caracteres.</value></data>
+  <data name="Server_PasswordTooLong" xml:space="preserve"><value>A senha é longa demais.</value></data>
+  <data name="Server_ReasonChannelDeleted" xml:space="preserve"><value>o canal foi excluído</value></data>
+  <data name="Server_ReasonClosed" xml:space="preserve"><value>conexão encerrada</value></data>
+  <data name="Server_ReasonConnectionFailed" xml:space="preserve"><value>a conexão falhou</value></data>
+  <data name="Server_ReasonJoinedElsewhere" xml:space="preserve"><value>você entrou de outro lugar</value></data>
+  <data name="Server_ReasonPublisherDisconnected" xml:space="preserve"><value>quem estava transmitindo se desconectou</value></data>
+  <data name="Server_ReasonReplaced" xml:space="preserve"><value>substituída por outra sessão</value></data>
+  <data name="Server_ReasonServerShuttingDown" xml:space="preserve"><value>o servidor está sendo desligado</value></data>
+  <data name="Server_ReasonStoppedByPublisher" xml:space="preserve"><value>encerrada por quem estava transmitindo</value></data>
+  <data name="Server_ReasonStreamEnded" xml:space="preserve"><value>a transmissão terminou</value></data>
+  <data name="Server_RegistrationClosed" xml:space="preserve"><value>O cadastro está fechado neste servidor.</value></data>
+  <data name="Server_SessionDescriptionInvalid" xml:space="preserve"><value>Não foi possível ler a descrição da sessão.</value></data>
+  <data name="Server_SessionDescriptionRejected" xml:space="preserve"><value>A descrição da sessão foi rejeitada ({0}).</value></data>
+  <data name="Server_StreamFull" xml:space="preserve"><value>Esta transmissão atingiu o limite de espectadores.</value></data>
+  <data name="Server_StreamNotLive" xml:space="preserve"><value>Essa transmissão não está mais ao vivo.</value></data>
+  <data name="Server_TextChannelNotFound" xml:space="preserve"><value>Esse canal de texto não existe.</value></data>
+  <data name="Server_TooManyAttachments" xml:space="preserve"><value>No máximo {0} anexos por mensagem.</value></data>
+  <data name="Server_UnknownChannelType" xml:space="preserve"><value>Tipo de canal desconhecido.</value></data>
+  <data name="Server_UnsupportedStreamFormat" xml:space="preserve"><value>Formato de transmissão não suportado.</value></data>
+  <data name="Server_UsernameCharacters" xml:space="preserve"><value>O nome de usuário só pode conter letras, números, '_' e '.'.</value></data>
+  <data name="Server_UsernameLength" xml:space="preserve"><value>O nome de usuário deve ter entre {0} e {1} caracteres.</value></data>
+  <data name="Server_UsernameRequired" xml:space="preserve"><value>O nome de usuário é obrigatório.</value></data>
+  <data name="Server_UsernameTaken" xml:space="preserve"><value>Esse nome de usuário já está em uso.</value></data>
+  <data name="Server_VoiceChannelFull" xml:space="preserve"><value>Este canal de voz está cheio.</value></data>
+  <data name="Server_VoiceChannelNotFound" xml:space="preserve"><value>Esse canal de voz não existe.</value></data>
+  <data name="Settings_AppVersion" xml:space="preserve"><value>Discagem para desktop {0}</value></data>
+  <data name="Settings_AudioSystem" xml:space="preserve"><value>Áudio: {0}</value></data>
+  <data name="Settings_AvatarColorLabel" xml:space="preserve"><value>COR DO AVATAR</value></data>
+  <data name="Settings_CallSounds" xml:space="preserve"><value>Tocar sons quando eu ou outras pessoas entrarem ou saírem de uma chamada</value></data>
+  <data name="Settings_CallsLabel" xml:space="preserve"><value>CHAMADAS</value></data>
+  <data name="Settings_ChangePassword" xml:space="preserve"><value>Alterar senha</value></data>
+  <data name="Settings_ChangePhoto" xml:space="preserve"><value>Alterar foto</value></data>
+  <data name="Settings_CheckForUpdatesAutomatically" xml:space="preserve"><value>Procurar atualizações automaticamente</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>Procurar agora</value></data>
+  <data name="Settings_CheckingForUpdates" xml:space="preserve"><value>Procurando…</value></data>
+  <data name="Settings_ChoosePhotoTitle" xml:space="preserve"><value>Escolha uma foto de perfil</value></data>
+  <data name="Settings_Close" xml:space="preserve"><value>Fechar</value></data>
+  <data name="Settings_CloseButtonLabel" xml:space="preserve"><value>AO FECHAR A JANELA</value></data>
+  <data name="Settings_CloseQuits" xml:space="preserve"><value>Encerrar o Discagem</value></data>
+  <data name="Settings_CloseQuitsHint" xml:space="preserve"><value>Sai de qualquer chamada e deixa você offline até abri-lo de novo.</value></data>
+  <data name="Settings_CloseToTray" xml:space="preserve"><value>Manter o Discagem aberto na área de notificação</value></data>
+  <data name="Settings_CloseToTrayHint" xml:space="preserve"><value>Você continua online e recebendo mensagens e chamadas.</value></data>
+  <data name="Settings_CodecInfo" xml:space="preserve"><value>VP8 via libvpx {0}</value></data>
+  <data name="Settings_CodecMissing" xml:space="preserve"><value>libvpx não encontrada — compartilhamento de tela indisponível</value></data>
+  <data name="Settings_ConfirmPasswordLabel" xml:space="preserve"><value>CONFIRME A NOVA SENHA</value></data>
+  <data name="Settings_CurrentPasswordLabel" xml:space="preserve"><value>SENHA ATUAL</value></data>
+  <data name="Settings_DeafenedNotice" xml:space="preserve"><value>Seu áudio está desativado agora, então os sons de mensagem estão silenciados.</value></data>
+  <data name="Settings_DefaultQualityHint" xml:space="preserve"><value>Já vem selecionada ao compartilhar a tela; você ainda pode mudá-la a cada vez.</value></data>
+  <data name="Settings_DefaultQualityLabel" xml:space="preserve"><value>QUALIDADE PADRÃO</value></data>
+  <data name="Settings_DiagnosticsHint" xml:space="preserve"><value>O log registra o que deu errado (sem mensagens nem senhas). Envie-o junto ao relatar um problema.</value></data>
+  <data name="Settings_DiagnosticsLabel" xml:space="preserve"><value>DIAGNÓSTICO</value></data>
+  <data name="Settings_DisplayNameLabel" xml:space="preserve"><value>NOME DE EXIBIÇÃO</value></data>
+  <data name="Settings_EchoAdviceOther" xml:space="preserve"><value>Use fones de ouvido para que os outros não se ouçam pelo seu microfone.</value></data>
+  <data name="Settings_EchoAdviceWindows" xml:space="preserve"><value>O cancelamento de eco e a supressão de ruído do Windows são usados quando o seu microfone os suporta.</value></data>
+  <data name="Settings_FlashTaskbar" xml:space="preserve"><value>Piscar o botão na barra de tarefas quando chegar uma mensagem</value></data>
+  <data name="Settings_InputDeviceLabel" xml:space="preserve"><value>DISPOSITIVO DE ENTRADA</value></data>
+  <data name="Settings_InputSensitivityHint" xml:space="preserve"><value>Fale normalmente: a barra fica verde quando os outros ouviriam você. Mova o controle para a direita se o ruído de fundo deixá-la verde.</value></data>
+  <data name="Settings_InputSensitivityLabel" xml:space="preserve"><value>SENSIBILIDADE DE ENTRADA</value></data>
+  <data name="Settings_LanguageLabel" xml:space="preserve"><value>IDIOMA DA INTERFACE</value></data>
+  <data name="Settings_LanguageRestart" xml:space="preserve"><value>O novo idioma vale quando o Discagem reiniciar.</value></data>
+  <data name="Settings_LanguageSystem" xml:space="preserve"><value>Idioma do sistema</value></data>
+  <data name="Settings_Logout" xml:space="preserve"><value>Sair</value></data>
+  <data name="Settings_MentionsOnly" xml:space="preserve"><value>Só para mensagens que me mencionam</value></data>
+  <data name="Settings_MessageSounds" xml:space="preserve"><value>Tocar um som quando chegar uma mensagem</value></data>
+  <data name="Settings_MessageSoundsHint" xml:space="preserve"><value>Quando o Discagem está em segundo plano ou a mensagem é de outro canal.</value></data>
+  <data name="Settings_MessagesLabel" xml:space="preserve"><value>MENSAGENS</value></data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve"><value>Minimizar para a área de notificação em vez da barra de tarefas</value></data>
+  <data name="Settings_NavHeading" xml:space="preserve"><value>CONFIGURAÇÕES</value></data>
+  <data name="Settings_NewPasswordLabel" xml:space="preserve"><value>NOVA SENHA</value></data>
+  <data name="Settings_NotificationVolumeLabel" xml:space="preserve"><value>VOLUME DAS NOTIFICAÇÕES</value></data>
+  <data name="Settings_OpenLogFolder" xml:space="preserve"><value>Abrir pasta do log</value></data>
+  <data name="Settings_OutputDeviceLabel" xml:space="preserve"><value>DISPOSITIVO DE SAÍDA</value></data>
+  <data name="Settings_OutputVolumeLabel" xml:space="preserve"><value>VOLUME DE SAÍDA</value></data>
+  <data name="Settings_PageAbout" xml:space="preserve"><value>Sobre</value></data>
+  <data name="Settings_PageAccount" xml:space="preserve"><value>Minha conta</value></data>
+  <data name="Settings_PageAppearance" xml:space="preserve"><value>Aparência</value></data>
+  <data name="Settings_PageLanguage" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_PageNotifications" xml:space="preserve"><value>Notificações</value></data>
+  <data name="Settings_PageStreaming" xml:space="preserve"><value>Compartilhamento de tela</value></data>
+  <data name="Settings_PageVoice" xml:space="preserve"><value>Voz e áudio</value></data>
+  <data name="Settings_PageWindow" xml:space="preserve"><value>Janela e inicialização</value></data>
+  <data name="Settings_PasswordChanged" xml:space="preserve"><value>Senha alterada. Os outros dispositivos foram desconectados.</value></data>
+  <data name="Settings_PasswordHeading" xml:space="preserve"><value>Senha</value></data>
+  <data name="Settings_PasswordTooShort" xml:space="preserve"><value>Use pelo menos {0} caracteres.</value></data>
+  <data name="Settings_PasswordsDoNotMatch" xml:space="preserve"><value>As novas senhas não coincidem.</value></data>
+  <data name="Settings_PhotoRemoved" xml:space="preserve"><value>Foto removida.</value></data>
+  <data name="Settings_PhotoUnreadable" xml:space="preserve"><value>Esse arquivo não é uma imagem que o Discagem consiga ler.</value></data>
+  <data name="Settings_PhotoUpdated" xml:space="preserve"><value>Foto atualizada.</value></data>
+  <data name="Settings_ProfileSaved" xml:space="preserve"><value>Perfil salvo.</value></data>
+  <data name="Settings_RemovePhoto" xml:space="preserve"><value>Remover foto</value></data>
+  <data name="Settings_RestartNow" xml:space="preserve"><value>Reiniciar agora</value></data>
+  <data name="Settings_SaveProfile" xml:space="preserve"><value>Salvar perfil</value></data>
+  <data name="Settings_ServerPrefix" xml:space="preserve"><value>Servidor: </value></data>
+  <data name="Settings_SilenceWhileDeafened" xml:space="preserve"><value>Silenciar os sons de mensagem com o áudio desativado</value></data>
+  <data name="Settings_SilenceWhileDeafenedHint" xml:space="preserve"><value>O áudio desativado (botão do fone de ouvido) fica salvo, inclusive fora das chamadas.</value></data>
+  <data name="Settings_StartMicTest" xml:space="preserve"><value>Testar microfone</value></data>
+  <data name="Settings_StartMinimized" xml:space="preserve"><value>Iniciar na área de notificação, sem abrir a janela</value></data>
+  <data name="Settings_StartWithSession" xml:space="preserve"><value>Iniciar o Discagem quando eu entrar na sessão</value></data>
+  <data name="Settings_StartWithSystemFailed" xml:space="preserve"><value>Não foi possível alterar a inicialização. Veja o log para mais detalhes.</value></data>
+  <data name="Settings_StartWithSystemHint" xml:space="preserve"><value>Assim você fica online e ouve as mensagens sem precisar abri-lo.</value></data>
+  <data name="Settings_StartWithSystemUnsupported" xml:space="preserve"><value>Não disponível nesta instalação (no Flatpak, use os aplicativos de inicialização do seu ambiente).</value></data>
+  <data name="Settings_StartWithWindows" xml:space="preserve"><value>Iniciar o Discagem com o Windows</value></data>
+  <data name="Settings_StartupLabel" xml:space="preserve"><value>INICIALIZAÇÃO</value></data>
+  <data name="Settings_StopMicTest" xml:space="preserve"><value>Parar teste</value></data>
+  <data name="Settings_TestSound" xml:space="preserve"><value>Testar som</value></data>
+  <data name="Settings_ThemeHint" xml:space="preserve"><value>O tema também define os sons de notificação: os temas Aero trazem sons no estilo do Messenger.</value></data>
+  <data name="Settings_ThemeLabel" xml:space="preserve"><value>TEMA</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Configurações</value></data>
+  <data name="Settings_TrayHintOther" xml:space="preserve"><value>Seu ambiente de trabalho precisa mostrar ícones de bandeja (no GNOME, a extensão AppIndicator). Abrir o Discagem de novo traz a janela de volta.</value></data>
+  <data name="Settings_TrayHintWindows" xml:space="preserve"><value>Abra-o de novo pelo ícone na área de notificação (talvez escondido sob a seta ^) ou pelo menu Iniciar. Para encerrar, use o menu do ícone.</value></data>
+  <data name="Settings_UpdatesLabel" xml:space="preserve"><value>ATUALIZAÇÕES</value></data>
+  <data name="Shell_BandOnline" xml:space="preserve"><value>(Online)</value></data>
+  <data name="Shell_BandReconnecting" xml:space="preserve"><value>(Reconectando…)</value></data>
+  <data name="Shell_CodecMissingLinux" xml:space="preserve"><value>O compartilhamento de tela precisa da libvpx: instale-a com o seu gerenciador de pacotes (por exemplo: sudo apt install libvpx9) e reinicie o Discagem.</value></data>
+  <data name="Shell_CodecMissingWindows" xml:space="preserve"><value>O compartilhamento de tela precisa do Microsoft Visual C++ Redistributable (x64): instale-o a partir de https://aka.ms/vs/17/release/vc_redist.x64.exe e reinicie o Discagem.</value></data>
+  <data name="Shell_ConnectFailed" xml:space="preserve"><value>Não foi possível conectar ao servidor: {0}</value></data>
+  <data name="Shell_ConnectingToServer" xml:space="preserve"><value>Conectando ao servidor…</value></data>
+  <data name="Shell_ConnectionLost" xml:space="preserve"><value>Conexão perdida — tentando reconectar…</value></data>
+  <data name="Shell_ConnectionLostScreenShareStopped" xml:space="preserve"><value>Conexão perdida. Seu compartilhamento de tela foi interrompido.</value></data>
+  <data name="Shell_CreateChannelFailed" xml:space="preserve"><value>Não foi possível criar o canal: {0}</value></data>
+  <data name="Shell_CreateChannelTooltip" xml:space="preserve"><value>Criar canal</value></data>
+  <data name="Shell_CreateTextChannel" xml:space="preserve"><value>Criar canal de texto</value></data>
+  <data name="Shell_CreateVoiceChannel" xml:space="preserve"><value>Criar canal de voz</value></data>
+  <data name="Shell_DefaultStreamTitle" xml:space="preserve"><value>Tela de {0}</value></data>
+  <data name="Shell_DeleteChannel" xml:space="preserve"><value>Excluir canal</value></data>
+  <data name="Shell_DeleteChannelFailed" xml:space="preserve"><value>Não foi possível excluir o canal</value></data>
+  <data name="Shell_DeleteTextChannelConfirm" xml:space="preserve"><value>Excluir #{0} e todas as suas mensagens? Essa ação não pode ser desfeita.</value></data>
+  <data name="Shell_EditChannel" xml:space="preserve"><value>Editar canal</value></data>
+  <data name="Shell_LiveBadge" xml:space="preserve"><value>AO VIVO</value></data>
+  <data name="Shell_LiveNowHeader" xml:space="preserve"><value>AO VIVO AGORA</value></data>
+  <data name="Shell_LiveNowHeaderAero" xml:space="preserve"><value>Ao vivo agora</value></data>
+  <data name="Shell_LiveStarting" xml:space="preserve"><value>Iniciando…</value></data>
+  <data name="Shell_ServerOptions" xml:space="preserve"><value>Opções do servidor</value></data>
+  <data name="Shell_SessionExpired" xml:space="preserve"><value>Sua sessão expirou. Faça login novamente.</value></data>
+  <data name="Shell_ShareScreenTooltip" xml:space="preserve"><value>Compartilhar sua tela</value></data>
+  <data name="Shell_StartScreenShareFailed" xml:space="preserve"><value>Não foi possível iniciar o compartilhamento de tela: {0}</value></data>
+  <data name="Shell_StartingStream" xml:space="preserve"><value>Iniciando sua transmissão…</value></data>
+  <data name="Shell_StopSharing" xml:space="preserve"><value>Parar de compartilhar</value></data>
+  <data name="Shell_StopStreamFailed" xml:space="preserve"><value>Não foi possível encerrar a transmissão</value></data>
+  <data name="Shell_StreamEnded" xml:space="preserve"><value>A transmissão terminou.</value></data>
+  <data name="Shell_StreamEndedBy" xml:space="preserve"><value>A transmissão de {0} terminou.</value></data>
+  <data name="Shell_TextChannelsHeader" xml:space="preserve"><value>CANAIS DE TEXTO</value></data>
+  <data name="Shell_TextChannelsHeaderAero" xml:space="preserve"><value>Canais de texto</value></data>
+  <data name="Shell_ThisIsYourStream" xml:space="preserve"><value>Esta é a sua transmissão</value></data>
+  <data name="Shell_UpToDate" xml:space="preserve"><value>Você está com a versão mais recente ({0}).</value></data>
+  <data name="Shell_UpdateAvailable" xml:space="preserve"><value>O Discagem {0} está disponível.</value></data>
+  <data name="Shell_UpdateAvailableBar" xml:space="preserve"><value>O Discagem {0} está disponível (sua versão: {1}).</value></data>
+  <data name="Shell_UpdateChannelFailed" xml:space="preserve"><value>Não foi possível atualizar o canal</value></data>
+  <data name="Shell_UpdateCheckFailed" xml:space="preserve"><value>Não foi possível verificar se há atualizações: {0}</value></data>
+  <data name="Shell_UpdateConfirmMessage" xml:space="preserve"><value>A atualização reinicia o Discagem, o que encerra sua chamada e seu compartilhamento de tela. Atualizar agora?</value></data>
+  <data name="Shell_UpdateConfirmTitle" xml:space="preserve"><value>Atualizar o Discagem</value></data>
+  <data name="Shell_UpdateDownload" xml:space="preserve"><value>Baixar</value></data>
+  <data name="Shell_UpdateDownloading" xml:space="preserve"><value>Baixando o Discagem {0}… {1:0}%</value></data>
+  <data name="Shell_UpdateFailed" xml:space="preserve"><value>Não foi possível atualizar o Discagem: {0}</value></data>
+  <data name="Shell_UpdateNow" xml:space="preserve"><value>Atualizar agora</value></data>
+  <data name="Shell_UserSettingsTooltip" xml:space="preserve"><value>Configurações de usuário</value></data>
+  <data name="Shell_VoiceChannelsHeader" xml:space="preserve"><value>CANAIS DE VOZ</value></data>
+  <data name="Shell_VoiceChannelsHeaderAero" xml:space="preserve"><value>Canais de voz</value></data>
+  <data name="Shell_WatchStream" xml:space="preserve"><value>Assistir à transmissão</value></data>
+  <data name="Shell_WatchStreamFailed" xml:space="preserve"><value>Não foi possível assistir à transmissão: {0}</value></data>
+  <data name="Shell_YouAreLive" xml:space="preserve"><value>Você está ao vivo</value></data>
+  <data name="Stream_CannotCaptureSound" xml:space="preserve"><value>este computador não consegue capturar o som</value></data>
+  <data name="Stream_CaptureFailed" xml:space="preserve"><value>Não foi possível capturar a tela ou janela selecionada.</value></data>
+  <data name="Stream_CaptureStopped" xml:space="preserve"><value>a captura parou ({0})</value></data>
+  <data name="Stream_CaptureSurfaceFailed" xml:space="preserve"><value>Não foi possível alocar uma superfície de captura.</value></data>
+  <data name="Stream_Connecting" xml:space="preserve"><value>Conectando…</value></data>
+  <data name="Stream_ConnectionFailed" xml:space="preserve"><value>Falha na conexão. Verifique se as portas UDP do servidor estão acessíveis.</value></data>
+  <data name="Stream_DeafenedHint" xml:space="preserve"><value>Seu áudio está desativado: as transmissões também ficam em silêncio.</value></data>
+  <data name="Stream_DefaultTitle" xml:space="preserve"><value>Tela de {0}</value></data>
+  <data name="Stream_Disconnected" xml:space="preserve"><value>Desconectado da transmissão ({0}).</value></data>
+  <data name="Stream_FullScreenTip" xml:space="preserve"><value>Tela cheia</value></data>
+  <data name="Stream_Live" xml:space="preserve"><value>AO VIVO</value></data>
+  <data name="Stream_MediaConnectionFailed" xml:space="preserve"><value>Não foi possível estabelecer a conexão de mídia com o servidor. Verifique se as portas UDP de mídia do servidor estão acessíveis.</value></data>
+  <data name="Stream_MuteStream" xml:space="preserve"><value>Silenciar transmissão</value></data>
+  <data name="Stream_NoSound" xml:space="preserve"><value>sem som: {0}</value></data>
+  <data name="Stream_NoSoundProblem" xml:space="preserve"><value>Sua transmissão está sem som: {0}</value></data>
+  <data name="Stream_PlaybackFailed" xml:space="preserve"><value>Não é possível reproduzir o som da transmissão: {0}</value></data>
+  <data name="Stream_PlaybackStopped" xml:space="preserve"><value>O som da transmissão parou: {0}</value></data>
+  <data name="Stream_PopOutTip" xml:space="preserve"><value>Abrir em uma janela separada</value></data>
+  <data name="Stream_Reconnecting" xml:space="preserve"><value>Reconectando…</value></data>
+  <data name="Stream_SharingConnectionLost" xml:space="preserve"><value>O compartilhamento de tela parou: a conexão de mídia foi perdida.</value></data>
+  <data name="Stream_SharingStopped" xml:space="preserve"><value>O compartilhamento de tela parou: {0}</value></data>
+  <data name="Stream_SharingStoppedByServer" xml:space="preserve"><value>O compartilhamento de tela parou: {0}.</value></data>
+  <data name="Stream_SoundNothingPlaying" xml:space="preserve"><value>som: {0} (nada tocando)</value></data>
+  <data name="Stream_SoundOff" xml:space="preserve"><value>som desativado</value></data>
+  <data name="Stream_SoundSending" xml:space="preserve"><value>som: {0}</value></data>
+  <data name="Stream_SoundStarting" xml:space="preserve"><value>iniciando o som…</value></data>
+  <data name="Stream_SoundStoppedProblem" xml:space="preserve"><value>O som da sua transmissão parou: {0}</value></data>
+  <data name="Stream_StatsNoSoundPlaying" xml:space="preserve"><value>nenhum som tocando</value></data>
+  <data name="Stream_StatsNoSoundShared" xml:space="preserve"><value>som não compartilhado</value></data>
+  <data name="Stream_StatsSound" xml:space="preserve"><value>som</value></data>
+  <data name="Stream_StopWatchingTip" xml:space="preserve"><value>Parar de assistir</value></data>
+  <data name="Stream_ViewersTip" xml:space="preserve"><value>Espectadores</value></data>
+  <data name="Stream_VolumeLabel" xml:space="preserve"><value>VOLUME DA TRANSMISSÃO</value></data>
+  <data name="Stream_VolumeTip" xml:space="preserve"><value>Volume da transmissão</value></data>
+  <data name="Stream_WaitingForVideo" xml:space="preserve"><value>Aguardando vídeo…</value></data>
+  <data name="Theme_AeroDarkDescription" xml:space="preserve"><value>Aero em vidro escuro. Sons do Messenger.</value></data>
+  <data name="Theme_AeroDarkName" xml:space="preserve"><value>Aero Escuro</value></data>
+  <data name="Theme_AeroDescription" xml:space="preserve"><value>Claro e brilhante, no estilo do Windows 7. Sons do Messenger.</value></data>
+  <data name="Theme_DiscagemDescription" xml:space="preserve"><value>O visual escuro original.</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Abrir o Discagem</value></data>
+  <data name="Tray_Quit" xml:space="preserve"><value>Sair do Discagem</value></data>
+  <data name="Update_ChecksumMissing" xml:space="preserve"><value>A lista de checksums da versão não inclui o instalador.</value></data>
+  <data name="Update_InstallerCorrupt" xml:space="preserve"><value>O instalador baixado está corrompido (o checksum não confere).</value></data>
+  <data name="Update_NoInstaller" xml:space="preserve"><value>Esta versão não tem um instalador para baixar.</value></data>
+  <data name="Voice_ChannelDeleted" xml:space="preserve"><value>O canal {0} foi excluído.</value></data>
+  <data name="Voice_Connected" xml:space="preserve"><value>Voz conectada</value></data>
+  <data name="Voice_Connecting" xml:space="preserve"><value>Conectando…</value></data>
+  <data name="Voice_Deafen" xml:space="preserve"><value>Desativar áudio</value></data>
+  <data name="Voice_DeafenedTooltip" xml:space="preserve"><value>Áudio desativado</value></data>
+  <data name="Voice_DeleteVoiceChannelConfirm" xml:space="preserve"><value>Excluir o canal de voz {0}? Todos que estiverem nele serão desconectados.</value></data>
+  <data name="Voice_Disconnect" xml:space="preserve"><value>Desconectar</value></data>
+  <data name="Voice_JoinFailed" xml:space="preserve"><value>Não foi possível entrar em {0}: {1}</value></data>
+  <data name="Voice_Mute" xml:space="preserve"><value>Desativar microfone</value></data>
+  <data name="Voice_MutedTooltip" xml:space="preserve"><value>Microfone desativado</value></data>
+  <data name="Voice_ReconnectFailed" xml:space="preserve"><value>Não foi possível reconectar a {0}.</value></data>
+  <data name="Voice_RejoinFailed" xml:space="preserve"><value>Não foi possível entrar novamente em {0}: {1}</value></data>
+  <data name="Voice_ThatsYou" xml:space="preserve"><value>Esse é você. As configurações do seu microfone ficam em Configurações de usuário.</value></data>
+  <data name="Voice_Undeafen" xml:space="preserve"><value>Ativar áudio</value></data>
+  <data name="Voice_Unmute" xml:space="preserve"><value>Ativar microfone</value></data>
+  <data name="Voice_UserVolume" xml:space="preserve"><value>VOLUME DO USUÁRIO</value></data>
+</root>

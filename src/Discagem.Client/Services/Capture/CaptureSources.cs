@@ -1,3 +1,4 @@
+using Discagem.Client.Resources;
 using Discagem.Media.Pipeline;
 
 namespace Discagem.Client.Services.Capture;
@@ -40,8 +41,8 @@ public static class CaptureSources
 
     public static string UnsupportedReason =>
         OperatingSystem.IsLinux()
-            ? "Screen sharing on Linux currently requires an X11 session (Wayland is not supported yet)."
-            : "Screen sharing is not supported on this platform yet.";
+            ? Strings.Picker_UnsupportedLinux
+            : Strings.Picker_UnsupportedPlatform;
 
     public static IReadOnlyList<CaptureSource> GetScreens()
     {

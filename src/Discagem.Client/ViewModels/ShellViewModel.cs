@@ -3,6 +3,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Client.Services.Audio;
 using Discagem.Media.Pipeline;
@@ -123,9 +124,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     public bool IsAdmin => Me.IsAdmin;
 
-    public string OnlineHeader => $"ONLINE — {OnlineMembers.Count}";
+    public string OnlineHeader => string.Format(Strings.Members_OnlineHeader, OnlineMembers.Count);
 
-    public string OfflineHeader => $"OFFLINE — {OfflineMembers.Count}";
+    public string OfflineHeader => string.Format(Strings.Members_OfflineHeader, OfflineMembers.Count);
 
     public bool HasOfflineMembers => OfflineMembers.Count > 0;
 
@@ -140,8 +141,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     public bool IsReconnecting => Connection is ConnectionState.Reconnecting or ConnectionState.Connecting or ConnectionState.Disconnected;
 
     public string ConnectionText => Connection == ConnectionState.Connecting
-        ? "Connecting to the server…"
-        : "Connection lost — trying to reconnect…";
+        ? Strings.Shell_ConnectingToServer
+        : Strings.Shell_ConnectionLost;
 
     public string WindowTitle
     {
@@ -191,7 +192,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private bool _isStartingStream;
 
     [ObservableProperty]
-    private string _liveStatsText = "Starting…";
+    private string _liveStatsText = Strings.Shell_LiveStarting;
 
     /// <summary>What the live stream's sound is doing (captured source, nothing playing, or why there is none).</summary>
     [ObservableProperty]
@@ -290,7 +291,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            SignOut("Your session has expired. Please log in again.");
+            SignOut(Strings.Shell_SessionExpired);
         }
         catch (ApiException)
         {
@@ -317,13 +318,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                SignOut("Your session has expired. Please log in again.");
+                SignOut(Strings.Shell_SessionExpired);
                 return;
             }
             catch (Exception ex)
             {
                 Connection = ConnectionState.Reconnecting;
-                ShowBanner($"Could not connect to the server: {ex.Message}");
+                ShowBanner(string.Format(Strings.Shell_ConnectFailed, ex.Message));
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
         }
@@ -365,7 +366,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             {
                 IsLive = false;
                 _ = _media.StopAsync();
-                ShowBanner("Connection lost. Your screen share was stopped.");
+                ShowBanner(Strings.Shell_ConnectionLostScreenShareStopped);
             }
 
             if (ActiveStream is not null)
@@ -500,7 +501,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            ShowBanner($"Could not load messages: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Conv_LoadMessagesFailed, Describe(ex)));
         }
         finally
         {
@@ -533,7 +534,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            ShowBanner($"Could not load older messages: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Conv_LoadOlderMessagesFailed, Describe(ex)));
             return 0;
         }
         finally
@@ -546,7 +547,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         var author = _members.TryGetValue(message.AuthorId, out var member)
             ? member
-            : GetOrAddMember(new UserDto(message.AuthorId, "unknown", "Unknown user", "#80848E", false, DateTimeOffset.UtcNow));
+            : GetOrAddMember(new UserDto(message.AuthorId, "unknown", Strings.Members_UnknownUser, "#80848E", false, DateTimeOffset.UtcNow));
         var item = new MessageItemViewModel(message, author, Me, a => new AttachmentViewModel(a, _images, _session.Api, _dialogs));
         foreach (var attachment in item.Attachments)
         {
@@ -581,7 +582,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         var visible = channel == SelectedChannel && _dialogs.IsWindowActive;
         if (!visible)
         {
-            PlayMessageSound();
+            var settings = _session.Settings;
+            if (item.MentionsMe || !settings.MessageSoundMentionsOnly)
+            {
+                PlayMessageSound();
+            }
+
             channel.UnreadCount++;
             if (item.MentionsMe)
             {
@@ -589,7 +595,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                 OnPropertyChanged(nameof(WindowTitle));
             }
 
-            _dialogs.RequestAttention();
+            if (settings.FlashTaskbar)
+            {
+                _dialogs.RequestAttention();
+            }
         }
     }
 
@@ -684,7 +693,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             {
                 // The server normally hangs up first; make sure no call is left in a channel that is gone.
                 SetConnectedVoice(null);
-                ShowBanner($"{voiceChannel.Name} was deleted.", isError: false);
+                ShowBanner(string.Format(Strings.Voice_ChannelDeleted, voiceChannel.Name), isError: false);
                 _ = SafeAsync(() => _voice.LeaveAsync(id));
             }
 
@@ -783,10 +792,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         TypingText = names.Count switch
         {
             0 => null,
-            1 => $"{names[0]} is typing…",
-            2 => $"{names[0]} and {names[1]} are typing…",
-            3 => $"{names[0]}, {names[1]} and {names[2]} are typing…",
-            _ => "Several people are typing…",
+            1 => string.Format(Strings.Conv_TypingOne, names[0]),
+            2 => string.Format(Strings.Conv_TypingTwo, names[0], names[1]),
+            3 => string.Format(Strings.Conv_TypingThree, names[0], names[1], names[2]),
+            _ => Strings.Conv_TypingSeveral,
         };
     }
 
@@ -802,7 +811,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         if (content.Length > Limits.MaxMessageLength)
         {
-            ShowBanner($"Messages can be at most {Limits.MaxMessageLength} characters long.");
+            ShowBanner(string.Format(Strings.Conv_MessageTooLong, Limits.MaxMessageLength));
             return;
         }
 
@@ -843,7 +852,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                 pending.IsUploading = false;
             }
 
-            ShowBanner($"Message not sent: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Conv_MessageNotSent, Describe(ex)));
         }
         finally
         {
@@ -864,7 +873,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         {
             if (PendingAttachments.Count >= Limits.MaxAttachmentsPerMessage)
             {
-                ShowBanner($"You can attach at most {Limits.MaxAttachmentsPerMessage} files per message.");
+                ShowBanner(string.Format(Strings.Conv_TooManyAttachments, Limits.MaxAttachmentsPerMessage));
                 break;
             }
 
@@ -881,7 +890,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         if (PendingAttachments.Count >= Limits.MaxAttachmentsPerMessage)
         {
-            ShowBanner($"You can attach at most {Limits.MaxAttachmentsPerMessage} files per message.");
+            ShowBanner(string.Format(Strings.Conv_TooManyAttachments, Limits.MaxAttachmentsPerMessage));
             return;
         }
 
@@ -953,20 +962,20 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        await SafeAsync(() => _hub.EditMessageAsync(message.Id, text), "Could not edit the message");
+        await SafeAsync(() => _hub.EditMessageAsync(message.Id, text), Strings.Conv_EditMessageFailed);
     }
 
     [RelayCommand]
     private async Task DeleteMessageAsync(MessageItemViewModel message)
     {
         var confirmed = await _dialogs.ConfirmAsync(
-            "Delete message",
-            "Are you sure you want to delete this message? This cannot be undone.",
-            "Delete",
+            Strings.Conv_DeleteMessageTitle,
+            Strings.Conv_DeleteMessageConfirm,
+            Strings.Conv_DeleteMessageButton,
             danger: true);
         if (confirmed)
         {
-            await SafeAsync(() => _hub.DeleteMessageAsync(message.Id), "Could not delete the message");
+            await SafeAsync(() => _hub.DeleteMessageAsync(message.Id), Strings.Conv_DeleteMessageFailed);
         }
     }
 
@@ -995,7 +1004,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            ShowBanner($"Could not create the channel: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Shell_CreateChannelFailed, Describe(ex)));
         }
     }
 
@@ -1005,7 +1014,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         var result = await _dialogs.EditChannelAsync(ChannelEditorViewModel.ForEdit(ChannelKind.Text, channel.Name, channel.Topic));
         if (result is not null)
         {
-            await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), "Could not update the channel");
+            await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), Strings.Shell_UpdateChannelFailed);
         }
     }
 
@@ -1013,13 +1022,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private async Task DeleteChannelAsync(ChannelViewModel channel)
     {
         var confirmed = await _dialogs.ConfirmAsync(
-            "Delete channel",
-            $"Delete #{channel.Name} and all of its messages? This cannot be undone.",
-            "Delete channel",
+            Strings.Shell_DeleteChannel,
+            string.Format(Strings.Shell_DeleteTextChannelConfirm, channel.Name),
+            Strings.Shell_DeleteChannel,
             danger: true);
         if (confirmed)
         {
-            await SafeAsync(() => _hub.DeleteChannelAsync(channel.Id), "Could not delete the channel");
+            await SafeAsync(() => _hub.DeleteChannelAsync(channel.Id), Strings.Shell_DeleteChannelFailed);
         }
     }
 
@@ -1029,7 +1038,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         var result = await _dialogs.EditChannelAsync(ChannelEditorViewModel.ForEdit(ChannelKind.Voice, channel.Name, channel.Topic));
         if (result is not null)
         {
-            await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), "Could not update the channel");
+            await SafeAsync(() => _hub.UpdateChannelAsync(channel.Id, result.Name, result.Topic), Strings.Shell_UpdateChannelFailed);
         }
     }
 
@@ -1037,13 +1046,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private async Task DeleteVoiceChannelAsync(VoiceChannelViewModel channel)
     {
         var confirmed = await _dialogs.ConfirmAsync(
-            "Delete channel",
-            $"Delete the voice channel {channel.Name}? Everyone in it will be disconnected.",
-            "Delete channel",
+            Strings.Shell_DeleteChannel,
+            string.Format(Strings.Voice_DeleteVoiceChannelConfirm, channel.Name),
+            Strings.Shell_DeleteChannel,
             danger: true);
         if (confirmed)
         {
-            await SafeAsync(() => _hub.DeleteChannelAsync(channel.Id), "Could not delete the channel");
+            await SafeAsync(() => _hub.DeleteChannelAsync(channel.Id), Strings.Shell_DeleteChannelFailed);
         }
     }
 
@@ -1118,10 +1127,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     public string UpdateText => AvailableUpdate is not { } update
         ? ""
         : IsInstallingUpdate
-            ? $"Downloading Discagem {update.Version}… {UpdateProgress:0}%"
-            : $"Discagem {update.Version} is available (you have {UpdateService.CurrentVersion}).";
+            ? string.Format(Strings.Shell_UpdateDownloading, update.Version, UpdateProgress)
+            : string.Format(Strings.Shell_UpdateAvailableBar, update.Version, UpdateService.CurrentVersion);
 
-    public string UpdateActionText => CanInstallUpdate ? "Update now" : "Download";
+    public string UpdateActionText => CanInstallUpdate ? Strings.Shell_UpdateNow : Strings.Shell_UpdateDownload;
 
     private async Task CheckForUpdatesAutomaticallyAsync()
     {
@@ -1139,7 +1148,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             var update = await _updates.CheckAsync();
             if (update is null)
             {
-                return $"You have the latest version ({UpdateService.CurrentVersion}).";
+                return string.Format(Strings.Shell_UpToDate, UpdateService.CurrentVersion);
             }
 
             // "Later" hides a version until the user asks again or a newer one comes out.
@@ -1148,11 +1157,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                 AvailableUpdate = update;
             }
 
-            return $"Discagem {update.Version} is available.";
+            return string.Format(Strings.Shell_UpdateAvailable, update.Version);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
-            return $"Could not check for updates: {ex.Message}";
+            return string.Format(Strings.Shell_UpdateCheckFailed, ex.Message);
         }
     }
 
@@ -1171,9 +1180,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         if ((IsInVoice || IsLive) && !await _dialogs.ConfirmAsync(
-                "Update Discagem",
-                "Updating restarts Discagem, which ends your call and your screen share. Update now?",
-                "Update now",
+                Strings.Shell_UpdateConfirmTitle,
+                Strings.Shell_UpdateConfirmMessage,
+                Strings.Shell_UpdateNow,
                 danger: false))
         {
             return;
@@ -1190,7 +1199,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or TaskCanceledException or System.ComponentModel.Win32Exception)
         {
             IsInstallingUpdate = false;
-            ShowBanner($"Could not update Discagem: {ex.Message}");
+            ShowBanner(string.Format(Strings.Shell_UpdateFailed, ex.Message));
         }
     }
 
@@ -1220,8 +1229,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         ShowBanner(OperatingSystem.IsWindows()
-            ? "Screen sharing needs the Microsoft Visual C++ Redistributable (x64): install it from https://aka.ms/vs/17/release/vc_redist.x64.exe and restart Discagem."
-            : "Screen sharing needs libvpx: install it with your package manager (for example: sudo apt install libvpx9) and restart Discagem.");
+            ? Strings.Shell_CodecMissingWindows
+            : Strings.Shell_CodecMissingLinux);
         return false;
     }
 
@@ -1234,7 +1243,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         var picker = new ScreenPickerViewModel(
-            $"{Me.DisplayName}'s screen",
+            string.Format(Strings.Shell_DefaultStreamTitle, Me.DisplayName),
             _session.Settings.StreamQualityIndex,
             _media.CanShareAudio,
             _voice.Audio.SupportsApplicationCapture,
@@ -1254,7 +1263,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _session.Settings.Save();
 
         IsStartingStream = true;
-        LiveStatsText = "Starting…";
+        LiveStatsText = Strings.Shell_LiveStarting;
         LiveSoundText = "";
         try
         {
@@ -1263,7 +1272,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            ShowBanner($"Could not start screen sharing: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Shell_StartScreenShareFailed, Describe(ex)));
         }
         finally
         {
@@ -1275,7 +1284,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private async Task StopLiveAsync()
     {
         IsLive = false;
-        await SafeAsync(_media.StopAsync, "Could not stop the stream");
+        await SafeAsync(_media.StopAsync, Strings.Shell_StopStreamFailed);
     }
 
     [RelayCommand]
@@ -1313,7 +1322,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            CloseStreamViewer(viewer, $"Could not watch the stream: {Describe(ex)}");
+            CloseStreamViewer(viewer, string.Format(Strings.Shell_WatchStreamFailed, Describe(ex)));
         }
     }
 
@@ -1381,7 +1390,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         {
             var viewer = ActiveStream;
             CloseStreamViewer(viewer, null);
-            ShowBanner(stream is null ? "The stream has ended." : $"{stream.Streamer.DisplayName}'s stream has ended.", isError: false);
+            ShowBanner(stream is null ? Strings.Shell_StreamEnded : string.Format(Strings.Shell_StreamEndedBy, stream.Streamer.DisplayName), isError: false);
         }
 
         if (IsLive && _media.LiveStreamId == streamId)
@@ -1419,7 +1428,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                 SetConnectedVoice(null);
             }
 
-            ShowBanner($"Could not join {channel.Name}: {Describe(ex)}");
+            ShowBanner(string.Format(Strings.Voice_JoinFailed, channel.Name, Describe(ex)));
         }
         finally
         {
@@ -1471,7 +1480,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
                     {
                         // The server refused (the channel is gone or full): retrying will not help.
                         SetConnectedVoice(null);
-                        ShowBanner($"Could not rejoin {channel.Name}: {Describe(ex)}");
+                        ShowBanner(string.Format(Strings.Voice_RejoinFailed, channel.Name, Describe(ex)));
                         return;
                     }
                     catch (Exception)
@@ -1487,7 +1496,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             if (ConnectedVoiceChannel is { } lost)
             {
                 SetConnectedVoice(null);
-                ShowBanner($"Could not reconnect to {lost.Name}.");
+                ShowBanner(string.Format(Strings.Voice_ReconnectFailed, lost.Name));
             }
         }
         finally
@@ -1645,7 +1654,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         var message = ex switch
         {
-            HubException hub => StripHubPrefix(hub.Message),
+            HubException hub => ServerMessages.Translate(StripHubPrefix(hub.Message)),
             ApiException api => api.Message,
             InvalidOperationException op => op.Message,
             _ => ex.Message,

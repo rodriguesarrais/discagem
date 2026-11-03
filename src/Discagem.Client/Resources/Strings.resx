@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="App_ConnectingToServer" xml:space="preserve"><value>Connecting to your server…</value></data>
+  <data name="App_SessionExpired" xml:space="preserve"><value>Your session has expired. Please log in again.</value></data>
+  <data name="Attach_DownloadTip" xml:space="preserve"><value>Download</value></data>
+  <data name="Attach_DropSubtitle" xml:space="preserve"><value>They will be attached to your next message in #{0}</value></data>
+  <data name="Attach_DropTitle" xml:space="preserve"><value>Drop files to upload</value></data>
+  <data name="Attach_RemoveTip" xml:space="preserve"><value>Remove</value></data>
+  <data name="Attach_UploadTip" xml:space="preserve"><value>Upload a file</value></data>
+  <data name="Audio_ApplicationSound" xml:space="preserve"><value>Application sound</value></data>
+  <data name="Audio_ApplicationsSoundWithoutDiscagem" xml:space="preserve"><value>Applications' sound (without Discagem)</value></data>
+  <data name="Audio_CouldNotCaptureComputerSound" xml:space="preserve"><value>could not capture the computer's sound ({0}).</value></data>
+  <data name="Audio_CouldNotOpenComputerAudio" xml:space="preserve"><value>Could not open the computer's audio ({0}).</value></data>
+  <data name="Audio_CouldNotOpenMicrophone" xml:space="preserve"><value>Could not open the microphone ({0}).</value></data>
+  <data name="Audio_CouldNotOpenSpeakers" xml:space="preserve"><value>Could not open the speakers ({0}).</value></data>
+  <data name="Audio_DisconnectedFromVoice" xml:space="preserve"><value>Disconnected from voice: {0}.</value></data>
+  <data name="Audio_EverythingExceptDiscagem" xml:space="preserve"><value>everything except Discagem</value></data>
+  <data name="Audio_EverythingExceptDiscagemFallback" xml:space="preserve"><value>everything except Discagem (the window's application could not be captured on its own)</value></data>
+  <data name="Audio_MicrophoneStopped" xml:space="preserve"><value>The microphone stopped working: {0}</value></data>
+  <data name="Audio_NoAudioSystem" xml:space="preserve"><value>No audio system was found (PulseAudio or PipeWire is required on Linux).</value></data>
+  <data name="Audio_NoBackend" xml:space="preserve"><value>None</value></data>
+  <data name="Audio_NoMicrophoneFound" xml:space="preserve"><value>No microphone was found.</value></data>
+  <data name="Audio_NoSpeakersFound" xml:space="preserve"><value>No speakers or headphones were found.</value></data>
+  <data name="Audio_OthersWillNotHearYou" xml:space="preserve"><value>{0} Others will not hear you.</value></data>
+  <data name="Audio_OutputStopped" xml:space="preserve"><value>The audio output stopped working: {0}</value></data>
+  <data name="Audio_PulseConnectFailed" xml:space="preserve"><value>Could not connect to PulseAudio: {0}.</value></data>
+  <data name="Audio_PulseConnectionLost" xml:space="preserve"><value>PulseAudio connection lost ({0})</value></data>
+  <data name="Audio_PulseMainLoopFailed" xml:space="preserve"><value>Could not start the PulseAudio main loop.</value></data>
+  <data name="Audio_SharedWindowApplication" xml:space="preserve"><value>the shared window's application</value></data>
+  <data name="Audio_SystemCaptureNeedsWindows2004" xml:space="preserve"><value>sharing sound without your voice chat needs Windows 10 version 2004 or later.</value></data>
+  <data name="Audio_SystemDefault" xml:space="preserve"><value>System default</value></data>
+  <data name="Audio_UnsupportedDeviceFormat" xml:space="preserve"><value>Unsupported device format: {0}.</value></data>
+  <data name="Audio_VoiceConnectionFailed" xml:space="preserve"><value>Could not establish the voice connection. Make sure the server's UDP media ports are reachable.</value></data>
+  <data name="Audio_VoiceConnectionLost" xml:space="preserve"><value>The voice connection was lost.</value></data>
+  <data name="Audio_WindowsAudioUnavailable" xml:space="preserve"><value>The Windows audio service is unavailable ({0}).</value></data>
+  <data name="Audio_YouWillNotHearOthers" xml:space="preserve"><value>{0} You will not hear the others.</value></data>
+  <data name="ChannelEditor_ChannelNameLabel" xml:space="preserve"><value>CHANNEL NAME</value></data>
+  <data name="ChannelEditor_ChannelTypeLabel" xml:space="preserve"><value>CHANNEL TYPE</value></data>
+  <data name="ChannelEditor_TextKind" xml:space="preserve"><value>Text</value></data>
+  <data name="ChannelEditor_TextKindDescription" xml:space="preserve"><value>Send messages, images, files and links</value></data>
+  <data name="ChannelEditor_TopicLabel" xml:space="preserve"><value>TOPIC</value></data>
+  <data name="ChannelEditor_TopicWatermark" xml:space="preserve"><value>Let everyone know what this channel is about</value></data>
+  <data name="ChannelEditor_VoiceKind" xml:space="preserve"><value>Voice</value></data>
+  <data name="ChannelEditor_VoiceKindDescription" xml:space="preserve"><value>Hang out together with voice</value></data>
+  <data name="ChannelVm_CreateConfirm" xml:space="preserve"><value>Create channel</value></data>
+  <data name="ChannelVm_CreateHeading" xml:space="preserve"><value>Create channel</value></data>
+  <data name="ChannelVm_EditConfirm" xml:space="preserve"><value>Save changes</value></data>
+  <data name="ChannelVm_EditHeading" xml:space="preserve"><value>Edit channel</value></data>
+  <data name="ChannelVm_TextWatermark" xml:space="preserve"><value>new-channel</value></data>
+  <data name="ChannelVm_VoiceWatermark" xml:space="preserve"><value>Hangout</value></data>
+  <data name="Chat_DeleteTip" xml:space="preserve"><value>Delete</value></data>
+  <data name="Chat_DismissTip" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="Chat_EditHintCancel" xml:space="preserve"><value>cancel</value></data>
+  <data name="Chat_EditHintEnter" xml:space="preserve"><value>enter to</value></data>
+  <data name="Chat_EditHintEscape" xml:space="preserve"><value>escape to</value></data>
+  <data name="Chat_EditHintSave" xml:space="preserve"><value>save</value></data>
+  <data name="Chat_EditTip" xml:space="preserve"><value>Edit</value></data>
+  <data name="Chat_Edited" xml:space="preserve"><value>(edited)</value></data>
+  <data name="Chat_MemberListTip" xml:space="preserve"><value>Member list</value></data>
+  <data name="Chat_Says" xml:space="preserve"><value>says:</value></data>
+  <data name="Chat_Send" xml:space="preserve"><value>Send</value></data>
+  <data name="Chat_TimestampDate" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="Chat_TimestampToday" xml:space="preserve"><value>Today at {0}</value></data>
+  <data name="Chat_TimestampYesterday" xml:space="preserve"><value>Yesterday at {0}</value></data>
+  <data name="Chat_UpdateLaterTip" xml:space="preserve"><value>Later</value></data>
+  <data name="Chat_UpdateWhatsNew" xml:space="preserve"><value>What's new</value></data>
+  <data name="Chat_WelcomeSubtitle" xml:space="preserve"><value>This is the start of the #{0} channel.</value></data>
+  <data name="Chat_WelcomeTitle" xml:space="preserve"><value>Welcome to #{0}!</value></data>
+  <data name="Conv_ComposerPlaceholder" xml:space="preserve"><value>Message #{0}</value></data>
+  <data name="Conv_DeleteMessageButton" xml:space="preserve"><value>Delete</value></data>
+  <data name="Conv_DeleteMessageConfirm" xml:space="preserve"><value>Are you sure you want to delete this message? This cannot be undone.</value></data>
+  <data name="Conv_DeleteMessageFailed" xml:space="preserve"><value>Could not delete the message</value></data>
+  <data name="Conv_DeleteMessageTitle" xml:space="preserve"><value>Delete message</value></data>
+  <data name="Conv_EditMessageFailed" xml:space="preserve"><value>Could not edit the message</value></data>
+  <data name="Conv_LoadMessagesFailed" xml:space="preserve"><value>Could not load messages: {0}</value></data>
+  <data name="Conv_LoadOlderMessagesFailed" xml:space="preserve"><value>Could not load older messages: {0}</value></data>
+  <data name="Conv_MessageNotSent" xml:space="preserve"><value>Message not sent: {0}</value></data>
+  <data name="Conv_MessageTooLong" xml:space="preserve"><value>Messages can be at most {0} characters long.</value></data>
+  <data name="Conv_TooManyAttachments" xml:space="preserve"><value>You can attach at most {0} files per message.</value></data>
+  <data name="Conv_TypingOne" xml:space="preserve"><value>{0} is typing…</value></data>
+  <data name="Conv_TypingSeveral" xml:space="preserve"><value>Several people are typing…</value></data>
+  <data name="Conv_TypingThree" xml:space="preserve"><value>{0}, {1} and {2} are typing…</value></data>
+  <data name="Conv_TypingTwo" xml:space="preserve"><value>{0} and {1} are typing…</value></data>
+  <data name="Dialog_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Dialog_ImagesFileType" xml:space="preserve"><value>Images</value></data>
+  <data name="Dialog_SaveFileTitle" xml:space="preserve"><value>Save file</value></data>
+  <data name="Dialog_UploadFilesTitle" xml:space="preserve"><value>Upload files</value></data>
+  <data name="Error_CouldNotReachServer" xml:space="preserve"><value>Could not reach the server.</value></data>
+  <data name="Error_CouldNotReachServerDetail" xml:space="preserve"><value>Could not reach the server ({0}).</value></data>
+  <data name="Error_EmptyResponse" xml:space="preserve"><value>The server sent an empty response.</value></data>
+  <data name="Error_FileTooLarge" xml:space="preserve"><value>That file is too large.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>Not found. Check the server address.</value></data>
+  <data name="Error_ServerError" xml:space="preserve"><value>The server returned an error ({0}).</value></data>
+  <data name="Error_SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>The server did not respond in time.</value></data>
+  <data name="Error_TooManyAttempts" xml:space="preserve"><value>Too many attempts. Please wait a minute and try again.</value></data>
+  <data name="Error_UnexpectedResponse" xml:space="preserve"><value>The server sent an unexpected response. Is this a Discagem server?</value></data>
+  <data name="Image_LoadFailed" xml:space="preserve"><value>Could not load image.</value></data>
+  <data name="Image_SaveImage" xml:space="preserve"><value>Save image…</value></data>
+  <data name="Login_CreateAccount" xml:space="preserve"><value>Create account</value></data>
+  <data name="Login_DisplayNameLabel" xml:space="preserve"><value>DISPLAY NAME</value></data>
+  <data name="Login_DisplayNameWatermark" xml:space="preserve"><value>How others see you (optional)</value></data>
+  <data name="Login_EnterCredentials" xml:space="preserve"><value>Enter your username and password.</value></data>
+  <data name="Login_EnterServerAddress" xml:space="preserve"><value>Enter the address of your Discagem server, e.g. chat.example.com.</value></data>
+  <data name="Login_HaveAccountPrompt" xml:space="preserve"><value>Already have an account?</value></data>
+  <data name="Login_InviteCodeLabel" xml:space="preserve"><value>INVITE CODE</value></data>
+  <data name="Login_InviteCodeWatermark" xml:space="preserve"><value>Ask the server owner</value></data>
+  <data name="Login_LogIn" xml:space="preserve"><value>Log in</value></data>
+  <data name="Login_NeedAccountPrompt" xml:space="preserve"><value>Need an account?</value></data>
+  <data name="Login_PasswordLabel" xml:space="preserve"><value>PASSWORD</value></data>
+  <data name="Login_Register" xml:space="preserve"><value>Register</value></data>
+  <data name="Login_RegisterHeading" xml:space="preserve"><value>Create an account</value></data>
+  <data name="Login_RegisterSubheading" xml:space="preserve"><value>Join your friends on your private server.</value></data>
+  <data name="Login_ServerAddressLabel" xml:space="preserve"><value>SERVER ADDRESS</value></data>
+  <data name="Login_ServerStatusRegistrationClosed" xml:space="preserve"><value>{0} · registration closed</value></data>
+  <data name="Login_ServerUnreachable" xml:space="preserve"><value>Server not reachable</value></data>
+  <data name="Login_SignInHeading" xml:space="preserve"><value>Welcome back!</value></data>
+  <data name="Login_SignInSubheading" xml:space="preserve"><value>We're so excited to see you again!</value></data>
+  <data name="Login_UsernameLabel" xml:space="preserve"><value>USERNAME</value></data>
+  <data name="Members_LiveBadge" xml:space="preserve"><value>LIVE</value></data>
+  <data name="Members_OfflineCountAero" xml:space="preserve"><value>Offline ({0})</value></data>
+  <data name="Members_OfflineHeader" xml:space="preserve"><value>OFFLINE — {0}</value></data>
+  <data name="Members_OnlineCountAero" xml:space="preserve"><value>Online ({0})</value></data>
+  <data name="Members_OnlineHeader" xml:space="preserve"><value>ONLINE — {0}</value></data>
+  <data name="Members_ServerAdmin" xml:space="preserve"><value>Server admin</value></data>
+  <data name="Members_Streaming" xml:space="preserve"><value>Streaming</value></data>
+  <data name="Members_UnknownUser" xml:space="preserve"><value>Unknown user</value></data>
+  <data name="Picker_AllScreens" xml:space="preserve"><value>All screens</value></data>
+  <data name="Picker_ApplicationsTab" xml:space="preserve"><value>Applications</value></data>
+  <data name="Picker_AudioHintEverything" xml:space="preserve"><value>Viewers hear everything your computer plays, Discagem's voice chat included. Turn this off if they are in your voice channel.</value></data>
+  <data name="Picker_AudioHintExceptDiscagem" xml:space="preserve"><value>Viewers hear everything your computer plays, except Discagem: your voice chat stays out of the stream.</value></data>
+  <data name="Picker_AudioHintOff" xml:space="preserve"><value>Viewers will not hear anything.</value></data>
+  <data name="Picker_AudioHintWindow" xml:space="preserve"><value>Viewers hear this window's application only.</value></data>
+  <data name="Picker_AudioNeedsPulse" xml:space="preserve"><value>Sharing sound needs PulseAudio or PipeWire.</value></data>
+  <data name="Picker_AudioNeedsWindows" xml:space="preserve"><value>Sharing sound needs Windows 10 version 2004 or later.</value></data>
+  <data name="Picker_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Picker_EntireScreen" xml:space="preserve"><value>Entire screen</value></data>
+  <data name="Picker_GoLive" xml:space="preserve"><value>Go Live</value></data>
+  <data name="Picker_QualityLabel" xml:space="preserve"><value>QUALITY</value></data>
+  <data name="Picker_ScreenNumber" xml:space="preserve"><value>Screen {0}</value></data>
+  <data name="Picker_ScreenNumberPrimary" xml:space="preserve"><value>Screen {0} (primary)</value></data>
+  <data name="Picker_ScreensTab" xml:space="preserve"><value>Screens</value></data>
+  <data name="Picker_ShareAudio" xml:space="preserve"><value>Share audio</value></data>
+  <data name="Picker_StreamTitleLabel" xml:space="preserve"><value>STREAM TITLE</value></data>
+  <data name="Picker_Subtitle" xml:space="preserve"><value>Pick a screen or an application window. Everyone on the server will be able to watch.</value></data>
+  <data name="Picker_Title" xml:space="preserve"><value>Share your screen</value></data>
+  <data name="Picker_UnsupportedLinux" xml:space="preserve"><value>Screen sharing on Linux currently requires an X11 session (Wayland is not supported yet).</value></data>
+  <data name="Picker_UnsupportedPlatform" xml:space="preserve"><value>Screen sharing is not supported on this platform yet.</value></data>
+  <data name="Server_AccountGone" xml:space="preserve"><value>Your account no longer exists.</value></data>
+  <data name="Server_AdminsOnly" xml:space="preserve"><value>Only administrators can manage channels.</value></data>
+  <data name="Server_AttachmentsInvalid" xml:space="preserve"><value>One or more attachments are invalid.</value></data>
+  <data name="Server_AvatarColorFormat" xml:space="preserve"><value>Avatar colour must be in #RRGGBB format.</value></data>
+  <data name="Server_AvatarFormat" xml:space="preserve"><value>Profile photos must be PNG or JPEG images.</value></data>
+  <data name="Server_AvatarTooLarge" xml:space="preserve"><value>Profile photos may be at most {0} MB.</value></data>
+  <data name="Server_ChannelNameCharacters" xml:space="preserve"><value>Channel names must contain letters or digits.</value></data>
+  <data name="Server_ChannelNameEmpty" xml:space="preserve"><value>Channel names cannot be empty.</value></data>
+  <data name="Server_ChannelNotFound" xml:space="preserve"><value>That channel does not exist.</value></data>
+  <data name="Server_CredentialsRequired" xml:space="preserve"><value>Username and password are required.</value></data>
+  <data name="Server_CurrentPasswordIncorrect" xml:space="preserve"><value>The current password is incorrect.</value></data>
+  <data name="Server_DeleteOwnMessagesOnly" xml:space="preserve"><value>You can only delete your own messages.</value></data>
+  <data name="Server_DisplayNameEmpty" xml:space="preserve"><value>Display name cannot be empty.</value></data>
+  <data name="Server_EditOwnMessagesOnly" xml:space="preserve"><value>You can only edit your own messages.</value></data>
+  <data name="Server_ExpectedMultipart" xml:space="preserve"><value>Expected a multipart/form-data request.</value></data>
+  <data name="Server_FileTooLarge" xml:space="preserve"><value>Files may be at most {0} MB.</value></data>
+  <data name="Server_InvalidCredentials" xml:space="preserve"><value>Invalid username or password.</value></data>
+  <data name="Server_InvalidInviteCode" xml:space="preserve"><value>Invalid invite code.</value></data>
+  <data name="Server_LastTextChannel" xml:space="preserve"><value>The last text channel cannot be deleted.</value></data>
+  <data name="Server_MessageEmpty" xml:space="preserve"><value>Messages cannot be empty.</value></data>
+  <data name="Server_MessageNotFound" xml:space="preserve"><value>That message does not exist.</value></data>
+  <data name="Server_MessageTooLong" xml:space="preserve"><value>Messages can be at most {0} characters long.</value></data>
+  <data name="Server_MissingSessionDescription" xml:space="preserve"><value>Missing session description.</value></data>
+  <data name="Server_NoFileUploaded" xml:space="preserve"><value>No file was uploaded.</value></data>
+  <data name="Server_NoPhotoUploaded" xml:space="preserve"><value>No photo was uploaded.</value></data>
+  <data name="Server_PasswordLength" xml:space="preserve"><value>Password must be at least {0} characters.</value></data>
+  <data name="Server_PasswordTooLong" xml:space="preserve"><value>Password is too long.</value></data>
+  <data name="Server_ReasonChannelDeleted" xml:space="preserve"><value>channel deleted</value></data>
+  <data name="Server_ReasonClosed" xml:space="preserve"><value>closed</value></data>
+  <data name="Server_ReasonConnectionFailed" xml:space="preserve"><value>connection failed</value></data>
+  <data name="Server_ReasonJoinedElsewhere" xml:space="preserve"><value>joined from elsewhere</value></data>
+  <data name="Server_ReasonPublisherDisconnected" xml:space="preserve"><value>publisher disconnected</value></data>
+  <data name="Server_ReasonReplaced" xml:space="preserve"><value>replaced</value></data>
+  <data name="Server_ReasonServerShuttingDown" xml:space="preserve"><value>server shutting down</value></data>
+  <data name="Server_ReasonStoppedByPublisher" xml:space="preserve"><value>stopped by publisher</value></data>
+  <data name="Server_ReasonStreamEnded" xml:space="preserve"><value>stream ended</value></data>
+  <data name="Server_RegistrationClosed" xml:space="preserve"><value>Registration is closed on this server.</value></data>
+  <data name="Server_SessionDescriptionInvalid" xml:space="preserve"><value>The session description could not be parsed.</value></data>
+  <data name="Server_SessionDescriptionRejected" xml:space="preserve"><value>The session description was rejected ({0}).</value></data>
+  <data name="Server_StreamFull" xml:space="preserve"><value>This stream has reached its viewer limit.</value></data>
+  <data name="Server_StreamNotLive" xml:space="preserve"><value>That stream is no longer live.</value></data>
+  <data name="Server_TextChannelNotFound" xml:space="preserve"><value>That text channel does not exist.</value></data>
+  <data name="Server_TooManyAttachments" xml:space="preserve"><value>At most {0} attachments per message.</value></data>
+  <data name="Server_UnknownChannelType" xml:space="preserve"><value>Unknown channel type.</value></data>
+  <data name="Server_UnsupportedStreamFormat" xml:space="preserve"><value>Unsupported stream format.</value></data>
+  <data name="Server_UsernameCharacters" xml:space="preserve"><value>Username may only contain letters, digits, '_' and '.'.</value></data>
+  <data name="Server_UsernameLength" xml:space="preserve"><value>Username must be between {0} and {1} characters.</value></data>
+  <data name="Server_UsernameRequired" xml:space="preserve"><value>Username is required.</value></data>
+  <data name="Server_UsernameTaken" xml:space="preserve"><value>That username is already taken.</value></data>
+  <data name="Server_VoiceChannelFull" xml:space="preserve"><value>This voice channel is full.</value></data>
+  <data name="Server_VoiceChannelNotFound" xml:space="preserve"><value>That voice channel does not exist.</value></data>
+  <data name="Settings_AppVersion" xml:space="preserve"><value>Discagem desktop {0}</value></data>
+  <data name="Settings_AudioSystem" xml:space="preserve"><value>Audio: {0}</value></data>
+  <data name="Settings_AvatarColorLabel" xml:space="preserve"><value>AVATAR COLOUR</value></data>
+  <data name="Settings_CallSounds" xml:space="preserve"><value>Play sounds when I or others join or leave a call</value></data>
+  <data name="Settings_CallsLabel" xml:space="preserve"><value>CALLS</value></data>
+  <data name="Settings_ChangePassword" xml:space="preserve"><value>Change password</value></data>
+  <data name="Settings_ChangePhoto" xml:space="preserve"><value>Change photo</value></data>
+  <data name="Settings_CheckForUpdatesAutomatically" xml:space="preserve"><value>Check for updates automatically</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>Check now</value></data>
+  <data name="Settings_CheckingForUpdates" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Settings_ChoosePhotoTitle" xml:space="preserve"><value>Choose a profile photo</value></data>
+  <data name="Settings_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Settings_CloseButtonLabel" xml:space="preserve"><value>WHEN I CLOSE THE WINDOW</value></data>
+  <data name="Settings_CloseQuits" xml:space="preserve"><value>Quit Discagem</value></data>
+  <data name="Settings_CloseQuitsHint" xml:space="preserve"><value>Leaves any call and signs you off until you open it again.</value></data>
+  <data name="Settings_CloseToTray" xml:space="preserve"><value>Keep Discagem running in the notification area</value></data>
+  <data name="Settings_CloseToTrayHint" xml:space="preserve"><value>You stay online and keep getting messages and calls.</value></data>
+  <data name="Settings_CodecInfo" xml:space="preserve"><value>VP8 via libvpx {0}</value></data>
+  <data name="Settings_CodecMissing" xml:space="preserve"><value>libvpx not found — screen sharing unavailable</value></data>
+  <data name="Settings_ConfirmPasswordLabel" xml:space="preserve"><value>CONFIRM NEW PASSWORD</value></data>
+  <data name="Settings_CurrentPasswordLabel" xml:space="preserve"><value>CURRENT PASSWORD</value></data>
+  <data name="Settings_DeafenedNotice" xml:space="preserve"><value>Your audio is off right now, so message sounds are silenced.</value></data>
+  <data name="Settings_DefaultQualityHint" xml:space="preserve"><value>Preselected when you share your screen; you can still change it each time.</value></data>
+  <data name="Settings_DefaultQualityLabel" xml:space="preserve"><value>DEFAULT QUALITY</value></data>
+  <data name="Settings_DiagnosticsHint" xml:space="preserve"><value>The log records what went wrong (no messages or passwords). Send it along when reporting a problem.</value></data>
+  <data name="Settings_DiagnosticsLabel" xml:space="preserve"><value>DIAGNOSTICS</value></data>
+  <data name="Settings_DisplayNameLabel" xml:space="preserve"><value>DISPLAY NAME</value></data>
+  <data name="Settings_EchoAdviceOther" xml:space="preserve"><value>Use headphones to keep others from hearing themselves through your microphone.</value></data>
+  <data name="Settings_EchoAdviceWindows" xml:space="preserve"><value>Windows echo cancellation and noise suppression are used where your microphone supports them.</value></data>
+  <data name="Settings_FlashTaskbar" xml:space="preserve"><value>Flash the taskbar button when a message arrives</value></data>
+  <data name="Settings_InputDeviceLabel" xml:space="preserve"><value>INPUT DEVICE</value></data>
+  <data name="Settings_InputSensitivityHint" xml:space="preserve"><value>Speak normally: the bar turns green when others would hear you. Move the slider right if background noise turns it green.</value></data>
+  <data name="Settings_InputSensitivityLabel" xml:space="preserve"><value>INPUT SENSITIVITY</value></data>
+  <data name="Settings_LanguageLabel" xml:space="preserve"><value>INTERFACE LANGUAGE</value></data>
+  <data name="Settings_LanguageRestart" xml:space="preserve"><value>The new language applies when Discagem restarts.</value></data>
+  <data name="Settings_LanguageSystem" xml:space="preserve"><value>System language</value></data>
+  <data name="Settings_Logout" xml:space="preserve"><value>Log out</value></data>
+  <data name="Settings_MentionsOnly" xml:space="preserve"><value>Only for messages that mention me</value></data>
+  <data name="Settings_MessageSounds" xml:space="preserve"><value>Play a sound when a message arrives</value></data>
+  <data name="Settings_MessageSoundsHint" xml:space="preserve"><value>When Discagem is in the background or the message is in another channel.</value></data>
+  <data name="Settings_MessagesLabel" xml:space="preserve"><value>MESSAGES</value></data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve"><value>Minimize to the notification area instead of the taskbar</value></data>
+  <data name="Settings_NavHeading" xml:space="preserve"><value>SETTINGS</value></data>
+  <data name="Settings_NewPasswordLabel" xml:space="preserve"><value>NEW PASSWORD</value></data>
+  <data name="Settings_NotificationVolumeLabel" xml:space="preserve"><value>NOTIFICATION VOLUME</value></data>
+  <data name="Settings_OpenLogFolder" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="Settings_OutputDeviceLabel" xml:space="preserve"><value>OUTPUT DEVICE</value></data>
+  <data name="Settings_OutputVolumeLabel" xml:space="preserve"><value>OUTPUT VOLUME</value></data>
+  <data name="Settings_PageAbout" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_PageAccount" xml:space="preserve"><value>My account</value></data>
+  <data name="Settings_PageAppearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_PageLanguage" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_PageNotifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Settings_PageStreaming" xml:space="preserve"><value>Screen sharing</value></data>
+  <data name="Settings_PageVoice" xml:space="preserve"><value>Voice &amp; audio</value></data>
+  <data name="Settings_PageWindow" xml:space="preserve"><value>Window &amp; start-up</value></data>
+  <data name="Settings_PasswordChanged" xml:space="preserve"><value>Password changed. Other devices have been signed out.</value></data>
+  <data name="Settings_PasswordHeading" xml:space="preserve"><value>Password</value></data>
+  <data name="Settings_PasswordTooShort" xml:space="preserve"><value>Use at least {0} characters.</value></data>
+  <data name="Settings_PasswordsDoNotMatch" xml:space="preserve"><value>The new passwords do not match.</value></data>
+  <data name="Settings_PhotoRemoved" xml:space="preserve"><value>Photo removed.</value></data>
+  <data name="Settings_PhotoUnreadable" xml:space="preserve"><value>That file is not an image Discagem can read.</value></data>
+  <data name="Settings_PhotoUpdated" xml:space="preserve"><value>Photo updated.</value></data>
+  <data name="Settings_ProfileSaved" xml:space="preserve"><value>Profile saved.</value></data>
+  <data name="Settings_RemovePhoto" xml:space="preserve"><value>Remove photo</value></data>
+  <data name="Settings_RestartNow" xml:space="preserve"><value>Restart now</value></data>
+  <data name="Settings_SaveProfile" xml:space="preserve"><value>Save profile</value></data>
+  <data name="Settings_ServerPrefix" xml:space="preserve"><value>Server: </value></data>
+  <data name="Settings_SilenceWhileDeafened" xml:space="preserve"><value>Silence message sounds while my audio is off</value></data>
+  <data name="Settings_SilenceWhileDeafenedHint" xml:space="preserve"><value>Turning audio off (the headphones button) is remembered, also outside calls.</value></data>
+  <data name="Settings_StartMicTest" xml:space="preserve"><value>Test microphone</value></data>
+  <data name="Settings_StartMinimized" xml:space="preserve"><value>Start in the notification area, without opening the window</value></data>
+  <data name="Settings_StartWithSession" xml:space="preserve"><value>Start Discagem when I sign in</value></data>
+  <data name="Settings_StartWithSystemFailed" xml:space="preserve"><value>Could not change the start-up setting. See the log for details.</value></data>
+  <data name="Settings_StartWithSystemHint" xml:space="preserve"><value>So you are online and hear messages without opening it yourself.</value></data>
+  <data name="Settings_StartWithSystemUnsupported" xml:space="preserve"><value>Not available in this installation (in the Flatpak, use your desktop's start-up applications).</value></data>
+  <data name="Settings_StartWithWindows" xml:space="preserve"><value>Start Discagem with Windows</value></data>
+  <data name="Settings_StartupLabel" xml:space="preserve"><value>START-UP</value></data>
+  <data name="Settings_StopMicTest" xml:space="preserve"><value>Stop test</value></data>
+  <data name="Settings_TestSound" xml:space="preserve"><value>Test sound</value></data>
+  <data name="Settings_ThemeHint" xml:space="preserve"><value>The theme also picks the notification sounds: the Aero themes bring Messenger-style sounds.</value></data>
+  <data name="Settings_ThemeLabel" xml:space="preserve"><value>THEME</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_TrayHintOther" xml:space="preserve"><value>Your desktop must show tray icons (on GNOME, the AppIndicator extension). Launching Discagem again brings the window back.</value></data>
+  <data name="Settings_TrayHintWindows" xml:space="preserve"><value>Open it again from its icon in the notification area (you may find it under the ^ arrow), or from the Start menu. Quit it from the icon's menu.</value></data>
+  <data name="Settings_UpdatesLabel" xml:space="preserve"><value>UPDATES</value></data>
+  <data name="Shell_BandOnline" xml:space="preserve"><value>(Online)</value></data>
+  <data name="Shell_BandReconnecting" xml:space="preserve"><value>(Reconnecting…)</value></data>
+  <data name="Shell_CodecMissingLinux" xml:space="preserve"><value>Screen sharing needs libvpx: install it with your package manager (for example: sudo apt install libvpx9) and restart Discagem.</value></data>
+  <data name="Shell_CodecMissingWindows" xml:space="preserve"><value>Screen sharing needs the Microsoft Visual C++ Redistributable (x64): install it from https://aka.ms/vs/17/release/vc_redist.x64.exe and restart Discagem.</value></data>
+  <data name="Shell_ConnectFailed" xml:space="preserve"><value>Could not connect to the server: {0}</value></data>
+  <data name="Shell_ConnectingToServer" xml:space="preserve"><value>Connecting to the server…</value></data>
+  <data name="Shell_ConnectionLost" xml:space="preserve"><value>Connection lost — trying to reconnect…</value></data>
+  <data name="Shell_ConnectionLostScreenShareStopped" xml:space="preserve"><value>Connection lost. Your screen share was stopped.</value></data>
+  <data name="Shell_CreateChannelFailed" xml:space="preserve"><value>Could not create the channel: {0}</value></data>
+  <data name="Shell_CreateChannelTooltip" xml:space="preserve"><value>Create channel</value></data>
+  <data name="Shell_CreateTextChannel" xml:space="preserve"><value>Create text channel</value></data>
+  <data name="Shell_CreateVoiceChannel" xml:space="preserve"><value>Create voice channel</value></data>
+  <data name="Shell_DefaultStreamTitle" xml:space="preserve"><value>{0}'s screen</value></data>
+  <data name="Shell_DeleteChannel" xml:space="preserve"><value>Delete channel</value></data>
+  <data name="Shell_DeleteChannelFailed" xml:space="preserve"><value>Could not delete the channel</value></data>
+  <data name="Shell_DeleteTextChannelConfirm" xml:space="preserve"><value>Delete #{0} and all of its messages? This cannot be undone.</value></data>
+  <data name="Shell_EditChannel" xml:space="preserve"><value>Edit channel</value></data>
+  <data name="Shell_LiveBadge" xml:space="preserve"><value>LIVE</value></data>
+  <data name="Shell_LiveNowHeader" xml:space="preserve"><value>LIVE NOW</value></data>
+  <data name="Shell_LiveNowHeaderAero" xml:space="preserve"><value>Live now</value></data>
+  <data name="Shell_LiveStarting" xml:space="preserve"><value>Starting…</value></data>
+  <data name="Shell_ServerOptions" xml:space="preserve"><value>Server options</value></data>
+  <data name="Shell_SessionExpired" xml:space="preserve"><value>Your session has expired. Please log in again.</value></data>
+  <data name="Shell_ShareScreenTooltip" xml:space="preserve"><value>Share your screen</value></data>
+  <data name="Shell_StartScreenShareFailed" xml:space="preserve"><value>Could not start screen sharing: {0}</value></data>
+  <data name="Shell_StartingStream" xml:space="preserve"><value>Starting your stream…</value></data>
+  <data name="Shell_StopSharing" xml:space="preserve"><value>Stop sharing</value></data>
+  <data name="Shell_StopStreamFailed" xml:space="preserve"><value>Could not stop the stream</value></data>
+  <data name="Shell_StreamEnded" xml:space="preserve"><value>The stream has ended.</value></data>
+  <data name="Shell_StreamEndedBy" xml:space="preserve"><value>{0}'s stream has ended.</value></data>
+  <data name="Shell_TextChannelsHeader" xml:space="preserve"><value>TEXT CHANNELS</value></data>
+  <data name="Shell_TextChannelsHeaderAero" xml:space="preserve"><value>Text channels</value></data>
+  <data name="Shell_ThisIsYourStream" xml:space="preserve"><value>This is your stream</value></data>
+  <data name="Shell_UpToDate" xml:space="preserve"><value>You have the latest version ({0}).</value></data>
+  <data name="Shell_UpdateAvailable" xml:space="preserve"><value>Discagem {0} is available.</value></data>
+  <data name="Shell_UpdateAvailableBar" xml:space="preserve"><value>Discagem {0} is available (you have {1}).</value></data>
+  <data name="Shell_UpdateChannelFailed" xml:space="preserve"><value>Could not update the channel</value></data>
+  <data name="Shell_UpdateCheckFailed" xml:space="preserve"><value>Could not check for updates: {0}</value></data>
+  <data name="Shell_UpdateConfirmMessage" xml:space="preserve"><value>Updating restarts Discagem, which ends your call and your screen share. Update now?</value></data>
+  <data name="Shell_UpdateConfirmTitle" xml:space="preserve"><value>Update Discagem</value></data>
+  <data name="Shell_UpdateDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="Shell_UpdateDownloading" xml:space="preserve"><value>Downloading Discagem {0}… {1:0}%</value></data>
+  <data name="Shell_UpdateFailed" xml:space="preserve"><value>Could not update Discagem: {0}</value></data>
+  <data name="Shell_UpdateNow" xml:space="preserve"><value>Update now</value></data>
+  <data name="Shell_UserSettingsTooltip" xml:space="preserve"><value>User settings</value></data>
+  <data name="Shell_VoiceChannelsHeader" xml:space="preserve"><value>VOICE CHANNELS</value></data>
+  <data name="Shell_VoiceChannelsHeaderAero" xml:space="preserve"><value>Voice channels</value></data>
+  <data name="Shell_WatchStream" xml:space="preserve"><value>Watch stream</value></data>
+  <data name="Shell_WatchStreamFailed" xml:space="preserve"><value>Could not watch the stream: {0}</value></data>
+  <data name="Shell_YouAreLive" xml:space="preserve"><value>You're live</value></data>
+  <data name="Stream_CannotCaptureSound" xml:space="preserve"><value>this computer cannot capture its sound</value></data>
+  <data name="Stream_CaptureFailed" xml:space="preserve"><value>The selected screen or window could not be captured.</value></data>
+  <data name="Stream_CaptureStopped" xml:space="preserve"><value>capture stopped ({0})</value></data>
+  <data name="Stream_CaptureSurfaceFailed" xml:space="preserve"><value>Could not allocate a capture surface.</value></data>
+  <data name="Stream_Connecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="Stream_ConnectionFailed" xml:space="preserve"><value>Connection failed. Check that the server's UDP ports are reachable.</value></data>
+  <data name="Stream_DeafenedHint" xml:space="preserve"><value>You are deafened: streams are silent too.</value></data>
+  <data name="Stream_DefaultTitle" xml:space="preserve"><value>{0}'s screen</value></data>
+  <data name="Stream_Disconnected" xml:space="preserve"><value>Disconnected from the stream ({0}).</value></data>
+  <data name="Stream_FullScreenTip" xml:space="preserve"><value>Full screen</value></data>
+  <data name="Stream_Live" xml:space="preserve"><value>LIVE</value></data>
+  <data name="Stream_MediaConnectionFailed" xml:space="preserve"><value>Could not establish the media connection to the server. Make sure the server's UDP media ports are reachable.</value></data>
+  <data name="Stream_MuteStream" xml:space="preserve"><value>Mute stream</value></data>
+  <data name="Stream_NoSound" xml:space="preserve"><value>no sound: {0}</value></data>
+  <data name="Stream_NoSoundProblem" xml:space="preserve"><value>Your stream has no sound: {0}</value></data>
+  <data name="Stream_PlaybackFailed" xml:space="preserve"><value>The stream's sound cannot be played: {0}</value></data>
+  <data name="Stream_PlaybackStopped" xml:space="preserve"><value>The stream's sound stopped: {0}</value></data>
+  <data name="Stream_PopOutTip" xml:space="preserve"><value>Open in a separate window</value></data>
+  <data name="Stream_Reconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
+  <data name="Stream_SharingConnectionLost" xml:space="preserve"><value>Screen sharing stopped: the media connection was lost.</value></data>
+  <data name="Stream_SharingStopped" xml:space="preserve"><value>Screen sharing stopped: {0}</value></data>
+  <data name="Stream_SharingStoppedByServer" xml:space="preserve"><value>Screen sharing stopped: {0}.</value></data>
+  <data name="Stream_SoundNothingPlaying" xml:space="preserve"><value>sound: {0} (nothing playing)</value></data>
+  <data name="Stream_SoundOff" xml:space="preserve"><value>sound off</value></data>
+  <data name="Stream_SoundSending" xml:space="preserve"><value>sound: {0}</value></data>
+  <data name="Stream_SoundStarting" xml:space="preserve"><value>starting sound…</value></data>
+  <data name="Stream_SoundStoppedProblem" xml:space="preserve"><value>Your stream's sound stopped: {0}</value></data>
+  <data name="Stream_StatsNoSoundPlaying" xml:space="preserve"><value>no sound playing</value></data>
+  <data name="Stream_StatsNoSoundShared" xml:space="preserve"><value>no sound shared</value></data>
+  <data name="Stream_StatsSound" xml:space="preserve"><value>sound</value></data>
+  <data name="Stream_StopWatchingTip" xml:space="preserve"><value>Stop watching</value></data>
+  <data name="Stream_ViewersTip" xml:space="preserve"><value>Viewers</value></data>
+  <data name="Stream_VolumeLabel" xml:space="preserve"><value>STREAM VOLUME</value></data>
+  <data name="Stream_VolumeTip" xml:space="preserve"><value>Stream volume</value></data>
+  <data name="Stream_WaitingForVideo" xml:space="preserve"><value>Waiting for video…</value></data>
+  <data name="Theme_AeroDarkDescription" xml:space="preserve"><value>Aero on dark glass. Messenger sounds.</value></data>
+  <data name="Theme_AeroDarkName" xml:space="preserve"><value>Aero Dark</value></data>
+  <data name="Theme_AeroDescription" xml:space="preserve"><value>Light and glossy, in the style of Windows 7. Messenger sounds.</value></data>
+  <data name="Theme_DiscagemDescription" xml:space="preserve"><value>The original dark look.</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Open Discagem</value></data>
+  <data name="Tray_Quit" xml:space="preserve"><value>Quit Discagem</value></data>
+  <data name="Update_ChecksumMissing" xml:space="preserve"><value>The release's checksum list does not cover the installer.</value></data>
+  <data name="Update_InstallerCorrupt" xml:space="preserve"><value>The downloaded installer is corrupt (its checksum does not match).</value></data>
+  <data name="Update_NoInstaller" xml:space="preserve"><value>This release has no installer to download.</value></data>
+  <data name="Voice_ChannelDeleted" xml:space="preserve"><value>{0} was deleted.</value></data>
+  <data name="Voice_Connected" xml:space="preserve"><value>Voice connected</value></data>
+  <data name="Voice_Connecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="Voice_Deafen" xml:space="preserve"><value>Deafen</value></data>
+  <data name="Voice_DeafenedTooltip" xml:space="preserve"><value>Deafened</value></data>
+  <data name="Voice_DeleteVoiceChannelConfirm" xml:space="preserve"><value>Delete the voice channel {0}? Everyone in it will be disconnected.</value></data>
+  <data name="Voice_Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Voice_JoinFailed" xml:space="preserve"><value>Could not join {0}: {1}</value></data>
+  <data name="Voice_Mute" xml:space="preserve"><value>Mute</value></data>
+  <data name="Voice_MutedTooltip" xml:space="preserve"><value>Muted</value></data>
+  <data name="Voice_ReconnectFailed" xml:space="preserve"><value>Could not reconnect to {0}.</value></data>
+  <data name="Voice_RejoinFailed" xml:space="preserve"><value>Could not rejoin {0}: {1}</value></data>
+  <data name="Voice_ThatsYou" xml:space="preserve"><value>That's you. Your microphone settings are in User settings.</value></data>
+  <data name="Voice_Undeafen" xml:space="preserve"><value>Undeafen</value></data>
+  <data name="Voice_Unmute" xml:space="preserve"><value>Unmute</value></data>
+  <data name="Voice_UserVolume" xml:space="preserve"><value>USER VOLUME</value></data>
+</root>

@@ -1,6 +1,7 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Shared;
 
@@ -60,7 +61,7 @@ public sealed partial class AttachmentViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Error = ex is ApiException ? ex.Message : "Could not load image.";
+            Error = ex is ApiException ? ex.Message : Strings.Image_LoadFailed;
         }
         finally
         {

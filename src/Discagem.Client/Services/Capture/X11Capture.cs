@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Discagem.Client.Resources;
 using Discagem.Media.Pipeline;
 
 namespace Discagem.Client.Services.Capture;
@@ -29,7 +30,7 @@ internal static unsafe class X11Capture
                 for (var i = 0; i < monitors.Count; i++)
                 {
                     var m = monitors[i];
-                    var label = $"Screen {i + 1}{(m.Primary ? " (primary)" : "")}";
+                    var label = string.Format(m.Primary ? Strings.Picker_ScreenNumberPrimary : Strings.Picker_ScreenNumber, i + 1);
                     sources.Add(new CaptureSource
                     {
                         Id = $"x11:{m.X},{m.Y},{m.Width},{m.Height}",
@@ -45,7 +46,7 @@ internal static unsafe class X11Capture
             sources.Add(new CaptureSource
             {
                 Id = "x11:root",
-                Name = monitors.Count > 1 ? "All screens" : "Entire screen",
+                Name = monitors.Count > 1 ? Strings.Picker_AllScreens : Strings.Picker_EntireScreen,
                 Kind = CaptureKind.Screen,
                 Width = rootWidth,
                 Height = rootHeight,

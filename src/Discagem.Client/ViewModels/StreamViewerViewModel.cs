@@ -5,6 +5,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Media.Imaging;
 using Discagem.Media.Pipeline;
@@ -45,7 +46,7 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
     private Bitmap? _frame;
 
     [ObservableProperty]
-    private string _status = "Connecting…";
+    private string _status = Strings.Stream_Connecting;
 
     [ObservableProperty]
     private string _statsText = "";
@@ -106,7 +107,8 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
         {
             // Whether sound arrived since the last update: tells "the streamer shares no sound" from "nothing is playing".
             var audioPackets = session.Audio.PacketsReceived;
-            var sound = audioPackets > lastAudioPackets ? " · sound" : Stream.HasAudio ? " · no sound playing" : " · no sound shared";
+            var sound = " · " + (audioPackets > lastAudioPackets ? Strings.Stream_StatsSound
+                : Stream.HasAudio ? Strings.Stream_StatsNoSoundPlaying : Strings.Stream_StatsNoSoundShared);
             lastAudioPackets = audioPackets;
             Dispatcher.UIThread.Post(() =>
                 StatsText = stats.Width > 0 ? $"{stats.Width}×{stats.Height} · {stats.FramesPerSecond:0} FPS · {stats.ReceivedKbps / 1000:0.0} Mbps{sound}" : "");
@@ -115,14 +117,14 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
         {
             Status = state switch
             {
-                RTCPeerConnectionState.connected => HasFrame ? "" : "Waiting for video…",
-                RTCPeerConnectionState.connecting or RTCPeerConnectionState.@new => "Connecting…",
-                RTCPeerConnectionState.disconnected => "Reconnecting…",
-                RTCPeerConnectionState.failed => "Connection failed. Check that the server's UDP ports are reachable.",
+                RTCPeerConnectionState.connected => HasFrame ? "" : Strings.Stream_WaitingForVideo,
+                RTCPeerConnectionState.connecting or RTCPeerConnectionState.@new => Strings.Stream_Connecting,
+                RTCPeerConnectionState.disconnected => Strings.Stream_Reconnecting,
+                RTCPeerConnectionState.failed => Strings.Stream_ConnectionFailed,
                 _ => Status,
             };
         });
-        session.Closed += reason => Dispatcher.UIThread.Post(() => CloseRequested?.Invoke(this, $"Disconnected from the stream ({reason})."));
+        session.Closed += reason => Dispatcher.UIThread.Post(() => CloseRequested?.Invoke(this, string.Format(Strings.Stream_Disconnected, reason)));
     }
 
     private void OnFrameDecoded(BgraFrame frame)

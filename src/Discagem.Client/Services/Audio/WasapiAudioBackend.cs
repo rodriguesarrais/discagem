@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Discagem.Client.Resources;
 using Discagem.Media.Audio;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
@@ -77,10 +78,10 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
         catch (COMException ex)
         {
-            throw new AudioDeviceException($"The Windows audio service is unavailable ({ex.Message}).", ex);
+            throw new AudioDeviceException(string.Format(Strings.Audio_WindowsAudioUnavailable, ex.Message), ex);
         }
 
-        throw new AudioDeviceException(flow == DataFlow.Capture ? "No microphone was found." : "No speakers or headphones were found.");
+        throw new AudioDeviceException(flow == DataFlow.Capture ? Strings.Audio_NoMicrophoneFound : Strings.Audio_NoSpeakersFound);
     }
 
     public IAudioStream OpenInput(string? deviceId, AudioSink sink)
@@ -100,7 +101,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
         catch (Exception ex) when (IsDeviceError(ex))
         {
-            throw new AudioDeviceException($"Could not open the microphone ({ex.Message}).", ex);
+            throw new AudioDeviceException(string.Format(Strings.Audio_CouldNotOpenMicrophone, ex.Message), ex);
         }
     }
 
@@ -113,7 +114,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
         catch (Exception ex) when (IsDeviceError(ex))
         {
-            throw new AudioDeviceException($"Could not open the speakers ({ex.Message}).", ex);
+            throw new AudioDeviceException(string.Format(Strings.Audio_CouldNotOpenSpeakers, ex.Message), ex);
         }
     }
 
@@ -131,7 +132,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
         {
-            throw new AudioDeviceException("sharing sound without your voice chat needs Windows 10 version 2004 or later.");
+            throw new AudioDeviceException(Strings.Audio_SystemCaptureNeedsWindows2004);
         }
 
         Exception? applicationError = null;
@@ -139,7 +140,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         {
             try
             {
-                return OpenProcessLoopback(pid, ProcessLoopbackMode.IncludeTargetProcessTree, "the shared window's application", sink);
+                return OpenProcessLoopback(pid, ProcessLoopbackMode.IncludeTargetProcessTree, Strings.Audio_SharedWindowApplication, sink);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
@@ -151,14 +152,14 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         try
         {
             var description = applicationError is null
-                ? "everything except Discagem"
-                : "everything except Discagem (the window's application could not be captured on its own)";
+                ? Strings.Audio_EverythingExceptDiscagem
+                : Strings.Audio_EverythingExceptDiscagemFallback;
             return OpenProcessLoopback(Environment.ProcessId, ProcessLoopbackMode.ExcludeTargetProcessTree, description, sink);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             ClientLog.Error($"Could not capture the computer's sound: {ex}");
-            throw new AudioDeviceException($"could not capture the computer's sound ({ex.Message}).", ex);
+            throw new AudioDeviceException(string.Format(Strings.Audio_CouldNotCaptureComputerSound, ex.Message), ex);
         }
     }
 
@@ -189,7 +190,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
             (false, 16) => PcmSampleType.Int16,
             (false, 24) => PcmSampleType.Int24,
             (false, 32) => PcmSampleType.Int32,
-            _ => throw new AudioDeviceException($"Unsupported device format: {format}."),
+            _ => throw new AudioDeviceException(string.Format(Strings.Audio_UnsupportedDeviceFormat, format)),
         };
         return new PcmFormat(format.SampleRate, format.Channels, type);
     }

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Discagem.Client.Resources;
 using Discagem.Client.Services;
 using Discagem.Shared;
 
@@ -70,15 +71,15 @@ public sealed partial class LoginViewModel : ObservableObject
 
     public bool ShowInviteCode => IsRegisterMode && InviteRequired;
 
-    public string Heading => IsRegisterMode ? "Create an account" : "Welcome back!";
+    public string Heading => IsRegisterMode ? Strings.Login_RegisterHeading : Strings.Login_SignInHeading;
 
-    public string Subheading => IsRegisterMode ? "Join your friends on your private server." : "We're so excited to see you again!";
+    public string Subheading => IsRegisterMode ? Strings.Login_RegisterSubheading : Strings.Login_SignInSubheading;
 
-    public string SubmitText => IsRegisterMode ? "Create account" : "Log in";
+    public string SubmitText => IsRegisterMode ? Strings.Login_CreateAccount : Strings.Login_LogIn;
 
-    public string TogglePrompt => IsRegisterMode ? "Already have an account?" : "Need an account?";
+    public string TogglePrompt => IsRegisterMode ? Strings.Login_HaveAccountPrompt : Strings.Login_NeedAccountPrompt;
 
-    public string ToggleText => IsRegisterMode ? "Log in" : "Register";
+    public string ToggleText => IsRegisterMode ? Strings.Login_LogIn : Strings.Login_Register;
 
     partial void OnServerAddressChanged(string value) => _ = ProbeServerAsync(value);
 
@@ -107,7 +108,7 @@ public sealed partial class LoginViewModel : ObservableObject
 
             ServerReachable = true;
             InviteRequired = info.RegistrationRequiresInvite;
-            ServerStatus = info.RegistrationOpen ? $"{info.Name} · v{info.Version}" : $"{info.Name} · registration closed";
+            ServerStatus = info.RegistrationOpen ? $"{info.Name} · v{info.Version}" : string.Format(Strings.Login_ServerStatusRegistrationClosed, info.Name);
         }
         catch (OperationCanceledException)
         {
@@ -116,7 +117,7 @@ public sealed partial class LoginViewModel : ObservableObject
         {
             if (!cts.IsCancellationRequested)
             {
-                ServerStatus = "Server not reachable";
+                ServerStatus = Strings.Login_ServerUnreachable;
             }
         }
     }
@@ -134,13 +135,13 @@ public sealed partial class LoginViewModel : ObservableObject
         ErrorMessage = null;
         if (!ApiClient.TryNormalizeAddress(ServerAddress, out var address))
         {
-            ErrorMessage = "Enter the address of your Discagem server, e.g. chat.example.com.";
+            ErrorMessage = Strings.Login_EnterServerAddress;
             return;
         }
 
         if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrEmpty(Password))
         {
-            ErrorMessage = "Enter your username and password.";
+            ErrorMessage = Strings.Login_EnterCredentials;
             return;
         }
 

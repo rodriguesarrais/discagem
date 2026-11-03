@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Resources;
 using Discagem.Shared;
 
 namespace Discagem.Client.ViewModels;
@@ -35,7 +36,7 @@ public sealed partial class LiveStreamViewModel : ObservableObject
 
     public bool HasViewers => ViewerCount > 0;
 
-    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? $"{Streamer.DisplayName}'s screen" : Title;
+    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? string.Format(Strings.Stream_DefaultTitle, Streamer.DisplayName) : Title;
 
     public void Update(StreamInfoDto stream)
     {

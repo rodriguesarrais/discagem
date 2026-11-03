@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Discagem.Client.Resources;
 using Discagem.Client.Services.Audio;
 using Discagem.Client.Services.Capture;
 using Discagem.Media.Audio;
@@ -65,23 +66,23 @@ public sealed class ScreenShareService : IAsyncDisposable
 
         if (!session.WantsAudio)
         {
-            return "sound off";
+            return Strings.Stream_SoundOff;
         }
 
         if (session.AudioError is { } error)
         {
-            return $"no sound: {error}";
+            return string.Format(Strings.Stream_NoSound, error);
         }
 
         if (session.AudioDescription is not { } description)
         {
-            return "starting sound…";
+            return Strings.Stream_SoundStarting;
         }
 
         var sent = session.Publisher.AudioPacketsSent;
         var sending = sent > session.LastAudioPacketsSent;
         session.LastAudioPacketsSent = sent;
-        return sending ? $"sound: {description}" : $"sound: {description} (nothing playing)";
+        return string.Format(sending ? Strings.Stream_SoundSending : Strings.Stream_SoundNothingPlaying, description);
     }
 
     public async Task StartAsync(CaptureSource source, StreamQuality quality, string title, bool shareAudio = false)
@@ -97,7 +98,7 @@ public sealed class ScreenShareService : IAsyncDisposable
             var firstSize = await Task.Run(() => frameSource.TryCapture(out var first) ? (first.Width, first.Height) : (0, 0));
             if (firstSize.Item1 == 0)
             {
-                throw new InvalidOperationException("The selected screen or window could not be captured.");
+                throw new InvalidOperationException(Strings.Stream_CaptureFailed);
             }
 
             var (width, height) = BgraScaler.FitWithin(firstSize.Item1, firstSize.Item2, quality.MaxHeight);
@@ -114,20 +115,19 @@ public sealed class ScreenShareService : IAsyncDisposable
 
             if (!await publisher.WaitForConnectionAsync(ConnectTimeout))
             {
-                throw new InvalidOperationException(
-                    "Could not establish the media connection to the server. Make sure the server's UDP media ports are reachable.");
+                throw new InvalidOperationException(Strings.Stream_MediaConnectionFailed);
             }
 
             // From here on the pipeline owns the frame source.
             pipeline = new CaptureEncodePipeline(frameSource, publisher, quality);
             var session = new PublishSession(answer.StreamId, answer.SessionId, publisher, pipeline) { WantsAudio = shareAudio };
             pipeline.StatsUpdated += stats => PublishStatsUpdated?.Invoke(stats);
-            pipeline.Failed += reason => _ = StopWithReasonAsync(session, $"Screen sharing stopped: {reason}");
+            pipeline.Failed += reason => _ = StopWithReasonAsync(session, string.Format(Strings.Stream_SharingStopped, reason));
             publisher.StateChanged += state =>
             {
                 if (state is RTCPeerConnectionState.failed or RTCPeerConnectionState.closed)
                 {
-                    _ = StopWithReasonAsync(session, "Screen sharing stopped: the media connection was lost.");
+                    _ = StopWithReasonAsync(session, Strings.Stream_SharingConnectionLost);
                 }
             };
 
@@ -139,7 +139,7 @@ public sealed class ScreenShareService : IAsyncDisposable
             }
             else if (shareAudio)
             {
-                session.AudioError = "this computer cannot capture its sound";
+                session.AudioError = Strings.Stream_CannotCaptureSound;
             }
         }
         catch
@@ -181,16 +181,16 @@ public sealed class ScreenShareService : IAsyncDisposable
             var reason = ex is AudioDeviceException ? ex.Message : $"{ex.GetType().Name}: {ex.Message}";
             session.AudioError = reason.TrimEnd('.');
             ClientLog.Error($"Stream audio capture failed (process {processId?.ToString() ?? "none"}): {ex}");
-            PublishAudioProblem?.Invoke($"Your stream has no sound: {reason}");
+            PublishAudioProblem?.Invoke(string.Format(Strings.Stream_NoSoundProblem, reason));
             return;
         }
 
         ClientLog.Info($"Stream audio: capturing {capture.DeviceName} with {_audio.Name}.");
         capture.Failed += reason =>
         {
-            session.AudioError = $"capture stopped ({reason})";
+            session.AudioError = string.Format(Strings.Stream_CaptureStopped, reason);
             ClientLog.Error($"Stream audio capture stopped: {reason}");
-            PublishAudioProblem?.Invoke($"Your stream's sound stopped: {reason}");
+            PublishAudioProblem?.Invoke(string.Format(Strings.Stream_SoundStoppedProblem, reason));
         };
         session.AudioDescription = capture.DeviceName;
         session.AttachAudio(capture, sender);
@@ -298,11 +298,11 @@ public sealed class ScreenShareService : IAsyncDisposable
     {
         if (_watching.TryGetValue(sessionId, out var session))
         {
-            session.CloseFromServer(reason);
+            session.CloseFromServer(ServerMessages.TranslateReason(reason));
         }
         else if (_publish is { } publish && publish.SessionId == sessionId)
         {
-            _ = StopWithReasonAsync(publish, $"Screen sharing stopped: {reason}.");
+            _ = StopWithReasonAsync(publish, string.Format(Strings.Stream_SharingStoppedByServer, ServerMessages.TranslateReason(reason)));
         }
     }
 
@@ -444,7 +444,7 @@ public sealed class WatchSession : IDisposable
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             ClientLog.Error($"Stream audio playback failed: {ex}");
-            AudioProblem?.Invoke($"The stream's sound cannot be played: {ex.Message}");
+            AudioProblem?.Invoke(string.Format(Strings.Stream_PlaybackFailed, ex.Message));
             return;
         }
 
@@ -452,7 +452,7 @@ public sealed class WatchSession : IDisposable
         output.Failed += reason =>
         {
             ClientLog.Error($"Stream audio playback stopped: {reason}");
-            AudioProblem?.Invoke($"The stream's sound stopped: {reason}");
+            AudioProblem?.Invoke(string.Format(Strings.Stream_PlaybackStopped, reason));
         };
         lock (_audioSync)
         {

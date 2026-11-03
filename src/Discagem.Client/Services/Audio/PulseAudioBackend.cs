@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Discagem.Client.Resources;
 using Discagem.Media.Audio;
 using Discagem.Media.WebRtc;
 
@@ -74,8 +75,9 @@ internal sealed class PulseAudioBackend : IAudioBackend
                 out var error);
             if (_handle == IntPtr.Zero)
             {
-                var what = device is not null ? "the computer's audio" : direction == Native.Direction.Record ? "the microphone" : "the speakers";
-                throw new AudioDeviceException($"Could not open {what}: {Native.Describe(error)}.");
+                var format = device is not null ? Strings.Audio_CouldNotOpenComputerAudio
+                    : direction == Native.Direction.Record ? Strings.Audio_CouldNotOpenMicrophone : Strings.Audio_CouldNotOpenSpeakers;
+                throw new AudioDeviceException(string.Format(format, Native.Describe(error)));
             }
 
             _thread = new Thread(() => Run(direction, sink, source))
@@ -87,7 +89,7 @@ internal sealed class PulseAudioBackend : IAudioBackend
             _thread.Start();
         }
 
-        public string DeviceName { get; init; } = "System default";
+        public string DeviceName { get; init; } = Strings.Audio_SystemDefault;
 
         public event Action<string>? Failed;
 

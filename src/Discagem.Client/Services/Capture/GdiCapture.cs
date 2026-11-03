@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
+using Discagem.Client.Resources;
 using Discagem.Media.Pipeline;
 
 namespace Discagem.Client.Services.Capture;
@@ -29,7 +30,9 @@ internal static class GdiCapture
         for (var i = 0; i < ordered.Count; i++)
         {
             var bounds = ordered[i].Bounds;
-            var label = ordered.Count == 1 ? "Entire screen" : $"Screen {i + 1}{(ordered[i].Primary ? " (primary)" : "")}";
+            var label = ordered.Count == 1
+                ? Strings.Picker_EntireScreen
+                : string.Format(ordered[i].Primary ? Strings.Picker_ScreenNumberPrimary : Strings.Picker_ScreenNumber, i + 1);
             sources.Add(new CaptureSource
             {
                 Id = "screen:" + ordered[i].Device,
@@ -146,7 +149,7 @@ internal static class GdiCapture
             if (_bitmap == IntPtr.Zero)
             {
                 Release();
-                throw new InvalidOperationException("Could not allocate a capture surface.");
+                throw new InvalidOperationException(Strings.Stream_CaptureSurfaceFailed);
             }
 
             _previous = Native.SelectObject(_memoryDc, _bitmap);

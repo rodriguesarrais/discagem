@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Discagem.Client.Resources;
 using Discagem.Shared;
 
 namespace Discagem.Client.Services;
@@ -188,7 +189,7 @@ public sealed class UpdateService : IDisposable
     {
         if (update.InstallerUrl is null || update.InstallerName is null || (update.Sha256 is null && update.ChecksumsUrl is null))
         {
-            throw new InvalidOperationException("This release has no installer to download.");
+            throw new InvalidOperationException(Strings.Update_NoInstaller);
         }
 
         var expected = update.Sha256;
@@ -196,7 +197,7 @@ public sealed class UpdateService : IDisposable
         {
             var checksums = await _http.GetStringAsync(update.ChecksumsUrl, cancellationToken);
             expected = ExpectedHash(checksums, update.InstallerName)
-                ?? throw new InvalidOperationException("The release's checksum list does not cover the installer.");
+                ?? throw new InvalidOperationException(Strings.Update_ChecksumMissing);
         }
 
         Directory.CreateDirectory(DownloadDirectory);
@@ -227,7 +228,7 @@ public sealed class UpdateService : IDisposable
         if (!string.Equals(Convert.ToHexStringLower(hash.GetHashAndReset()), expected, StringComparison.OrdinalIgnoreCase))
         {
             File.Delete(path);
-            throw new InvalidOperationException("The downloaded installer is corrupt (its checksum does not match).");
+            throw new InvalidOperationException(Strings.Update_InstallerCorrupt);
         }
 
         return path;

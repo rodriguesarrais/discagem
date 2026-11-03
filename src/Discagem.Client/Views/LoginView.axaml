@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Discagem.Client.ViewModels"
              xmlns:c="using:Discagem.Client.Controls"
+             xmlns:r="using:Discagem.Client.Resources"
              x:Class="Discagem.Client.Views.LoginView"
              x:DataType="vm:LoginViewModel"
              Background="{DynamicResource LoginBackground}">
@@ -31,7 +32,7 @@
 
           <StackPanel>
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="SERVER ADDRESS" Classes="label" />
+              <TextBlock Text="{x:Static r:Strings.Login_ServerAddressLabel}" Classes="label" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasServerStatus}" Margin="0,0,0,8">
                 <Ellipse Width="7" Height="7" VerticalAlignment="Center"
                          Fill="{DynamicResource OnlineBrush}" IsVisible="{Binding ServerReachable}" />
@@ -44,23 +45,23 @@
           </StackPanel>
 
           <StackPanel>
-            <TextBlock Text="USERNAME" Classes="label" />
+            <TextBlock Text="{x:Static r:Strings.Login_UsernameLabel}" Classes="label" />
             <TextBox Text="{Binding Username}" x:Name="UsernameBox" />
           </StackPanel>
 
           <StackPanel IsVisible="{Binding IsRegisterMode}">
-            <TextBlock Text="DISPLAY NAME" Classes="label" />
-            <TextBox Text="{Binding DisplayName}" Watermark="How others see you (optional)" />
+            <TextBlock Text="{x:Static r:Strings.Login_DisplayNameLabel}" Classes="label" />
+            <TextBox Text="{Binding DisplayName}" Watermark="{x:Static r:Strings.Login_DisplayNameWatermark}" />
           </StackPanel>
 
           <StackPanel>
-            <TextBlock Text="PASSWORD" Classes="label" />
+            <TextBlock Text="{x:Static r:Strings.Login_PasswordLabel}" Classes="label" />
             <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton" x:Name="PasswordBox" />
           </StackPanel>
 
           <StackPanel IsVisible="{Binding ShowInviteCode}">
-            <TextBlock Text="INVITE CODE" Classes="label" />
-            <TextBox Text="{Binding InviteCode}" Watermark="Ask the server owner" />
+            <TextBlock Text="{x:Static r:Strings.Login_InviteCodeLabel}" Classes="label" />
+            <TextBox Text="{Binding InviteCode}" Watermark="{x:Static r:Strings.Login_InviteCodeWatermark}" />
           </StackPanel>
 
           <Border Background="{DynamicResource ErrorBoxBrush}" CornerRadius="6" Padding="12,10" IsVisible="{Binding HasError}">

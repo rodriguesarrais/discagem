@@ -185,6 +185,8 @@ Section "un.${APP_NAME}" UnSecApp
   Delete "$SMPROGRAMS\${APP_NAME}.lnk"
   Delete "$DESKTOP\${APP_NAME}.lnk"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
+  ; Written by the client when "Start Discagem with Windows" is turned on.
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${APP_NAME}"
   RMDir /r "$INSTDIR"
 SectionEnd
 

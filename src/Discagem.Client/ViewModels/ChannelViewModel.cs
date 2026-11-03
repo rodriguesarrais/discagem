@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Resources;
 using Discagem.Shared;
 
 namespace Discagem.Client.ViewModels;
@@ -49,7 +50,7 @@ public sealed partial class ChannelViewModel : ObservableObject
 
     public bool HasMentions => MentionCount > 0;
 
-    public string Placeholder => $"Message #{Name}";
+    public string Placeholder => string.Format(Strings.Conv_ComposerPlaceholder, Name);
 
     public ObservableCollection<MessageItemViewModel> Messages { get; } = [];
 

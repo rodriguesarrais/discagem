@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="using:Discagem.Client.Resources"
         x:Class="Discagem.Client.Views.Dialogs.ConfirmDialog"
         Width="440" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
@@ -11,7 +12,7 @@
     </StackPanel>
     <Border Background="{DynamicResource SidebarBrush}" Padding="16,14">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-        <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
+        <Button Classes="ghost" Content="{x:Static r:Strings.Dialog_Cancel}" Click="OnCancel" IsCancel="True" />
         <Button x:Name="ConfirmButton" Classes="primary" Click="OnConfirm" IsDefault="True" />
       </StackPanel>
     </Border>

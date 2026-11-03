@@ -40,15 +40,21 @@ internal sealed class SingleInstance : IDisposable
 
     /// <summary>
     /// Claims the instance for this process. Returns null, after asking the running client to show
-    /// its window, when another client already holds it.
+    /// its window, when another client already holds it (still, after <paramref name="wait"/>: a
+    /// restart waits for the client it replaces to finish quitting).
     /// </summary>
-    public static SingleInstance? TryClaim()
+    public static SingleInstance? TryClaim(TimeSpan wait = default)
     {
         var name = InstanceName();
+        var deadline = Environment.TickCount64 + (long)wait.TotalMilliseconds;
         IDisposable? claim;
         try
         {
-            claim = OperatingSystem.IsWindows() ? ClaimMutex(name) : ClaimLockFile();
+            while ((claim = OperatingSystem.IsWindows() ? ClaimMutex(name) : ClaimLockFile()) is null
+                   && Environment.TickCount64 < deadline)
+            {
+                Thread.Sleep(200);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or WaitHandleCannotBeOpenedException)
         {

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Discagem.Client.ViewModels"
              xmlns:c="using:Discagem.Client.Controls"
+             xmlns:r="using:Discagem.Client.Resources"
              x:Class="Discagem.Client.Views.StreamView"
              x:DataType="vm:StreamViewerViewModel">
   <Grid Classes="stream-surface" Classes.no-frame="{Binding !HasFrame}" Background="#0B0B0E" DoubleTapped="OnDoubleTapped">
@@ -29,7 +30,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBlock Text="{Binding Stream.Streamer.DisplayName}" FontWeight="Bold" Foreground="White" />
             <Border Classes="live-badge">
-              <TextBlock Text="LIVE" />
+              <TextBlock Text="{x:Static r:Strings.Stream_Live}" />
             </Border>
           </StackPanel>
           <TextBlock Text="{Binding Stream.DisplayTitle}" FontSize="12.5" Foreground="#CCFFFFFF" TextTrimming="CharacterEllipsis" />
@@ -37,11 +38,11 @@
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="{Binding StatsText}" FontSize="11.5" Foreground="#B3FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0" />
           <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,6,0"
-                      ToolTip.Tip="Viewers">
+                      ToolTip.Tip="{x:Static r:Strings.Stream_ViewersTip}">
             <c:Icon Data="{StaticResource IconEye}" Width="15" Height="15" Foreground="#CCFFFFFF" />
             <TextBlock Text="{Binding Stream.ViewerCount}" Foreground="#CCFFFFFF" FontSize="12.5" />
           </StackPanel>
-          <Button Classes="icon" Foreground="White" ToolTip.Tip="Stream volume" IsVisible="{Binding Stream.HasAudio}">
+          <Button Classes="icon" Foreground="White" ToolTip.Tip="{x:Static r:Strings.Stream_VolumeTip}" IsVisible="{Binding Stream.HasAudio}">
             <Panel>
               <c:Icon Data="{StaticResource IconVolume}" IsVisible="{Binding !IsSilenced}" />
               <c:Icon Data="{StaticResource IconVolumeOff}" IsVisible="{Binding IsSilenced}" />
@@ -50,25 +51,25 @@
               <Flyout Placement="BottomEdgeAlignedRight">
                 <StackPanel Width="240" Spacing="8" Margin="4">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="STREAM VOLUME" Classes="label" VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Static r:Strings.Stream_VolumeLabel}" Classes="label" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding VolumeLabel}" Classes="secondary" FontSize="12" VerticalAlignment="Center" />
                   </Grid>
                   <Slider Minimum="0" Maximum="200" Value="{Binding VolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True"
                           IsEnabled="{Binding !IsSilenced}" />
-                  <CheckBox Content="Mute stream" IsChecked="{Binding IsAudioMuted}" />
-                  <TextBlock Text="You are deafened: streams are silent too." Classes="secondary" FontSize="12" TextWrapping="Wrap"
+                  <CheckBox Content="{x:Static r:Strings.Stream_MuteStream}" IsChecked="{Binding IsAudioMuted}" />
+                  <TextBlock Text="{x:Static r:Strings.Stream_DeafenedHint}" Classes="secondary" FontSize="12" TextWrapping="Wrap"
                              IsVisible="{Binding IsDeafened}" />
                 </StackPanel>
               </Flyout>
             </Button.Flyout>
           </Button>
-          <Button Classes="icon" Foreground="White" ToolTip.Tip="Open in a separate window" Click="OnPopOutClick" x:Name="PopOutButton">
+          <Button Classes="icon" Foreground="White" ToolTip.Tip="{x:Static r:Strings.Stream_PopOutTip}" Click="OnPopOutClick" x:Name="PopOutButton">
             <c:Icon Data="{StaticResource IconPopOut}" />
           </Button>
-          <Button Classes="icon" Foreground="White" ToolTip.Tip="Full screen" Click="OnFullScreenClick">
+          <Button Classes="icon" Foreground="White" ToolTip.Tip="{x:Static r:Strings.Stream_FullScreenTip}" Click="OnFullScreenClick">
             <c:Icon Data="{StaticResource IconFullscreen}" />
           </Button>
-          <Button Classes="icon" Foreground="White" ToolTip.Tip="Stop watching" Command="{Binding CloseCommand}">
+          <Button Classes="icon" Foreground="White" ToolTip.Tip="{x:Static r:Strings.Stream_StopWatchingTip}" Command="{Binding CloseCommand}">
             <c:Icon Data="{StaticResource IconClose}" />
           </Button>
         </StackPanel>

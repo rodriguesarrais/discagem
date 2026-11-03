@@ -1,3 +1,4 @@
+using Discagem.Client.Resources;
 using Discagem.Client.Services.Audio;
 using Discagem.Media.Audio;
 using Discagem.Media.WebRtc;
@@ -34,7 +35,7 @@ public sealed class VoiceService : IAsyncDisposable
         _settings = settings;
         _myUserId = myUserId;
         Audio = audio;
-        _cues = new CuePlayer(audio, () => _settings.VoiceOutputDevice, () => _settings.VoiceOutputVolume);
+        _cues = new CuePlayer(audio, () => _settings.VoiceOutputDevice, () => _settings.NotificationVolume);
         _hub.IceCandidate += OnRemoteCandidate;
         _hub.MediaSessionClosed += OnMediaSessionClosed;
     }
@@ -96,7 +97,7 @@ public sealed class VoiceService : IAsyncDisposable
             {
                 if (state is RTCPeerConnectionState.failed or RTCPeerConnectionState.closed)
                 {
-                    _ = DropAsync(call, "The voice connection was lost.", canRejoin: true);
+                    _ = DropAsync(call, Strings.Audio_VoiceConnectionLost, canRejoin: true);
                 }
             };
 
@@ -122,8 +123,7 @@ public sealed class VoiceService : IAsyncDisposable
 
                 if (!await peer.WaitForConnectionAsync(ConnectTimeout))
                 {
-                    throw new InvalidOperationException(
-                        "Could not establish the voice connection. Make sure the server's UDP media ports are reachable.");
+                    throw new InvalidOperationException(Strings.Audio_VoiceConnectionFailed);
                 }
             }
             catch
@@ -140,7 +140,10 @@ public sealed class VoiceService : IAsyncDisposable
 
             OpenMicrophone(call, attempt: 0);
             OpenSpeakers(call, attempt: 0);
-            engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
+            if (_settings.CallSounds)
+            {
+                engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
+            }
         }
         finally
         {
@@ -254,33 +257,39 @@ public sealed class VoiceService : IAsyncDisposable
         if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
         {
             call.Engine.Mixer.RemoveSpeaker((uint)userId);
-            call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Leave);
+            if (_settings.CallSounds)
+            {
+                call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Leave);
+            }
         }
     }
 
     /// <summary>Someone joined the call: play the join cue.</summary>
     public void OnParticipantJoined(long channelId, long userId)
     {
-        if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
+        if (_call is { } call && call.ChannelId == channelId && userId != _myUserId && _settings.CallSounds)
         {
             call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
         }
     }
 
     /// <summary>
-    /// Plays a notification sound: mixed into the call when there is one, otherwise on the voice
-    /// output device. Nothing plays while deafened.
+    /// Plays a notification sound at the notification volume: mixed into the call when there is
+    /// one, otherwise on the voice output device. While deafened it plays only when the user has not
+    /// asked for silence: deafening is remembered between calls, so it would otherwise silence
+    /// message sounds for good.
     /// </summary>
-    public void PlayNotification(float[] sound)
+    public void PlayNotification(float[] sound, bool evenWhileDeafened = false)
     {
-        if (_settings.VoiceDeafened)
+        if (_settings.VoiceDeafened && _settings.SilenceSoundsWhileDeafened && !evenWhileDeafened)
         {
             return;
         }
 
         if (_call is { } call)
         {
-            call.Engine.Mixer.PlayCue(sound);
+            var volume = Math.Clamp(_settings.NotificationVolume, 0f, 2f);
+            call.Engine.Mixer.PlayCue(volume == 1f ? sound : Array.ConvertAll(sound, s => s * volume));
             return;
         }
 
@@ -324,7 +333,7 @@ public sealed class VoiceService : IAsyncDisposable
         }
         catch (AudioDeviceException ex)
         {
-            AudioProblem?.Invoke($"{ex.Message} Others will not hear you.");
+            AudioProblem?.Invoke(string.Format(Strings.Audio_OthersWillNotHearYou, ex.Message));
         }
     }
 
@@ -342,7 +351,7 @@ public sealed class VoiceService : IAsyncDisposable
         }
         catch (AudioDeviceException ex)
         {
-            AudioProblem?.Invoke($"{ex.Message} You will not hear the others.");
+            AudioProblem?.Invoke(string.Format(Strings.Audio_YouWillNotHearOthers, ex.Message));
         }
     }
 
@@ -351,7 +360,7 @@ public sealed class VoiceService : IAsyncDisposable
     {
         if (attempt >= MaxDeviceRetries)
         {
-            AudioProblem?.Invoke($"The {(input ? "microphone" : "audio output")} stopped working: {reason}");
+            AudioProblem?.Invoke(string.Format(input ? Strings.Audio_MicrophoneStopped : Strings.Audio_OutputStopped, reason));
             return;
         }
 
@@ -404,6 +413,7 @@ public sealed class VoiceService : IAsyncDisposable
         _call = null;
         var cue = ThemeManager.Sounds.Leave;
         var cueStarted = Environment.TickCount64;
+        playCue &= _settings.CallSounds;
         if (playCue)
         {
             call.Engine.Mixer.PlayCue(cue);
@@ -448,13 +458,13 @@ public sealed class VoiceService : IAsyncDisposable
     {
         if (_call is { } call && call.SessionId == sessionId)
         {
-            _ = DropAsync(call, $"Disconnected from voice: {reason}.", canRejoin: false);
+            _ = DropAsync(call, string.Format(Strings.Audio_DisconnectedFromVoice, ServerMessages.TranslateReason(reason)), canRejoin: false);
         }
         else if (sessionId == _droppedSessionId)
         {
             // The media connection closed first and looked like a network failure; it was the server
             // hanging up on purpose, so do not rejoin.
-            Disconnected?.Invoke($"Disconnected from voice: {reason}.", false);
+            Disconnected?.Invoke(string.Format(Strings.Audio_DisconnectedFromVoice, ServerMessages.TranslateReason(reason)), false);
         }
     }
 

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:r="using:Discagem.Client.Resources"
              xmlns:vm="using:Discagem.Client.ViewModels"
              xmlns:c="using:Discagem.Client.Controls"
              x:Class="Discagem.Client.Views.MemberRow"
@@ -12,15 +13,15 @@
         <StackPanel Orientation="Horizontal" Spacing="5">
           <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14.5" TextTrimming="CharacterEllipsis" />
           <c:Icon Data="{StaticResource IconCrown}" Width="13" Height="13" Foreground="{DynamicResource CrownBrush}" StrokeThickness="2.4"
-                  IsVisible="{Binding IsAdmin}" ToolTip.Tip="Server admin" VerticalAlignment="Center" />
+                  IsVisible="{Binding IsAdmin}" ToolTip.Tip="{x:Static r:Strings.Members_ServerAdmin}" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding IsLive}">
           <c:Icon Data="{StaticResource IconMonitor}" Width="12" Height="12" Foreground="{DynamicResource LiveBrush}" />
-          <TextBlock Text="Streaming" FontSize="12" Foreground="{DynamicResource LiveBrush}" FontWeight="SemiBold" />
+          <TextBlock Text="{x:Static r:Strings.Members_Streaming}" FontSize="12" Foreground="{DynamicResource LiveBrush}" FontWeight="SemiBold" />
         </StackPanel>
       </StackPanel>
       <Border Grid.Column="2" Classes="live-badge" IsVisible="{Binding IsLive}">
-        <TextBlock Text="LIVE" />
+        <TextBlock Text="{x:Static r:Strings.Members_LiveBadge}" />
       </Border>
     </Grid>
   </Button>

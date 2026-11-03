@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Resources;
 using Discagem.Client.Services.Capture;
 using Discagem.Media.Imaging;
 using Discagem.Media.Pipeline;
@@ -52,19 +53,19 @@ public sealed partial class ScreenPickerViewModel : ObservableObject
 
     /// <summary>What viewers will hear with the current choice.</summary>
     public string AudioHint => !ShareAudio
-        ? "Viewers will not hear anything."
+        ? Strings.Picker_AudioHintOff
         : !_supportsApplicationAudio
-            ? "Viewers hear everything your computer plays, Discagem's voice chat included. Turn this off if they are in your voice channel."
+            ? Strings.Picker_AudioHintEverything
             : Selected?.Source.Kind == CaptureKind.Window
-                ? "Viewers hear this window's application only."
-                : "Viewers hear everything your computer plays, except Discagem: your voice chat stays out of the stream.";
+                ? Strings.Picker_AudioHintWindow
+                : Strings.Picker_AudioHintExceptDiscagem;
 
     /// <summary>Why sound cannot be shared on this computer (shown instead of the option).</summary>
     public string? AudioUnavailableReason => CanShareAudio
         ? null
         : OperatingSystem.IsWindows()
-            ? "Sharing sound needs Windows 10 version 2004 or later."
-            : "Sharing sound needs PulseAudio or PipeWire.";
+            ? Strings.Picker_AudioNeedsWindows
+            : Strings.Picker_AudioNeedsPulse;
 
     public ObservableCollection<CaptureTileViewModel> Screens { get; } = [];
 

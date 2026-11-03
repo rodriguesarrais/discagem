@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Discagem.Client.Resources;
 using Discagem.Media.Audio;
 using Discagem.Media.WebRtc;
 
@@ -75,7 +76,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         _mainloop = pa_threaded_mainloop_new();
         if (_mainloop == IntPtr.Zero)
         {
-            throw new AudioDeviceException("Could not start the PulseAudio main loop.");
+            throw new AudioDeviceException(Strings.Audio_PulseMainLoopFailed);
         }
 
         _context = pa_context_new(pa_threaded_mainloop_get_api(_mainloop), "Discagem");
@@ -84,7 +85,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         {
             var error = Describe(pa_context_errno(_context));
             Release();
-            throw new AudioDeviceException($"Could not connect to PulseAudio: {error}.");
+            throw new AudioDeviceException(string.Format(Strings.Audio_PulseConnectFailed, error));
         }
 
         pa_threaded_mainloop_lock(_mainloop);
@@ -98,7 +99,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
 
             if (state != ContextReady)
             {
-                throw new AudioDeviceException($"Could not connect to PulseAudio: {Describe(pa_context_errno(_context))}.");
+                throw new AudioDeviceException(string.Format(Strings.Audio_PulseConnectFailed, Describe(pa_context_errno(_context))));
             }
 
             // Watch for playback streams coming and going, then pick up the ones already playing.
@@ -118,7 +119,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         _mixer.Start();
     }
 
-    public string DeviceName => _onlyProcessId is null ? "Applications' sound (without Discagem)" : "Application sound";
+    public string DeviceName => _onlyProcessId is null ? Strings.Audio_ApplicationsSoundWithoutDiscagem : Strings.Audio_ApplicationSound;
 
     public event Action<string>? Failed;
 
@@ -141,7 +142,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         var state = pa_context_get_state(context);
         if (state is ContextFailed or ContextTerminated && !_stopped)
         {
-            Failed?.Invoke($"PulseAudio connection lost ({Describe(pa_context_errno(context))})");
+            Failed?.Invoke(string.Format(Strings.Audio_PulseConnectionLost, Describe(pa_context_errno(context))));
         }
 
         pa_threaded_mainloop_signal(_mainloop, 0);

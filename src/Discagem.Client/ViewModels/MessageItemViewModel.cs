@@ -1,5 +1,6 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Resources;
 using Discagem.Shared;
 using Discagem.Shared.Text;
 
@@ -88,14 +89,14 @@ public sealed partial class MessageItemViewModel : ObservableObject
         var time = local.ToString("t", CultureInfo.CurrentCulture);
         if (local.Date == today)
         {
-            return $"Today at {time}";
+            return string.Format(CultureInfo.CurrentCulture, Strings.Chat_TimestampToday, time);
         }
 
         if (local.Date == today.AddDays(-1))
         {
-            return $"Yesterday at {time}";
+            return string.Format(CultureInfo.CurrentCulture, Strings.Chat_TimestampYesterday, time);
         }
 
-        return $"{local.ToString("d", CultureInfo.CurrentCulture)} {time}";
+        return string.Format(CultureInfo.CurrentCulture, Strings.Chat_TimestampDate, local.ToString("d", CultureInfo.CurrentCulture), time);
     }
 }
