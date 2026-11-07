@@ -49,6 +49,12 @@ public sealed class ClientSettings
     public Dictionary<long, float> StreamVolumes { get; set; } = [];
 
     /// <summary>
+    /// Volume of each application in the sound of your own streams (application key, the executable's
+    /// name in lower case, to gain; 1 = 100 %, 0 = left out).
+    /// </summary>
+    public Dictionary<string, float> StreamApplicationVolumes { get; set; } = [];
+
+    /// <summary>
     /// Whether closing the window keeps Discagem running in the notification area (null: the
     /// platform default, on for Windows; Linux desktops do not all show tray icons).
     /// </summary>

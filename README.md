@@ -37,10 +37,11 @@ native Avalonia application for Windows (and Linux/X11).
 
 **Screen sharing**
 - Share a whole monitor or a single application window, with live thumbnails in the picker.
-- Sound comes along in stereo, and voice chat never does: sharing a screen sends everything the
-  computer plays except Discagem itself, and on Windows sharing a window sends only that
-  application's sound. Viewers get a volume control per streamer, and deafening silences streams
-  too. The streamer and the viewers see whether sound is being sent and received.
+- Sound comes along in stereo, and voice chat never does: sharing a screen sends what each
+  application plays except Discagem itself, and on Windows sharing a window sends only that
+  application's sound. A mixer on the streamer's live card sets each application's volume in the
+  stream (remembered per application). Viewers get a volume control per streamer, and deafening
+  silences streams too. The streamer and the viewers see whether sound is being sent and received.
 - Quality presets from 720p30 to 1440p30 / source resolution; VP8 tuned for screen content.
 - Any number of people can watch at the same time; the stream can be popped out or shown full screen.
 - Live statistics (resolution, frame rate, bitrate) for both the streamer and viewers.
@@ -113,12 +114,17 @@ A simple loss-based controller lowers the bitrate when the streamer's uplink dro
 
 The stream's sound travels as a second track on the same connection: 48 kHz stereo Opus at
 128 kbit/s in 20 ms frames, paused during silence. Discagem's own sounds (voice chat, watched
-streams) are always left out, so the people in a call never hear themselves through a stream. On
-Windows (10 version 2004 or later) the sound is captured with WASAPI process loopback, either from the
-shared window's application and its child processes or from everything except Discagem; Windows
-offers no way to leave voice chat out on older versions, so they share no sound. On Linux Discagem
-records every PulseAudio/PipeWire playback stream except its own, each through its own monitor
-stream, and mixes them, picking up applications that start playing later. The server forwards the
+streams) are always left out, so the people in a call never hear themselves through a stream.
+The sound is captured application by application and mixed with each application's volume
+(`src/Discagem.Media/Audio/ApplicationAudioMixer.cs`), picking up applications that start playing
+later. On Windows (10 version 2004 or later) each application is captured with WASAPI process
+loopback in its include mode: the shared window's application and its child processes, or, for a
+whole screen, every process with an audio session except Discagem. Capturing "everything except
+Discagem" is not enough, because headset software and virtual mixers (SteelSeries Sonar,
+Voicemeeter...) replay Discagem's voice chat from their own process; known ones start muted in the
+mixer, and any other can be turned off there. Windows offers no way to leave voice chat out on
+versions before 10 2004, so they share no sound. On Linux Discagem records every
+PulseAudio/PipeWire playback stream except its own, each through its own monitor stream. The server forwards the
 packets with the streamer's sequence numbers, as it does for voice, and viewers play them through a
 jitter buffer with loss concealment. Clients from before stream audio keep working: they simply
 receive the video only.

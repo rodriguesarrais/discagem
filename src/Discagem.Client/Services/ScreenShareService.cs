@@ -22,16 +22,24 @@ public sealed class ScreenShareService : IAsyncDisposable
     private readonly IReadOnlyList<IceServerConfig> _iceServers;
     private readonly IAudioBackend _audio;
     private readonly Func<string?> _outputDevice;
+    private readonly Func<string, float>? _applicationVolume;
     private readonly ConcurrentDictionary<string, MediaPeer> _peers = new();
     private readonly ConcurrentDictionary<string, WatchSession> _watching = new();
     private PublishSession? _publish;
 
-    public ScreenShareService(ChatConnection hub, IReadOnlyList<IceServerConfig> iceServers, IAudioBackend audio, Func<string?> outputDevice)
+    /// <param name="applicationVolume">Starting volume of an application in the sound of a stream, from its key.</param>
+    public ScreenShareService(
+        ChatConnection hub,
+        IReadOnlyList<IceServerConfig> iceServers,
+        IAudioBackend audio,
+        Func<string?> outputDevice,
+        Func<string, float>? applicationVolume = null)
     {
         _hub = hub;
         _iceServers = iceServers;
         _audio = audio;
         _outputDevice = outputDevice;
+        _applicationVolume = applicationVolume;
         _hub.IceCandidate += OnRemoteCandidate;
         _hub.MediaSessionClosed += OnMediaSessionClosed;
     }
@@ -51,6 +59,12 @@ public sealed class ScreenShareService : IAsyncDisposable
 
     /// <summary>Whether this computer can send its audio with a screen share.</summary>
     public bool CanShareAudio => _audio.SupportsSystemCapture;
+
+    /// <summary>The mixer of the live stream's sound, once its capture runs; null otherwise.</summary>
+    public ApplicationAudioMixer? PublishMixer => _publish?.AudioMixer;
+
+    /// <summary>Raised (on any thread) when the applications in the live stream's sound change, or its capture starts.</summary>
+    public event Action? PublishApplicationsChanged;
 
     /// <summary>
     /// A short description of the live stream's sound for the streamer: what is captured and whether
@@ -169,10 +183,10 @@ public sealed class ScreenShareService : IAsyncDisposable
     private void StartAudio(PublishSession session, ScreenSharePublisher publisher, int? processId)
     {
         var sender = new StreamAudioSender(publisher.SendAudio);
-        IAudioStream capture;
+        IMixedAudioStream capture;
         try
         {
-            capture = _audio.OpenSystemCapture(processId, sender.Write);
+            capture = _audio.OpenSystemCapture(processId, sender.Write, _applicationVolume);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -193,7 +207,9 @@ public sealed class ScreenShareService : IAsyncDisposable
             PublishAudioProblem?.Invoke($"Your stream's sound stopped: {reason}");
         };
         session.AudioDescription = capture.DeviceName;
+        capture.Mixer.ApplicationsChanged += () => PublishApplicationsChanged?.Invoke();
         session.AttachAudio(capture, sender);
+        PublishApplicationsChanged?.Invoke();
     }
 
     public async Task StopAsync()
@@ -325,7 +341,7 @@ public sealed class ScreenShareService : IAsyncDisposable
         CaptureEncodePipeline pipeline) : IDisposable
     {
         private readonly object _sync = new();
-        private IAudioStream? _audioCapture;
+        private IMixedAudioStream? _audioCapture;
         private StreamAudioSender? _audioSender;
         private bool _disposed;
 
@@ -344,8 +360,19 @@ public sealed class ScreenShareService : IAsyncDisposable
 
         public long LastAudioPacketsSent;
 
+        public ApplicationAudioMixer? AudioMixer
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _disposed ? null : _audioCapture?.Mixer;
+                }
+            }
+        }
+
         /// <summary>Hands over the audio capture, which is opened after the stream started (or disposes it if the stream has stopped since).</summary>
-        public void AttachAudio(IAudioStream capture, StreamAudioSender sender)
+        public void AttachAudio(IMixedAudioStream capture, StreamAudioSender sender)
         {
             lock (_sync)
             {
@@ -363,7 +390,7 @@ public sealed class ScreenShareService : IAsyncDisposable
 
         public void Dispose()
         {
-            IAudioStream? capture;
+            IMixedAudioStream? capture;
             StreamAudioSender? sender;
             lock (_sync)
             {

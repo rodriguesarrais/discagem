@@ -14,6 +14,12 @@ public sealed record AudioDeviceInfo(string Id, string Name)
 
 public sealed class AudioDeviceException(string message, Exception? inner = null) : Exception(message, inner);
 
+/// <summary>A screen share's sound capture that mixes applications one by one, each at its own volume.</summary>
+public interface IMixedAudioStream : IAudioStream
+{
+    ApplicationAudioMixer Mixer { get; }
+}
+
 /// <summary>An open capture or playback stream.</summary>
 public interface IAudioStream : IDisposable
 {
@@ -47,12 +53,12 @@ public interface IAudioBackend
     bool SupportsApplicationCapture { get; }
 
     /// <summary>
-    /// Captures what the computer plays, as interleaved stereo, to send along with a screen share:
+    /// Captures what applications play, as interleaved stereo, to send along with a screen share:
     /// only the given process and its children when <paramref name="processId"/> is set, otherwise
-    /// everything except Discagem itself (where <see cref="SupportsApplicationCapture"/>; elsewhere
-    /// everything the default output plays).
+    /// every application except Discagem itself. Each application goes through the returned
+    /// stream's <see cref="IMixedAudioStream.Mixer"/>, starting at <paramref name="initialVolume"/>.
     /// </summary>
-    IAudioStream OpenSystemCapture(int? processId, AudioSink sink);
+    IMixedAudioStream OpenSystemCapture(int? processId, AudioSink sink, Func<string, float>? initialVolume = null);
 }
 
 public static class AudioBackends
@@ -92,7 +98,7 @@ internal sealed class UnavailableAudioBackend : IAudioBackend
 
     public bool SupportsApplicationCapture => false;
 
-    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) =>
+    public IMixedAudioStream OpenSystemCapture(int? processId, AudioSink sink, Func<string, float>? initialVolume = null) =>
         throw new AudioDeviceException("No audio system was found (PulseAudio or PipeWire is required on Linux).");
 }
 
@@ -162,20 +168,52 @@ internal sealed class SyntheticAudioBackend(
         return new ClockedStream("Recorder", channels, source, file, null);
     }
 
-    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink)
+    public IMixedAudioStream OpenSystemCapture(int? processId, AudioSink sink, Func<string, float>? initialVolume = null)
     {
         if (streamTones is not var (leftHz, rightHz))
         {
-            return inner.OpenSystemCapture(processId, sink);
+            return inner.OpenSystemCapture(processId, sink, initialVolume);
         }
 
+        // Two test "applications", one per channel, so that the mixer can be tried out.
         var left = new Tone(leftHz);
         var right = new Tone(rightHz);
-        return new ClockedStream($"{leftHz}/{rightHz} Hz tones", 2, buffer =>
+        var mixer = new ApplicationAudioMixer(sink, initialVolume);
+        mixer.AddInput(1, "test-tone-left", $"Test tone ({leftHz} Hz, left)");
+        mixer.AddInput(2, "test-tone-right", $"Test tone ({rightHz} Hz, right)");
+        var buffer = new float[ApplicationAudioMixer.BlockSamples];
+        var feeder = new ClockedStream($"{leftHz}/{rightHz} Hz tones", 2, block =>
         {
+            Array.Clear(buffer);
             left.Fill(buffer, 2, 0);
+            mixer.Write(1, buffer);
+            Array.Clear(buffer);
             right.Fill(buffer, 2, 1);
-        }, null, sink);
+            mixer.Write(2, buffer);
+            block.Clear();
+        }, null, null);
+        mixer.Start();
+        return new MixedStream(feeder, mixer);
+    }
+
+    /// <summary>A synthetic source feeding a mixer.</summary>
+    private sealed class MixedStream(IAudioStream feeder, ApplicationAudioMixer mixer) : IMixedAudioStream
+    {
+        public ApplicationAudioMixer Mixer { get; } = mixer;
+
+        public string DeviceName => feeder.DeviceName;
+
+        public event Action<string>? Failed
+        {
+            add { }
+            remove { }
+        }
+
+        public void Dispose()
+        {
+            feeder.Dispose();
+            Mixer.Dispose();
+        }
     }
 
     /// <summary>A sine wave written to one channel of an interleaved buffer.</summary>

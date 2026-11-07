@@ -56,8 +56,8 @@ public sealed partial class ScreenPickerViewModel : ObservableObject
         : !_supportsApplicationAudio
             ? "Viewers hear everything your computer plays, Discagem's voice chat included. Turn this off if they are in your voice channel."
             : Selected?.Source.Kind == CaptureKind.Window
-                ? "Viewers hear this window's application only."
-                : "Viewers hear everything your computer plays, except Discagem: your voice chat stays out of the stream.";
+                ? "Viewers hear this window's application only. Set its volume with the mixer on the live card."
+                : "Viewers hear your applications, except Discagem: your voice chat stays out. Set each one's volume with the mixer on the live card.";
 
     /// <summary>Why sound cannot be shared on this computer (shown instead of the option).</summary>
     public string? AudioUnavailableReason => CanShareAudio
