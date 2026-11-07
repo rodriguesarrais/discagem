@@ -38,7 +38,8 @@ internal sealed class PulseAudioBackend : IAudioBackend
     public bool SupportsApplicationCapture => true;
 
     /// <summary>Captures every application's playback except Discagem's own (see <see cref="PulseApplicationCapture"/>).</summary>
-    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink) => new PulseApplicationCapture(processId, sink);
+    public IMixedAudioStream OpenSystemCapture(int? processId, AudioSink sink, Func<string, float>? initialVolume = null) =>
+        new PulseApplicationCapture(processId, sink, initialVolume);
 
     private sealed unsafe class PulseStream : IAudioStream
     {

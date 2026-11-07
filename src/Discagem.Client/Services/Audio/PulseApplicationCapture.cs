@@ -7,21 +7,21 @@ namespace Discagem.Client.Services.Audio;
 
 /// <summary>
 /// Captures what applications play through PulseAudio (or PipeWire's PulseAudio service) for a
-/// screen share: one monitor stream per playback stream ("sink input"), mixed into 48 kHz stereo.
+/// screen share: one monitor stream per playback stream ("sink input"), mixed into 48 kHz stereo
+/// by an <see cref="ApplicationAudioMixer"/>, where each application has its own volume.
 /// Discagem's own playback streams (voice chat, watched streams, sounds) are left out, so the
 /// people in a call never hear themselves through the stream. Playback streams that start later
 /// are picked up as they appear.
 /// </summary>
 /// <remarks>
 /// Uses the asynchronous libpulse API with a threaded main loop: PulseAudio callbacks run on its
-/// thread with the loop locked, and a mixer thread hands 10 ms blocks to the sink.
+/// thread with the loop locked, and the mixer's thread hands 10 ms blocks to the sink.
 /// </remarks>
-internal sealed unsafe class PulseApplicationCapture : IAudioStream
+internal sealed unsafe class PulseApplicationCapture : IMixedAudioStream
 {
     private const string Library = "libpulse.so.0";
     private const int Channels = 2;
-    private const int BlockFrames = DiscagemAudio.SampleRate / 100;
-    private const int BlockSamples = BlockFrames * Channels;
+    private const int BlockSamples = ApplicationAudioMixer.BlockSamples;
 
     // Layout of pa_sink_input_info and pa_sink_info on 64-bit Linux (stable libpulse ABI).
     private const int SinkInputIndexOffset = 0;
@@ -43,14 +43,13 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
     private const int StreamAdjustLatency = 0x2000;
     private const int SampleFormatFloat32Le = 5;
 
-    private readonly AudioSink _sink;
     private readonly int? _onlyProcessId;
     private readonly int _ownProcessId = Environment.ProcessId;
     private readonly IntPtr _mainloop;
     private readonly IntPtr _context;
     private readonly Dictionary<uint, Input> _inputs = new();
-    private readonly object _mixLock = new();
-    private readonly Thread _mixer;
+    private readonly Dictionary<uint, (string Key, string Name)> _identities = new();
+    private readonly object _inputsLock = new();
     private volatile bool _stopped;
 
     // Callbacks handed to native code; kept in fields so that they live as long as this object.
@@ -61,9 +60,9 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
     private readonly StreamRequestCallback _onRead;
     private readonly StreamNotifyCallback _onStreamState;
 
-    public PulseApplicationCapture(int? onlyProcessId, AudioSink sink)
+    public PulseApplicationCapture(int? onlyProcessId, AudioSink sink, Func<string, float>? initialVolume)
     {
-        _sink = sink;
+        Mixer = new ApplicationAudioMixer(sink, initialVolume);
         _onlyProcessId = onlyProcessId;
         _onContextState = OnContextState;
         _onSubscription = OnSubscription;
@@ -114,9 +113,10 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         }
 
         pa_threaded_mainloop_unlock(_mainloop);
-        _mixer = new Thread(MixLoop) { IsBackground = true, Name = "Discagem stream audio mixer", Priority = ThreadPriority.AboveNormal };
-        _mixer.Start();
+        Mixer.Start();
     }
+
+    public ApplicationAudioMixer Mixer { get; }
 
     public string DeviceName => _onlyProcessId is null ? "Applications' sound (without Discagem)" : "Application sound";
 
@@ -127,7 +127,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
     {
         get
         {
-            lock (_mixLock)
+            lock (_inputsLock)
             {
                 return _inputs.Values.Count(i => !i.IsDead);
             }
@@ -176,6 +176,8 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         var sinkIndex = *(uint*)(info + SinkInputSinkOffset);
         var properties = *(IntPtr*)(info + SinkInputProplistOffset);
         var processId = int.TryParse(Property(properties, "application.process.id"), out var pid) ? pid : (int?)null;
+        var binary = Property(properties, "application.process.binary");
+        var appName = Property(properties, "application.name");
 
         var wanted = _onlyProcessId is { } only ? processId == only : processId != _ownProcessId;
         if (!wanted)
@@ -183,7 +185,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
             return;
         }
 
-        lock (_mixLock)
+        lock (_inputsLock)
         {
             if (_inputs.TryGetValue(index, out var existing) && existing.SinkIndex == sinkIndex && !existing.IsDead)
             {
@@ -192,6 +194,10 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         }
 
         RemoveInput(index);
+        lock (_inputsLock)
+        {
+            _identities[index] = ApplicationIdentity(binary, appName);
+        }
 
         // The monitor stream must be connected to the monitor of the output the stream plays on.
         Unref(pa_context_get_sink_info_by_index(context, sinkIndex, _onSink, (IntPtr)(((long)sinkIndex << 32) | index)));
@@ -238,10 +244,25 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
             return;
         }
 
-        lock (_mixLock)
+        (string Key, string Name) identity;
+        lock (_inputsLock)
         {
+            identity = _identities.GetValueOrDefault(index, ("unknown", "Unknown application"));
             _inputs[index] = new Input(index, sinkIndex, stream);
         }
+
+        Mixer.AddInput(index, identity.Key, identity.Name);
+    }
+
+    /// <summary>The key and name the mixer shows for a playback stream, from its application's properties.</summary>
+    internal static (string Key, string Name) ApplicationIdentity(string? binary, string? name)
+    {
+        var key = !string.IsNullOrWhiteSpace(binary) ? binary.Trim()
+            : !string.IsNullOrWhiteSpace(name) ? name.Trim()
+            : "unknown";
+        var shown = !string.IsNullOrWhiteSpace(name) ? name.Trim()
+            : key == "unknown" ? "Unknown application" : key;
+        return (key.ToLowerInvariant(), shown);
     }
 
     private void OnRead(IntPtr stream, nuint bytes, IntPtr userdata)
@@ -251,14 +272,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         {
             if (data != IntPtr.Zero)
             {
-                var samples = new ReadOnlySpan<float>((void*)data, (int)(length / sizeof(float)));
-                lock (_mixLock)
-                {
-                    if (_inputs.TryGetValue(index, out var input))
-                    {
-                        input.Buffer.Write(samples);
-                    }
-                }
+                Mixer.Write(index, new ReadOnlySpan<float>((void*)data, (int)(length / sizeof(float))));
             }
 
             pa_stream_drop(stream);
@@ -271,7 +285,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         // subscription events that follow clean it up or create a new one.
         if (pa_stream_get_state(stream) is StreamFailed or StreamTerminated)
         {
-            lock (_mixLock)
+            lock (_inputsLock)
             {
                 if (_inputs.TryGetValue((uint)(long)userdata, out var input) && input.Stream == stream)
                 {
@@ -285,7 +299,7 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
     private void RemoveInput(uint index)
     {
         Input? input;
-        lock (_mixLock)
+        lock (_inputsLock)
         {
             if (!_inputs.Remove(index, out input))
             {
@@ -293,42 +307,12 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
             }
         }
 
+        Mixer.RemoveInput(index);
+
         pa_stream_set_read_callback(input.Stream, null, IntPtr.Zero);
         pa_stream_set_state_callback(input.Stream, null, IntPtr.Zero);
         pa_stream_disconnect(input.Stream);
         pa_stream_unref(input.Stream);
-    }
-
-    // ---- Mixing ---------------------------------------------------------------------------------
-
-    /// <summary>Every 10 ms, adds up what each application played and hands the block on.</summary>
-    private void MixLoop()
-    {
-        var block = new float[BlockSamples];
-        var clock = Stopwatch.StartNew();
-        var next = 0.0;
-        while (!_stopped)
-        {
-            var wait = next - clock.Elapsed.TotalMilliseconds;
-            if (wait > 1)
-            {
-                Thread.Sleep((int)wait);
-                continue;
-            }
-
-            // After a stall, catch up without bursting more than a few blocks.
-            next = Math.Max(next + 10, clock.Elapsed.TotalMilliseconds - 30);
-            Array.Clear(block);
-            lock (_mixLock)
-            {
-                foreach (var input in _inputs.Values)
-                {
-                    input.Buffer.ReadAdd(block);
-                }
-            }
-
-            _sink(block);
-        }
     }
 
     // ---- Lifetime -------------------------------------------------------------------------------
@@ -341,13 +325,16 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         }
 
         _stopped = true;
-        if (Thread.CurrentThread != _mixer)
-        {
-            _mixer.Join(TimeSpan.FromSeconds(1));
-        }
+        Mixer.Dispose();
 
         pa_threaded_mainloop_lock(_mainloop);
-        foreach (var index in _inputs.Keys.ToList())
+        List<uint> indexes;
+        lock (_inputsLock)
+        {
+            indexes = _inputs.Keys.ToList();
+        }
+
+        foreach (var index in indexes)
         {
             RemoveInput(index);
         }
@@ -391,70 +378,6 @@ internal sealed unsafe class PulseApplicationCapture : IAudioStream
         public IntPtr Stream { get; } = stream;
 
         public bool IsDead { get; set; }
-
-        public JitterRing Buffer { get; } = new();
-    }
-
-    /// <summary>
-    /// Interleaved samples from one monitor stream. Reading starts once 20 ms are queued, so that
-    /// fragment timing does not cause gaps, and the queue is trimmed if it grows past 200 ms.
-    /// </summary>
-    private sealed class JitterRing
-    {
-        private const int StartSamples = BlockSamples * 2;
-        private const int MaxSamples = BlockSamples * 20;
-        private const int TrimToSamples = BlockSamples * 4;
-
-        private readonly float[] _buffer = new float[DiscagemAudio.SampleRate * Channels];
-        private int _start;
-        private int _count;
-        private bool _playing;
-
-        public void Write(ReadOnlySpan<float> samples)
-        {
-            foreach (var sample in samples)
-            {
-                if (_count == _buffer.Length)
-                {
-                    _start = (_start + 1) % _buffer.Length;
-                    _count--;
-                }
-
-                _buffer[(_start + _count) % _buffer.Length] = sample;
-                _count++;
-            }
-        }
-
-        public void ReadAdd(Span<float> block)
-        {
-            if (!_playing && _count < StartSamples)
-            {
-                return;
-            }
-
-            _playing = true;
-            if (_count > MaxSamples)
-            {
-                var drop = _count - TrimToSamples;
-                drop -= drop % Channels;
-                _start = (_start + drop) % _buffer.Length;
-                _count -= drop;
-            }
-
-            var available = Math.Min(_count - _count % Channels, block.Length);
-            for (var i = 0; i < available; i++)
-            {
-                block[i] += _buffer[(_start + i) % _buffer.Length];
-            }
-
-            _start = (_start + available) % _buffer.Length;
-            _count -= available;
-            if (_count == 0)
-            {
-                // Ran dry: the application paused or stopped. Buffer afresh when it resumes.
-                _playing = false;
-            }
-        }
     }
 
     // ---- libpulse -------------------------------------------------------------------------------

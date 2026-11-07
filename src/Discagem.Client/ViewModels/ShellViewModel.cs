@@ -61,7 +61,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _hub = new ChatConnection(session.Api.BaseAddress, () => _session.Api.Token);
         var iceServers = BuildIceServers(session);
         var audio = AudioBackends.Create();
-        _media = new ScreenShareService(_hub, iceServers, audio, () => session.Settings.VoiceOutputDevice);
+        _media = new ScreenShareService(_hub, iceServers, audio, () => session.Settings.VoiceOutputDevice,
+            key => StreamMixerViewModel.InitialVolume(session.Settings, key));
+        StreamMixer = new StreamMixerViewModel(session.Settings);
         _voice = new VoiceService(_hub, iceServers, session.Settings, audio, session.User.Id);
         _isMuted = session.Settings.VoiceMuted;
         _isDeafened = session.Settings.VoiceDeafened;
@@ -78,8 +80,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             {
                 LiveStatsText = $"{stats.Height}p · {stats.FramesPerSecond:0} FPS · {stats.SentKbps / 1000:0.0} Mbps";
                 LiveSoundText = sound.Length > 0 ? char.ToUpperInvariant(sound[0]) + sound[1..] : "";
+                StreamMixer.Refresh(_media.PublishMixer);
             });
         };
+        _media.PublishApplicationsChanged += () => Dispatcher.UIThread.Post(() => StreamMixer.Refresh(_media.PublishMixer));
         _media.PublishStopped += reason => Dispatcher.UIThread.Post(() =>
         {
             IsLive = false;
@@ -106,6 +110,17 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     public event Action<string?>? LoggedOut;
 
     public ObservableCollection<ChannelViewModel> Channels { get; } = [];
+
+    /// <summary>The applications in the sound of your live stream, with their volumes.</summary>
+    public StreamMixerViewModel StreamMixer { get; }
+
+    partial void OnIsLiveChanged(bool value)
+    {
+        if (!value)
+        {
+            StreamMixer.Refresh(null);
+        }
+    }
 
     public ObservableCollection<VoiceChannelViewModel> VoiceChannels { get; } = [];
 

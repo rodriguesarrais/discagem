@@ -10,8 +10,8 @@ namespace Discagem.Client.Services.Audio;
 /// Windows audio through WASAPI in shared mode. The microphone is opened in the communications
 /// processing mode where available, which lets Windows apply its echo cancellation, noise
 /// suppression and gain control. Conversion to and from 48 kHz mono (or stereo) happens here.
-/// The audio of screen shares is captured with process loopback (Windows 10 2004 and later), which
-/// can follow one application or leave Discagem's own sounds out.
+/// The audio of screen shares is captured application by application with process loopback
+/// (Windows 10 2004 and later), so that Discagem's own sounds stay out.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class WasapiAudioBackend : IAudioBackend
@@ -123,11 +123,14 @@ internal sealed class WasapiAudioBackend : IAudioBackend
     public bool SupportsApplicationCapture => SupportsSystemCapture;
 
     /// <remarks>
-    /// Only process loopback is used: capturing a whole output device would also capture voice chat,
-    /// which must never reach the stream. A window's application that cannot be captured on its own
-    /// (one running as administrator, say) falls back to everything except Discagem.
+    /// Only process loopback in its include mode is used, one application at a time (see
+    /// <see cref="WasapiApplicationCapture"/>). Capturing a whole output device, or everything except
+    /// Discagem, would also capture voice chat whenever another program replays Discagem's sound
+    /// (headset software and virtual mixers do), and viewers would hear themselves. A window's
+    /// application that cannot be captured on its own (one running as administrator, say) falls back
+    /// to every application.
     /// </remarks>
-    public IAudioStream OpenSystemCapture(int? processId, AudioSink sink)
+    public IMixedAudioStream OpenSystemCapture(int? processId, AudioSink sink, Func<string, float>? initialVolume = null)
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
         {
@@ -139,7 +142,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         {
             try
             {
-                return OpenProcessLoopback(pid, ProcessLoopbackMode.IncludeTargetProcessTree, "the shared window's application", sink);
+                return WasapiApplicationCapture.ForProcess(pid, sink, initialVolume);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
@@ -151,9 +154,9 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         try
         {
             var description = applicationError is null
-                ? "everything except Discagem"
-                : "everything except Discagem (the window's application could not be captured on its own)";
-            return OpenProcessLoopback(Environment.ProcessId, ProcessLoopbackMode.ExcludeTargetProcessTree, description, sink);
+                ? "every application except Discagem"
+                : "every application except Discagem (the window's application could not be captured on its own)";
+            return WasapiApplicationCapture.ForAllApplications(sink, initialVolume, description);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -162,12 +165,13 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         }
     }
 
+    /// <summary>Captures what one process and its children play, as 48 kHz stereo.</summary>
     [SupportedOSPlatform("windows10.0.19041")]
-    private static LoopbackStream OpenProcessLoopback(int processId, ProcessLoopbackMode mode, string description, AudioSink sink)
+    internal static IAudioStream OpenProcessLoopback(int processId, string description, AudioSink sink)
     {
         // Process loopback has no device mix format: ask for 48 kHz float stereo and let Windows convert.
         var recorder = new WasapiRecorderBuilder()
-            .WithProcessLoopback((uint)processId, mode)
+            .WithProcessLoopback((uint)processId, ProcessLoopbackMode.IncludeTargetProcessTree)
             .WithFormat(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2))
             .WithBufferLength(20)
             .BuildAsync()
@@ -176,7 +180,7 @@ internal sealed class WasapiAudioBackend : IAudioBackend
         return new LoopbackStream(recorder, description, sink);
     }
 
-    private static bool IsDeviceError(Exception ex) =>
+    internal static bool IsDeviceError(Exception ex) =>
         ex is COMException or ArgumentException or InvalidOperationException or NotSupportedException or AudioDeviceException;
 
     private static PcmFormat ToPcmFormat(WaveFormat format)

@@ -9,6 +9,10 @@ public static class Converters
     public static readonly IValueConverter WatchTooltip =
         new FuncValueConverter<bool, string>(isMine => isMine ? "This is your stream" : "Watch stream");
 
+    /// <summary>Full opacity for an application that is playing sound, faint otherwise.</summary>
+    public static readonly IValueConverter PlayingOpacity =
+        new FuncValueConverter<bool, double>(playing => playing ? 1.0 : 0.25);
+
     public static readonly IValueConverter MuteTooltip =
         new FuncValueConverter<bool, string>(off => off ? "Unmute" : "Mute");
 

@@ -268,10 +268,48 @@
               <TextBlock Grid.Row="1" Text="{Binding LiveStatsText}" Classes="caption" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
               <TextBlock Grid.Row="2" Text="{Binding LiveSoundText}" Classes="caption" Margin="0,2,0,0" TextWrapping="Wrap"
                          IsVisible="{Binding LiveSoundText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-              <Button Grid.Column="1" Grid.RowSpan="3" Classes="icon danger-hover" ToolTip.Tip="Stop sharing"
-                      Command="{Binding StopLiveCommand}" VerticalAlignment="Center">
-                <c:Icon Data="{StaticResource IconStop}" Fill="{DynamicResource LiveBrush}" Foreground="{DynamicResource LiveBrush}" />
-              </Button>
+              <StackPanel Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <Button Classes="icon" ToolTip.Tip="Stream sound mixer" IsVisible="{Binding StreamMixer.IsAvailable}">
+                  <c:Icon Data="{StaticResource IconSliders}" />
+                  <Button.Flyout>
+                    <Flyout Placement="TopEdgeAlignedLeft">
+                      <StackPanel Width="280" Spacing="10" Margin="4">
+                        <TextBlock Text="STREAM SOUND" Classes="label" />
+                        <TextBlock Text="Nothing is playing sound yet. Applications appear here when they do."
+                                   Classes="secondary" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding StreamMixer.HasNoApplications}" />
+                        <ItemsControl ItemsSource="{Binding StreamMixer.Applications}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Spacing="6" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:StreamApplicationViewModel">
+                              <StackPanel Spacing="0">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                  <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center"
+                                           Fill="{DynamicResource OnlineBrush}" Opacity="{Binding IsPlaying, Converter={x:Static views:Converters.PlayingOpacity}}"
+                                           ToolTip.Tip="Lit while the application plays sound" />
+                                  <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                             ToolTip.Tip="{Binding Name}" />
+                                  <TextBlock Grid.Column="2" Text="{Binding VolumeLabel}" Classes="secondary" FontSize="12"
+                                             VerticalAlignment="Center" Margin="8,0,0,0" />
+                                </Grid>
+                                <Slider Minimum="0" Maximum="100" Value="{Binding VolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="secondary" FontSize="12" TextWrapping="Wrap"
+                                   Text="Viewers hear each application at the volume set here. If they hear themselves, turn off the program that replays your sound (headset software or a virtual mixer)." />
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+                <Button Classes="icon danger-hover" ToolTip.Tip="Stop sharing" Command="{Binding StopLiveCommand}">
+                  <c:Icon Data="{StaticResource IconStop}" Fill="{DynamicResource LiveBrush}" Foreground="{DynamicResource LiveBrush}" />
+                </Button>
+              </StackPanel>
             </Grid>
           </Border>
           <Border Classes="status-card" Margin="8,0,8,8" Padding="12,12" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"

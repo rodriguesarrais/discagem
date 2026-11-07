@@ -8,6 +8,7 @@
   <StreamGeometry x:Key="IconMonitor">M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H4 A2 2 0 0 1 2 15 V5 A2 2 0 0 1 4 3 Z M8 21 H16 M12 17 V21</StreamGeometry>
   <StreamGeometry x:Key="IconScreenShare">M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H4 A2 2 0 0 1 2 15 V5 A2 2 0 0 1 4 3 Z M8 21 H16 M12 17 V21 M12 13 V7 M9 10 L12 7 L15 10</StreamGeometry>
   <StreamGeometry x:Key="IconWindow">M5 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V5 A2 2 0 0 1 5 3 Z M3 9 H21 M7 6 H7.01 M10 6 H10.01</StreamGeometry>
+  <StreamGeometry x:Key="IconSliders">M21 4 H14 M10 4 H3 M21 12 H12 M8 12 H3 M21 20 H16 M12 20 H3 M14 2 V6 M8 10 V14 M16 18 V22</StreamGeometry>
   <StreamGeometry x:Key="IconSettings">M4 21 V14 M4 10 V3 M12 21 V12 M12 8 V3 M20 21 V16 M20 12 V3 M1 14 H7 M9 8 H15 M17 16 H23</StreamGeometry>
   <StreamGeometry x:Key="IconUsers">M17 21 V19 A4 4 0 0 0 13 15 H5 A4 4 0 0 0 1 19 V21 M9 3 A4 4 0 1 0 9 11 A4 4 0 1 0 9 3 Z M23 21 V19 A4 4 0 0 0 20 15.13 M16 3.13 A4 4 0 0 1 16 10.88</StreamGeometry>
   <StreamGeometry x:Key="IconEdit">M17 3 A2.83 2.83 0 0 1 21 7 L7.5 20.5 L2 22 L3.5 16.5 Z</StreamGeometry>
