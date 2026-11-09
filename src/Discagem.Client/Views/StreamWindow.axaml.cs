@@ -17,19 +17,28 @@ public partial class StreamWindow : Window
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (_viewer is not null)
-        {
-            _viewer.CloseRequested -= OnCloseRequested;
-        }
-
+        Unsubscribe();
         _viewer = DataContext as StreamViewerViewModel;
         if (_viewer is not null)
         {
             _viewer.CloseRequested += OnCloseRequested;
+            _viewer.Closed += OnViewerClosed;
         }
     }
 
     private void OnCloseRequested(StreamViewerViewModel viewer, string? reason) => Close();
+
+    /// <summary>The viewer was closed from elsewhere (the stream ended, say): nothing is left to show.</summary>
+    private void OnViewerClosed(StreamViewerViewModel viewer) => Close();
+
+    private void Unsubscribe()
+    {
+        if (_viewer is not null)
+        {
+            _viewer.CloseRequested -= OnCloseRequested;
+            _viewer.Closed -= OnViewerClosed;
+        }
+    }
 
     public void ToggleFullScreen() =>
         WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
@@ -52,9 +61,6 @@ public partial class StreamWindow : Window
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         base.OnClosing(e);
-        if (_viewer is not null)
-        {
-            _viewer.CloseRequested -= OnCloseRequested;
-        }
+        Unsubscribe();
     }
 }

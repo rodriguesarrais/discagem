@@ -40,6 +40,12 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
     /// <summary>Raised on the UI thread when the viewer should be closed (stream ended or user closed it).</summary>
     public event Action<StreamViewerViewModel, string?>? CloseRequested;
 
+    /// <summary>
+    /// Raised on the UI thread once the viewer is closed, whoever closed it (the stream ended, another
+    /// stream was opened, the connection dropped), so that a pop-out window showing it closes too.
+    /// </summary>
+    public event Action<StreamViewerViewModel>? Closed;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasFrame))]
     private Bitmap? _frame;
@@ -215,5 +221,13 @@ public sealed partial class StreamViewerViewModel : ObservableObject, IDisposabl
         }
 
         Frame = null;
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Closed?.Invoke(this);
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() => Closed?.Invoke(this));
+        }
     }
 }
