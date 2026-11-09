@@ -223,7 +223,6 @@ internal static class GdiCapture
         public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
         public const int DWMWA_CLOAKED = 14;
         public const uint SRCCOPY = 0x00CC0020;
-        public const uint CAPTUREBLT = 0x40000000;
         public const uint PW_RENDERFULLCONTENT = 0x00000002;
         public const int CURSOR_SHOWING = 0x00000001;
         public const uint DI_NORMAL = 0x0003;
@@ -408,7 +407,10 @@ internal sealed class GdiScreenSource(string name, int x, int y, int width, int 
         try
         {
             _surface.Ensure(screenDc, width, height);
-            if (!GdiCapture.Native.BitBlt(_surface.DeviceContext, 0, 0, width, height, screenDc, x, y, GdiCapture.Native.SRCCOPY | GdiCapture.Native.CAPTUREBLT))
+            // No CAPTUREBLT: with it, Windows hides and redraws the mouse cursor on every copy, so the
+            // streamer's cursor flickers. Since Windows 8 the desktop is always composed, and a plain
+            // copy of the screen already includes layered windows (tooltips, menus, overlays).
+            if (!GdiCapture.Native.BitBlt(_surface.DeviceContext, 0, 0, width, height, screenDc, x, y, GdiCapture.Native.SRCCOPY))
             {
                 return false;
             }
