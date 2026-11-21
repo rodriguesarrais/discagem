@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:c="using:Discagem.Client.Controls"
+        xmlns:views="using:Discagem.Client.Views"
+        x:Class="Discagem.Client.Views.Dialogs.RoomSettingsDialog"
+        x:DataType="vm:RoomSettingsViewModel"
+        Width="560" Height="660" MinHeight="420" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
+        Title="{Binding Room.Name, StringFormat='{}{0} — Room settings'}">
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource SidebarBrush}" Padding="16,14">
+      <Button Classes="ghost" Content="Close" Click="OnClose" IsCancel="True" HorizontalAlignment="Right" />
+    </Border>
+    <ScrollViewer>
+      <StackPanel Margin="22,20,22,24" Spacing="22">
+
+        <!-- Overview -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Room settings" Classes="h2" />
+          <Grid ColumnDefinitions="Auto,*">
+            <Panel Width="72" Height="72" Margin="0,0,16,0" VerticalAlignment="Top">
+              <Border CornerRadius="20" Background="{Binding Color, Converter={x:Static views:Converters.ColorToBrush}}"
+                      IsVisible="{Binding !Room.HasIcon}">
+                <TextBlock Text="{Binding Room.Initials}" FontSize="24" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <Border CornerRadius="20" ClipToBounds="True" IsVisible="{Binding Room.HasIcon}">
+                <Image Source="{Binding Room.Icon}" Stretch="UniformToFill" />
+              </Border>
+            </Panel>
+            <StackPanel Grid.Column="1" Spacing="12">
+              <StackPanel>
+                <TextBlock Text="ROOM NAME" Classes="label" />
+                <TextBox Text="{Binding Name}" MaxLength="32" IsReadOnly="{Binding !CanManage}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding CanManage}">
+                <Button Command="{Binding ChangeIconCommand}" IsEnabled="{Binding !IsBusy}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <c:Icon Data="{StaticResource IconImage}" Width="15" Height="15" />
+                    <TextBlock Text="Change icon" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="link" Content="Remove icon" Command="{Binding RemoveIconCommand}" VerticalAlignment="Center"
+                        IsVisible="{Binding Room.HasIcon}" IsEnabled="{Binding !IsBusy}" />
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+          <StackPanel IsVisible="{Binding CanManage}">
+            <TextBlock Text="COLOUR" Classes="label" />
+            <ItemsControl ItemsSource="{Binding Palette}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                          Command="{Binding $parent[Window].((vm:RoomSettingsViewModel)DataContext).PickColorCommand}"
+                          CommandParameter="{Binding}">
+                    <Border Width="28" Height="28" CornerRadius="8" Background="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <Button Classes="primary" Content="Save changes" Command="{Binding SaveCommand}" HorizontalAlignment="Left"
+                  IsVisible="{Binding CanManage}" IsEnabled="{Binding HasChanges}" />
+        </StackPanel>
+
+        <!-- Invite -->
+        <Border Classes="section-card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="INVITE" Classes="label" Margin="0" />
+            <TextBlock Classes="secondary" TextWrapping="Wrap"
+                       Text="People with an account on this server join with this code (+ in the room bar, then Join a room)." />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBox Text="{Binding Room.InviteCode, Mode=OneWay}" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace"
+                       FontSize="17" />
+              <Button Grid.Column="1" Classes="primary" Content="Copy invite" Margin="10,0,0,0" Command="{Binding CopyInviteCommand}" />
+              <Button Grid.Column="2" Classes="ghost" Content="Reset" Margin="6,0,0,0" Command="{Binding ResetInviteCommand}"
+                      IsVisible="{Binding CanManage}" ToolTip.Tip="Make a new code; the current one stops working" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Members -->
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding MembersHeader}" Classes="label" />
+          <ItemsControl ItemsSource="{Binding Members}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RoomMemberViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
+                  <c:AvatarView Width="34" Height="34" DisplayName="{Binding Member.DisplayName}" Color="{Binding Member.AvatarColor}"
+                                Image="{Binding Member.AvatarImage}" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Member.DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <c:Icon Data="{StaticResource IconCrown}" Width="14" Height="14" Foreground="#F0B232"
+                              IsVisible="{Binding IsOwner}" ToolTip.Tip="Room owner" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Member.Username, StringFormat='@{0}'}" Classes="caption" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanManage}" VerticalAlignment="Center">
+                    <Button Classes="ghost compact" Content="Make owner"
+                            Command="{Binding $parent[Window].((vm:RoomSettingsViewModel)DataContext).TransferCommand}" CommandParameter="{Binding}" />
+                    <Button Classes="danger compact" Content="Remove"
+                            Command="{Binding $parent[Window].((vm:RoomSettingsViewModel)DataContext).RemoveMemberCommand}" CommandParameter="{Binding}" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Danger zone -->
+        <Border Classes="section-card" IsVisible="{Binding CanManage}">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Delete room" FontWeight="SemiBold" />
+              <TextBlock Text="Removes the room, its channels and all messages for everyone." Classes="caption" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="danger" Content="Delete room" Command="{Binding DeleteRoomCommand}" Margin="12,0,0,0" />
+          </Grid>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

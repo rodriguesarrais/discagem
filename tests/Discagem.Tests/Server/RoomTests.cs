@@ -81,6 +81,8 @@ public sealed class RoomTests : IAsyncLifetime
         Assert.Equal(room.Room.Id, joined.Room.Id);
         Assert.Equal(room.Channels.Count, joined.Channels.Count);
         await _carol.InvokeAsync<RoomStateDto>(nameof(IChatHub.JoinRoom), $"https://chat.example.com/invite/{room.Room.InviteCode}/");
+        Assert.Equal("AB3DE7FG", Discagem.Server.Hubs.ChatHub.ParseInviteCode(
+            "Join Friends on Discagem: open Discagem, sign in to https://chat.example.com, choose \"Join a room\" and enter the code ab3de7fg."));
         Assert.Equal(
             new[] { _aliceAuth.User.Id, _bobAuth.User.Id, _carolAuth.User.Id }.Order(),
             (await updated.Task.WaitAsync(Timeout)).MemberIds);

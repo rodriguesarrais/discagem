@@ -12,10 +12,13 @@ public sealed partial class ChannelViewModel : ObservableObject
     public ChannelViewModel(ChannelDto channel)
     {
         Id = channel.Id;
+        RoomId = channel.RoomId;
         Update(channel);
     }
 
     public long Id { get; }
+
+    public long RoomId { get; }
 
     [ObservableProperty]
     private string _name = "";

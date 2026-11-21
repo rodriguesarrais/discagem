@@ -669,17 +669,14 @@ public sealed class ChatHub(
         });
     }
 
-    /// <summary>Accepts the code alone, in any case, or a link or text that ends with it.</summary>
+    /// <summary>
+    /// Accepts the code alone, in any case, or any text that ends with it: a link, or the invite
+    /// message the client copies ("… enter the code AB3DE7FG").
+    /// </summary>
     internal static string ParseInviteCode(string? text)
     {
-        var value = (text ?? "").Trim().TrimEnd('/');
-        var slash = value.LastIndexOf('/');
-        if (slash >= 0)
-        {
-            value = value[(slash + 1)..];
-        }
-
-        return value.Trim().ToUpperInvariant();
+        var words = (text ?? "").Split([' ', '\t', '\r', '\n', '/'], StringSplitOptions.RemoveEmptyEntries);
+        return words.Length == 0 ? "" : words[^1].Trim('.', ',', '"', '\'', '!', ')', '(').ToUpperInvariant();
     }
 
     internal static string NormalizeRoomName(string? name)

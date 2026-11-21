@@ -15,6 +15,13 @@ public interface IDialogService
 
     Task<bool> ConfirmAsync(string title, string message, string confirmText, bool danger);
 
+    /// <summary>Asks for a new room's name and colour, or for an invite code. True when the user confirmed.</summary>
+    Task<bool> ShowRoomEntryAsync(RoomEntryViewModel viewModel);
+
+    Task ShowRoomSettingsAsync(RoomSettingsViewModel viewModel);
+
+    Task CopyTextAsync(string text);
+
     Task<IReadOnlyList<IStorageFile>> PickFilesAsync();
 
     /// <summary>Asks for one image file (PNG, JPEG, GIF, WebP or BMP).</summary>

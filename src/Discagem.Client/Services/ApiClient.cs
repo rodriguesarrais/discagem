@@ -112,6 +112,22 @@ public sealed class ApiClient : IDisposable
 
     public Task<UserDto> RemoveAvatarAsync() => SendAsync<UserDto>(HttpMethod.Delete, "api/me/avatar", null);
 
+    /// <summary>Replaces a room's icon (a prepared PNG, see <see cref="AvatarImages"/>).</summary>
+    public async Task<RoomDto> UploadRoomIconAsync(long roomId, byte[] png, CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(png);
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        form.Add(file, "file", "icon.png");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"api/rooms/{roomId}/icon") { Content = form };
+        return await SendCoreAsync<RoomDto>(request, cancellationToken, TimeSpan.FromMinutes(2));
+    }
+
+    public Task<RoomDto> RemoveRoomIconAsync(long roomId) => SendAsync<RoomDto>(HttpMethod.Delete, $"api/rooms/{roomId}/icon", null);
+
+    public Task<byte[]> DownloadRoomIconAsync(long roomId, int version, CancellationToken cancellationToken = default) =>
+        DownloadAsync($"api/rooms/{roomId}/icon?v={version}", cancellationToken);
+
     public async Task<byte[]> DownloadAvatarAsync(long userId, int version, CancellationToken cancellationToken = default)
     {
         try

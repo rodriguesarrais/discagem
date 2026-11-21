@@ -63,3 +63,33 @@ public sealed class AvatarCache(ApiClient api)
         }
     }
 }
+
+/// <summary>Downloads and decodes room icons, keyed by room and icon version.</summary>
+public sealed class RoomIconCache(ApiClient api)
+{
+    /// <summary>Decoded width: the room tile (48 px) on a 2x screen.</summary>
+    private const int DecodeWidth = 128;
+
+    private readonly ConcurrentDictionary<(long RoomId, int Version), Task<Bitmap?>> _entries = new();
+
+    /// <summary>Returns the icon, or null if it cannot be loaded right now (a later call tries again).</summary>
+    public Task<Bitmap?> GetAsync(long roomId, int version) => _entries.GetOrAdd((roomId, version), LoadAsync);
+
+    private async Task<Bitmap?> LoadAsync((long RoomId, int Version) key)
+    {
+        try
+        {
+            var bytes = await api.DownloadRoomIconAsync(key.RoomId, key.Version);
+            return await Task.Run(() =>
+            {
+                using var stream = new MemoryStream(bytes);
+                return Bitmap.DecodeToWidth(stream, DecodeWidth, BitmapInterpolationMode.HighQuality);
+            });
+        }
+        catch (Exception ex) when (ex is ApiException or ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            _entries.TryRemove(key, out _);
+            return null;
+        }
+    }
+}

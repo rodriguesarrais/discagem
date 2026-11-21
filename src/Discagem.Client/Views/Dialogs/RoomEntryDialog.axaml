@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Discagem.Client.ViewModels"
+        xmlns:c="using:Discagem.Client.Controls"
+        xmlns:views="using:Discagem.Client.Views"
+        x:Class="Discagem.Client.Views.Dialogs.RoomEntryDialog"
+        x:DataType="vm:RoomEntryViewModel"
+        Width="460" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ChatBrush}"
+        Title="Add a room">
+  <StackPanel>
+    <StackPanel Margin="20,20,20,24" Spacing="18">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Add a room" Classes="h2" />
+        <TextBlock Text="Rooms have their own channels and members. Create one for your group, or join one with the invite code someone sent you."
+                   Classes="secondary" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <StackPanel Spacing="8">
+        <RadioButton Classes="choice" GroupName="mode" IsChecked="{Binding IsCreate}">
+          <Grid ColumnDefinitions="Auto,*">
+            <c:Icon Data="{StaticResource IconPlusCircle}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="Create a room" FontWeight="SemiBold" />
+              <TextBlock Text="You own it and invite whoever you want" Classes="caption" />
+            </StackPanel>
+          </Grid>
+        </RadioButton>
+        <RadioButton Classes="choice" GroupName="mode" IsChecked="{Binding IsJoin}">
+          <Grid ColumnDefinitions="Auto,*">
+            <c:Icon Data="{StaticResource IconUsers}" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="Join a room" FontWeight="SemiBold" />
+              <TextBlock Text="Enter the invite code you were given" Classes="caption" />
+            </StackPanel>
+          </Grid>
+        </RadioButton>
+      </StackPanel>
+
+      <!-- Create -->
+      <StackPanel Spacing="14" IsVisible="{Binding IsCreate}">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Width="56" Height="56" CornerRadius="16" Background="{Binding Color, Converter={x:Static views:Converters.ColorToBrush}}"
+                  Margin="0,0,14,0" VerticalAlignment="Bottom">
+            <TextBlock Text="{Binding Initials}" FontSize="19" FontWeight="Bold" Foreground="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="ROOM NAME" Classes="label" />
+            <TextBox x:Name="NameBox" Text="{Binding Name}" MaxLength="32" Watermark="Friday game night" />
+          </StackPanel>
+        </Grid>
+        <StackPanel>
+          <TextBlock Text="COLOUR" Classes="label" />
+          <ItemsControl ItemsSource="{Binding Palette}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                        Command="{Binding $parent[Window].((vm:RoomEntryViewModel)DataContext).PickColorCommand}"
+                        CommandParameter="{Binding}">
+                  <Border Width="30" Height="30" CornerRadius="9" Background="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Join -->
+      <StackPanel IsVisible="{Binding IsJoin}">
+        <TextBlock Text="INVITE CODE" Classes="label" />
+        <TextBox x:Name="CodeBox" Text="{Binding InviteCode}" MaxLength="200" Watermark="AB3DE7FG" />
+        <TextBlock Text="Codes are 8 letters and digits. Pasting the whole invite message works too."
+                   Classes="caption" Margin="2,6,0,0" TextWrapping="Wrap" />
+      </StackPanel>
+    </StackPanel>
+    <Border Background="{DynamicResource SidebarBrush}" Padding="16,14">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+        <Button Classes="ghost" Content="Cancel" Click="OnCancel" IsCancel="True" />
+        <Button Classes="primary" Content="{Binding ConfirmText}" Click="OnConfirm" IsDefault="True" IsEnabled="{Binding CanConfirm}" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</Window>

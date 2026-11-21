@@ -38,6 +38,10 @@ public sealed partial class MemberViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAdmin;
 
+    /// <summary>Whether the member owns the room being shown (marked with a crown).</summary>
+    [ObservableProperty]
+    private bool _isRoomOwner;
+
     /// <summary>The profile photo, once loaded (null without one).</summary>
     [ObservableProperty]
     private Bitmap? _avatarImage;

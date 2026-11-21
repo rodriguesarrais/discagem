@@ -28,6 +28,9 @@ public sealed class ChatConnection : IAsyncDisposable
         _hub.On<ChannelDto>(nameof(IChatClient.ChannelCreated), c => ChannelCreated?.Invoke(c));
         _hub.On<ChannelDto>(nameof(IChatClient.ChannelUpdated), c => ChannelUpdated?.Invoke(c));
         _hub.On<long>(nameof(IChatClient.ChannelDeleted), c => ChannelDeleted?.Invoke(c));
+        _hub.On<RoomDto>(nameof(IChatClient.RoomUpdated), r => RoomUpdated?.Invoke(r));
+        _hub.On<RoomStateDto>(nameof(IChatClient.RoomAdded), r => RoomAdded?.Invoke(r));
+        _hub.On<long>(nameof(IChatClient.RoomRemoved), r => RoomRemoved?.Invoke(r));
         _hub.On<UserDto>(nameof(IChatClient.UserCreated), u => UserCreated?.Invoke(u));
         _hub.On<UserDto>(nameof(IChatClient.UserUpdated), u => UserUpdated?.Invoke(u));
         _hub.On<long, bool>(nameof(IChatClient.PresenceChanged), (u, online) => PresenceChanged?.Invoke(u, online));
@@ -79,6 +82,9 @@ public sealed class ChatConnection : IAsyncDisposable
     public event Action<string, string>? MediaSessionClosed;
     public event Action<VoiceParticipantDto>? VoiceStateChanged;
     public event Action<long, long>? VoiceLeft;
+    public event Action<RoomDto>? RoomUpdated;
+    public event Action<RoomStateDto>? RoomAdded;
+    public event Action<long>? RoomRemoved;
     public event Action<EmojiDto>? EmojiCreated;
     public event Action<long>? EmojiDeleted;
     public event Action<SoundDto>? SoundCreated;
@@ -113,8 +119,27 @@ public sealed class ChatConnection : IAsyncDisposable
 
     public Task TypingAsync(long channelId) => _hub.SendAsync(nameof(IChatHub.Typing), channelId);
 
-    public Task<ChannelDto> CreateChannelAsync(string name, string topic, ChannelKind kind) =>
-        _hub.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), name, topic, kind);
+    public Task<ChannelDto> CreateChannelAsync(long roomId, string name, string topic, ChannelKind kind) =>
+        _hub.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), roomId, name, topic, kind);
+
+    public Task MoveChannelAsync(long channelId, int position) => _hub.InvokeAsync(nameof(IChatHub.MoveChannel), channelId, position);
+
+    public Task<RoomStateDto> CreateRoomAsync(string name, string color) =>
+        _hub.InvokeAsync<RoomStateDto>(nameof(IChatHub.CreateRoom), name, color);
+
+    public Task<RoomStateDto> JoinRoomAsync(string inviteCode) => _hub.InvokeAsync<RoomStateDto>(nameof(IChatHub.JoinRoom), inviteCode);
+
+    public Task LeaveRoomAsync(long roomId) => _hub.InvokeAsync(nameof(IChatHub.LeaveRoom), roomId);
+
+    public Task UpdateRoomAsync(long roomId, string name, string color) => _hub.InvokeAsync(nameof(IChatHub.UpdateRoom), roomId, name, color);
+
+    public Task<string> ResetRoomInviteAsync(long roomId) => _hub.InvokeAsync<string>(nameof(IChatHub.ResetRoomInvite), roomId);
+
+    public Task RemoveRoomMemberAsync(long roomId, long userId) => _hub.InvokeAsync(nameof(IChatHub.RemoveRoomMember), roomId, userId);
+
+    public Task TransferRoomAsync(long roomId, long userId) => _hub.InvokeAsync(nameof(IChatHub.TransferRoom), roomId, userId);
+
+    public Task DeleteRoomAsync(long roomId) => _hub.InvokeAsync(nameof(IChatHub.DeleteRoom), roomId);
 
     public Task UpdateChannelAsync(long channelId, string name, string topic) =>
         _hub.InvokeAsync(nameof(IChatHub.UpdateChannel), channelId, name, topic);

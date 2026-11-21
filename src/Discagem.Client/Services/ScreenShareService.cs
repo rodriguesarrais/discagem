@@ -98,7 +98,8 @@ public sealed class ScreenShareService : IAsyncDisposable
         return sending ? $"sound: {description}" : $"sound: {description} (nothing playing)";
     }
 
-    public async Task StartAsync(CaptureSource source, StreamQuality quality, string title, bool shareAudio = false)
+    /// <param name="roomId">The room the stream is shown in.</param>
+    public async Task StartAsync(CaptureSource source, StreamQuality quality, string title, bool shareAudio = false, long? roomId = null)
     {
         await StopAsync();
 
@@ -121,7 +122,7 @@ public sealed class ScreenShareService : IAsyncDisposable
             publisher.LocalCandidate += relay.OnLocalCandidate;
 
             var offer = await publisher.CreateOfferAsync();
-            answer = await _hub.StartStreamAsync(new StartStreamRequest(offer, title, width, height, quality.FrameRate));
+            answer = await _hub.StartStreamAsync(new StartStreamRequest(offer, title, width, height, quality.FrameRate, roomId is 0 ? null : roomId));
             _peers[answer.SessionId] = publisher;
             relay.SetSession(answer.SessionId);
             publisher.ApplyAnswer(answer.AnswerSdp);

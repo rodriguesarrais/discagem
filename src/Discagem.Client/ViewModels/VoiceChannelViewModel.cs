@@ -10,11 +10,14 @@ public sealed partial class VoiceChannelViewModel : ObservableObject
     public VoiceChannelViewModel(ChannelDto channel)
     {
         Id = channel.Id;
+        RoomId = channel.RoomId;
         Participants.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasParticipants));
         Update(channel);
     }
 
     public long Id { get; }
+
+    public long RoomId { get; }
 
     [ObservableProperty]
     private string _name = "";

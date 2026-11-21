@@ -48,6 +48,15 @@ public sealed class ClientSettings
     /// <summary>Whether to send the computer's sound (or the shared window's) with a screen share.</summary>
     public bool StreamShareAudio { get; set; } = true;
 
+    /// <summary>The room shown last.</summary>
+    public long? LastRoomId { get; set; }
+
+    /// <summary>The channel shown last in each room (room id to channel id).</summary>
+    public Dictionary<long, long> LastChannelByRoom { get; set; } = [];
+
+    /// <summary>The user's order of the room rail (room ids); rooms not listed go at the end.</summary>
+    public List<long> RoomOrder { get; set; } = [];
+
     /// <summary>Volume of each streamer's stream audio (user id to gain; 1 = 100 %).</summary>
     public Dictionary<long, float> StreamVolumes { get; set; } = [];
 

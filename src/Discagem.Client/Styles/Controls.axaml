@@ -88,6 +88,12 @@
     <Setter Property="Foreground" Value="White" />
   </Style>
 
+  <!-- Smaller buttons for rows in lists (members in room settings, say). -->
+  <Style Selector="Button.compact">
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+
   <Style Selector="Button.live">
     <Setter Property="Background" Value="{DynamicResource LiveBrush}" />
     <Setter Property="Foreground" Value="White" />
@@ -599,6 +605,14 @@
     <Setter Property="Margin" Value="16,0,16,0" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+  </Style>
+
+  <!-- Room tiles in the rail: round, and a rounded square when selected or hovered -->
+  <Style Selector="Border.room-face">
+    <Setter Property="CornerRadius" Value="24" />
+  </Style>
+  <Style Selector="Button.room-tile.selected Border.room-face, Button.room-tile:pointerover Border.room-face">
+    <Setter Property="CornerRadius" Value="16" />
   </Style>
 
   <Style Selector="Border.rail-indicator">

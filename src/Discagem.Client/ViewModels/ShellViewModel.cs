@@ -35,6 +35,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private readonly VoiceService _voice;
     private long _lastMessageSound = long.MinValue / 2;
     private readonly AvatarCache _avatars;
+    private readonly RoomIconCache _roomIcons;
     private readonly ImageCache _images;
     private readonly EmojiCatalog _emojiCatalog;
     private readonly Dictionary<long, MemberViewModel> _members = new();
@@ -56,6 +57,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _updates = new UpdateService(session.Api.BaseAddress);
         _images = new ImageCache(session.Api);
         _avatars = new AvatarCache(session.Api);
+        _roomIcons = new RoomIconCache(session.Api);
+        Rooms.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoRooms));
         _me = GetOrAddMember(session.User, isMe: true);
         _showMembers = session.Settings.ShowMembers;
 
@@ -114,7 +117,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     /// <summary>Raised when the user signs out or the session becomes invalid (with an optional message).</summary>
     public event Action<string?>? LoggedOut;
 
-    public ObservableCollection<ChannelViewModel> Channels { get; } = [];
+    /// <summary>The rooms the user is in, in the order they chose.</summary>
+    public ObservableCollection<RoomViewModel> Rooms { get; } = [];
+
+    /// <summary>The selected room's text channels.</summary>
+    public ObservableCollection<ChannelViewModel> Channels => SelectedRoom?.Channels ?? NoChannels;
 
     /// <summary>The applications in the sound of your live stream, with their volumes.</summary>
     public StreamMixerViewModel StreamMixer { get; }
@@ -133,13 +140,25 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    public ObservableCollection<VoiceChannelViewModel> VoiceChannels { get; } = [];
+    /// <summary>The selected room's voice channels.</summary>
+    public ObservableCollection<VoiceChannelViewModel> VoiceChannels => SelectedRoom?.VoiceChannels ?? NoVoiceChannels;
+
+    private static readonly ObservableCollection<ChannelViewModel> NoChannels = [];
+    private static readonly ObservableCollection<VoiceChannelViewModel> NoVoiceChannels = [];
+    private static readonly ObservableCollection<LiveStreamViewModel> NoStreams = [];
 
     public ObservableCollection<MemberViewModel> OnlineMembers { get; } = [];
 
     public ObservableCollection<MemberViewModel> OfflineMembers { get; } = [];
 
-    public ObservableCollection<LiveStreamViewModel> LiveStreams { get; } = [];
+    /// <summary>The selected room's live streams.</summary>
+    public ObservableCollection<LiveStreamViewModel> LiveStreams => SelectedRoom?.LiveStreams ?? NoStreams;
+
+    private IEnumerable<ChannelViewModel> AllChannels => Rooms.SelectMany(r => r.Channels);
+
+    private IEnumerable<VoiceChannelViewModel> AllVoiceChannels => Rooms.SelectMany(r => r.VoiceChannels);
+
+    private IEnumerable<LiveStreamViewModel> AllStreams => Rooms.SelectMany(r => r.LiveStreams);
 
     public ObservableCollection<PendingAttachmentViewModel> PendingAttachments { get; } = [];
 
@@ -149,13 +168,24 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     public bool IsAdmin => Me.IsAdmin;
 
+    /// <summary>The selected room's name; the server's before the user is in any room.</summary>
+    public string RoomName => SelectedRoom?.Name ?? ServerName;
+
+    public bool HasRoom => SelectedRoom is not null;
+
+    /// <summary>Once connected, true while the user is in no room at all.</summary>
+    public bool HasNoRooms => Rooms.Count == 0 && Connection == ConnectionState.Connected;
+
+    /// <summary>The room's owner and server administrators manage the selected room.</summary>
+    public bool CanManageRoom => SelectedRoom is { } room && (room.IsOwner(Me.Id) || Me.IsAdmin);
+
     public string OnlineHeader => $"ONLINE — {OnlineMembers.Count}";
 
     public string OfflineHeader => $"OFFLINE — {OfflineMembers.Count}";
 
     public bool HasOfflineMembers => OfflineMembers.Count > 0;
 
-    public bool HasLiveStreams => LiveStreams.Count > 0;
+    public bool HasLiveStreams => SelectedRoom?.HasLiveStreams == true;
 
     public bool HasPendingAttachments => PendingAttachments.Count > 0;
 
@@ -173,14 +203,18 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     {
         get
         {
-            var unread = Channels.Sum(c => c.MentionCount);
-            var title = SelectedChannel is null ? $"Discagem — {ServerName}" : $"#{SelectedChannel.Name} — {ServerName}";
+            var unread = AllChannels.Sum(c => c.MentionCount);
+            var title = SelectedChannel is null ? $"Discagem — {RoomName}" : $"#{SelectedChannel.Name} — {RoomName}";
             return unread > 0 ? $"({unread}) {title}" : title;
         }
     }
 
     [ObservableProperty]
     private MemberViewModel _me;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RoomName), nameof(HasRoom), nameof(CanManageRoom), nameof(HasLiveStreams), nameof(WindowTitle))]
+    private RoomViewModel? _selectedRoom;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(WindowTitle))]
@@ -194,7 +228,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private string? _typingText;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsReconnecting), nameof(ConnectionText))]
+    [NotifyPropertyChangedFor(nameof(IsReconnecting), nameof(ConnectionText), nameof(HasNoRooms))]
     private ConnectionState _connection = ConnectionState.Connecting;
 
     [ObservableProperty]
@@ -261,6 +295,36 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _session.Settings.Save();
     }
 
+    partial void OnSelectedRoomChanged(RoomViewModel? oldValue, RoomViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.IsSelected = false;
+            oldValue.LiveStreams.CollectionChanged -= OnSelectedRoomStreamsChanged;
+        }
+
+        // The lists in the sidebar follow the room before a channel of it is selected.
+        OnPropertyChanged(nameof(Channels));
+        OnPropertyChanged(nameof(VoiceChannels));
+        OnPropertyChanged(nameof(LiveStreams));
+        SortMembers();
+        if (newValue is null)
+        {
+            SelectedChannel = null;
+            return;
+        }
+
+        newValue.IsSelected = true;
+        newValue.LiveStreams.CollectionChanged += OnSelectedRoomStreamsChanged;
+        _session.Settings.LastRoomId = newValue.Id;
+        _session.Settings.Save();
+        var lastChannel = _session.Settings.LastChannelByRoom.GetValueOrDefault(newValue.Id);
+        SelectedChannel = newValue.Channels.FirstOrDefault(c => c.Id == lastChannel) ?? newValue.Channels.FirstOrDefault();
+    }
+
+    private void OnSelectedRoomStreamsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        OnPropertyChanged(nameof(HasLiveStreams));
+
     partial void OnSelectedChannelChanged(ChannelViewModel? value)
     {
         if (value is null)
@@ -270,6 +334,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         value.MarkRead();
         _session.Settings.LastChannelId = value.Id;
+        _session.Settings.LastChannelByRoom[value.RoomId] = value.Id;
         _session.Settings.Save();
         UpdateTypingText();
         OnPropertyChanged(nameof(WindowTitle));
@@ -363,6 +428,9 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _hub.ChannelCreated += c => Dispatcher.UIThread.Post(() => AddOrUpdateChannel(c));
         _hub.ChannelUpdated += c => Dispatcher.UIThread.Post(() => AddOrUpdateChannel(c));
         _hub.ChannelDeleted += id => Dispatcher.UIThread.Post(() => OnChannelDeleted(id));
+        _hub.RoomUpdated += r => Dispatcher.UIThread.Post(() => OnRoomUpdated(r));
+        _hub.RoomAdded += r => Dispatcher.UIThread.Post(() => AddRoomState(r, select: false));
+        _hub.RoomRemoved += id => Dispatcher.UIThread.Post(() => RemoveRoom(id, announce: true));
         _hub.UserCreated += u => Dispatcher.UIThread.Post(() => GetOrAddMember(u));
         _hub.UserUpdated += u => Dispatcher.UIThread.Post(() =>
         {
@@ -452,26 +520,42 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             member.IsOnline = online.Contains(member.Id);
         }
 
-        SortMembers();
         Emojis.Reset(state.Emojis ?? []);
         Soundboard.Reset(state.Sounds);
+
+        // Servers from before rooms have one set of channels: show it as a single room.
+        var rooms = state.Rooms ?? [new RoomDto(0, ServerName, null, "#5865F2", null, "", _members.Keys.ToList(), DateTimeOffset.UtcNow)];
+        foreach (var stale in Rooms.Where(r => rooms.All(d => d.Id != r.Id)).ToList())
+        {
+            RemoveRoom(stale.Id, announce: false);
+        }
+
+        foreach (var room in rooms)
+        {
+            AddOrUpdateRoom(room);
+        }
 
         foreach (var channel in state.Channels)
         {
             AddOrUpdateChannel(channel);
         }
 
-        foreach (var stale in Channels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
+        foreach (var room in Rooms)
         {
-            Channels.Remove(stale);
+            foreach (var stale in room.Channels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
+            {
+                room.Channels.Remove(stale);
+            }
+
+            foreach (var stale in room.VoiceChannels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
+            {
+                room.VoiceChannels.Remove(stale);
+            }
+
+            room.LiveStreams.Clear();
         }
 
-        foreach (var stale in VoiceChannels.Where(c => state.Channels.All(s => s.Id != c.Id)).ToList())
-        {
-            VoiceChannels.Remove(stale);
-        }
-
-        foreach (var channel in VoiceChannels)
+        foreach (var channel in AllVoiceChannels)
         {
             channel.Participants.Clear();
         }
@@ -482,12 +566,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         // Anything may have changed while disconnected: reload history lazily.
-        foreach (var channel in Channels)
+        foreach (var channel in AllChannels)
         {
             channel.IsLoaded = false;
         }
 
-        LiveStreams.Clear();
         foreach (var member in _members.Values)
         {
             member.IsLive = false;
@@ -499,17 +582,24 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         OnPropertyChanged(nameof(IsAdmin));
-        var preferred = SelectedChannel ?? Channels.FirstOrDefault(c => c.Id == _session.Settings.LastChannelId) ?? Channels.FirstOrDefault();
-        if (preferred is not null)
+        OnPropertyChanged(nameof(CanManageRoom));
+        OnPropertyChanged(nameof(HasNoRooms));
+        SortMembers();
+        var preferredRoom = SelectedRoom
+            ?? Rooms.FirstOrDefault(r => r.Id == _session.Settings.LastRoomId)
+            ?? Rooms.FirstOrDefault(r => r.Channels.Any(c => c.Id == _session.Settings.LastChannelId))
+            ?? Rooms.FirstOrDefault();
+        if (preferredRoom != SelectedRoom)
         {
-            if (SelectedChannel == preferred)
-            {
-                await LoadLatestAsync(preferred);
-            }
-            else
-            {
-                SelectedChannel = preferred;
-            }
+            SelectedRoom = preferredRoom;
+        }
+        else if (SelectedChannel is { } selected)
+        {
+            await LoadLatestAsync(selected);
+        }
+        else
+        {
+            SelectedChannel = SelectedRoom?.Channels.FirstOrDefault();
         }
 
         BannerMessage = null;
@@ -650,7 +740,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    private ChannelViewModel? FindChannel(long id) => Channels.FirstOrDefault(c => c.Id == id);
+    private ChannelViewModel? FindChannel(long id) => AllChannels.FirstOrDefault(c => c.Id == id);
+
+    private VoiceChannelViewModel? FindVoiceChannel(long id) => AllVoiceChannels.FirstOrDefault(c => c.Id == id);
+
+    private RoomViewModel? FindRoom(long id) => Rooms.FirstOrDefault(r => r.Id == id);
 
     private void AddOrUpdateChannel(ChannelDto dto)
     {
@@ -660,7 +754,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        var existing = FindChannel(dto.Id);
+        if (FindRoom(dto.RoomId) is not { } room)
+        {
+            return;
+        }
+
+        var channels = room.Channels;
+        var existing = channels.FirstOrDefault(c => c.Id == dto.Id);
         if (existing is not null)
         {
             existing.Update(dto);
@@ -668,16 +768,16 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         else
         {
             existing = new ChannelViewModel(dto);
-            Channels.Add(existing);
+            channels.Add(existing);
         }
 
-        var ordered = Channels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToList();
+        var ordered = channels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToList();
         for (var i = 0; i < ordered.Count; i++)
         {
-            var current = Channels.IndexOf(ordered[i]);
+            var current = channels.IndexOf(ordered[i]);
             if (current != i)
             {
-                Channels.Move(current, i);
+                channels.Move(current, i);
             }
         }
 
@@ -686,33 +786,39 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void AddOrUpdateVoiceChannel(ChannelDto dto)
     {
-        var existing = VoiceChannels.FirstOrDefault(c => c.Id == dto.Id);
+        if (FindRoom(dto.RoomId) is not { } room)
+        {
+            return;
+        }
+
+        var channels = room.VoiceChannels;
+        var existing = channels.FirstOrDefault(c => c.Id == dto.Id);
         if (existing is not null)
         {
             existing.Update(dto);
         }
         else
         {
-            VoiceChannels.Add(new VoiceChannelViewModel(dto) { IsConnected = ConnectedVoiceChannel?.Id == dto.Id });
+            channels.Add(new VoiceChannelViewModel(dto) { IsConnected = ConnectedVoiceChannel?.Id == dto.Id });
         }
 
-        var ordered = VoiceChannels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToList();
+        var ordered = channels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToList();
         for (var i = 0; i < ordered.Count; i++)
         {
-            var current = VoiceChannels.IndexOf(ordered[i]);
+            var current = channels.IndexOf(ordered[i]);
             if (current != i)
             {
-                VoiceChannels.Move(current, i);
+                channels.Move(current, i);
             }
         }
     }
 
     private void OnChannelDeleted(long id)
     {
-        var voiceChannel = VoiceChannels.FirstOrDefault(c => c.Id == id);
+        var voiceChannel = FindVoiceChannel(id);
         if (voiceChannel is not null)
         {
-            VoiceChannels.Remove(voiceChannel);
+            FindRoom(voiceChannel.RoomId)?.VoiceChannels.Remove(voiceChannel);
             if (ConnectedVoiceChannel?.Id == id)
             {
                 // The server normally hangs up first; make sure no call is left in a channel that is gone.
@@ -731,10 +837,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         var wasSelected = channel == SelectedChannel;
-        Channels.Remove(channel);
+        var room = FindRoom(channel.RoomId);
+        room?.Channels.Remove(channel);
         if (wasSelected)
         {
-            SelectedChannel = Channels.FirstOrDefault();
+            SelectedChannel = room?.Channels.FirstOrDefault();
         }
     }
 
@@ -767,8 +874,16 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void SortMembers()
     {
-        Sync(OnlineMembers, _members.Values.Where(m => m.IsOnline).OrderBy(m => m.SortKey).ToList());
-        Sync(OfflineMembers, _members.Values.Where(m => !m.IsOnline && m.Username != "unknown").OrderBy(m => m.SortKey).ToList());
+        // The member list shows the selected room's members.
+        var room = SelectedRoom;
+        foreach (var member in _members.Values)
+        {
+            member.IsRoomOwner = room?.IsOwner(member.Id) == true;
+        }
+
+        var members = _members.Values.Where(m => room?.HasMember(m.Id) == true).ToList();
+        Sync(OnlineMembers, members.Where(m => m.IsOnline).OrderBy(m => m.SortKey).ToList());
+        Sync(OfflineMembers, members.Where(m => !m.IsOnline && m.Username != "unknown").OrderBy(m => m.SortKey).ToList());
         OnPropertyChanged(nameof(OnlineHeader));
         OnPropertyChanged(nameof(OfflineHeader));
         OnPropertyChanged(nameof(HasOfflineMembers));
@@ -1042,7 +1157,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
         try
         {
-            var channel = await _hub.CreateChannelAsync(result.Name, result.Topic, result.Kind);
+            if (SelectedRoom is not { } room)
+            {
+                return;
+            }
+
+            var channel = await _hub.CreateChannelAsync(room.Id, result.Name, result.Topic, result.Kind);
             AddOrUpdateChannel(channel);
             if (channel.Kind == ChannelKind.Text)
             {
@@ -1314,7 +1434,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         LiveSoundText = "";
         try
         {
-            await _media.StartAsync(selection.Source, selection.Quality, selection.Title, selection.ShareAudio);
+            await _media.StartAsync(selection.Source, selection.Quality, selection.Title, selection.ShareAudio, SelectedRoom?.Id);
             IsLive = true;
         }
         catch (Exception ex)
@@ -1376,7 +1496,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     [RelayCommand]
     private void WatchMember(MemberViewModel member)
     {
-        var stream = LiveStreams.FirstOrDefault(s => s.Streamer == member);
+        var stream = LiveStreams.FirstOrDefault(s => s.Streamer == member) ?? AllStreams.FirstOrDefault(s => s.Streamer == member);
         if (stream is not null)
         {
             WatchCommand.Execute(stream);
@@ -1400,37 +1520,38 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void AddOrUpdateStream(StreamInfoDto dto)
     {
-        var existing = LiveStreams.FirstOrDefault(s => s.StreamId == dto.StreamId);
+        var existing = AllStreams.FirstOrDefault(s => s.StreamId == dto.StreamId);
         if (existing is not null)
         {
             existing.Update(dto);
             return;
         }
 
-        if (!_members.TryGetValue(dto.UserId, out var streamer))
+        if (!_members.TryGetValue(dto.UserId, out var streamer) || FindRoom(dto.RoomId) is not { } room)
         {
             return;
         }
 
         // A user only has one stream; drop any stale entry.
-        foreach (var stale in LiveStreams.Where(s => s.Streamer == streamer).ToList())
+        foreach (var other in Rooms)
         {
-            LiveStreams.Remove(stale);
+            foreach (var stale in other.LiveStreams.Where(s => s.Streamer == streamer).ToList())
+            {
+                other.LiveStreams.Remove(stale);
+            }
         }
 
         streamer.IsLive = true;
-        LiveStreams.Add(new LiveStreamViewModel(dto, streamer));
-        OnPropertyChanged(nameof(HasLiveStreams));
+        room.LiveStreams.Add(new LiveStreamViewModel(dto, streamer));
     }
 
     private void OnStreamEnded(string streamId)
     {
-        var stream = LiveStreams.FirstOrDefault(s => s.StreamId == streamId);
+        var stream = AllStreams.FirstOrDefault(s => s.StreamId == streamId);
         if (stream is not null)
         {
-            LiveStreams.Remove(stream);
-            stream.Streamer.IsLive = LiveStreams.Any(s => s.Streamer == stream.Streamer);
-            OnPropertyChanged(nameof(HasLiveStreams));
+            FindRoom(stream.RoomId)?.LiveStreams.Remove(stream);
+            stream.Streamer.IsLive = AllStreams.Any(s => s.Streamer == stream.Streamer);
         }
 
         if (ActiveStream?.StreamId == streamId)
@@ -1446,6 +1567,240 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             _ = _media.StopAsync();
         }
     }
+
+    // ---- Rooms ----------------------------------------------------------------------------
+
+    private RoomViewModel AddOrUpdateRoom(RoomDto dto)
+    {
+        if (FindRoom(dto.Id) is { } existing)
+        {
+            existing.Update(dto);
+            return existing;
+        }
+
+        // Rooms go where the user put them; new ones at the end.
+        var room = new RoomViewModel(dto, _roomIcons);
+        var order = _session.Settings.RoomOrder;
+        int Rank(RoomViewModel r) => order.IndexOf(r.Id) is var i and >= 0 ? i : int.MaxValue;
+        var index = 0;
+        while (index < Rooms.Count && (Rank(Rooms[index]), Rooms[index].Id).CompareTo((Rank(room), room.Id)) < 0)
+        {
+            index++;
+        }
+
+        Rooms.Insert(index, room);
+        return room;
+    }
+
+    /// <summary>A room the user just created or joined (here or on another device).</summary>
+    private RoomViewModel AddRoomState(RoomStateDto state, bool select)
+    {
+        var room = AddOrUpdateRoom(state.Room);
+        foreach (var channel in state.Channels)
+        {
+            AddOrUpdateChannel(channel);
+        }
+
+        foreach (var participant in state.VoiceParticipants)
+        {
+            OnVoiceStateChanged(participant, announce: false);
+        }
+
+        foreach (var stream in state.Streams)
+        {
+            AddOrUpdateStream(stream);
+        }
+
+        if (select || SelectedRoom is null)
+        {
+            SelectedRoom = room;
+        }
+
+        return room;
+    }
+
+    private void OnRoomUpdated(RoomDto dto)
+    {
+        if (FindRoom(dto.Id) is not { } room)
+        {
+            return;
+        }
+
+        room.Update(dto);
+        if (room == SelectedRoom)
+        {
+            SortMembers();
+            OnPropertyChanged(nameof(RoomName));
+            OnPropertyChanged(nameof(CanManageRoom));
+            OnPropertyChanged(nameof(WindowTitle));
+        }
+    }
+
+    /// <summary>Forgets a room the user left, was removed from, or that was deleted.</summary>
+    private void RemoveRoom(long roomId, bool announce)
+    {
+        if (FindRoom(roomId) is not { } room)
+        {
+            return;
+        }
+
+        if (ConnectedVoiceChannel is { } voice && voice.RoomId == roomId)
+        {
+            // The server hangs up too; make sure no call is left in a room the user is no longer in.
+            SetConnectedVoice(null);
+            _ = SafeAsync(() => _voice.LeaveAsync(voice.Id));
+        }
+
+        if (ActiveStream is { } viewer && room.LiveStreams.Any(s => s.StreamId == viewer.StreamId))
+        {
+            CloseStreamViewer(viewer, null);
+        }
+
+        var index = Rooms.IndexOf(room);
+        Rooms.Remove(room);
+        foreach (var stream in room.LiveStreams)
+        {
+            stream.Streamer.IsLive = AllStreams.Any(s => s.Streamer == stream.Streamer);
+        }
+
+        if (room == SelectedRoom)
+        {
+            SelectedRoom = Rooms.Count == 0 ? null : Rooms[Math.Min(index, Rooms.Count - 1)];
+        }
+
+        OnPropertyChanged(nameof(WindowTitle));
+        if (announce)
+        {
+            ShowBanner($"You are no longer in {room.Name}.", isError: false);
+        }
+    }
+
+    [RelayCommand]
+    private void SelectRoom(RoomViewModel room) => SelectedRoom = room;
+
+    /// <summary>Creates a room, or joins one with an invite code.</summary>
+    [RelayCommand]
+    private async Task AddRoomAsync(string? mode)
+    {
+        var entry = new RoomEntryViewModel(mode == "join");
+        if (!await _dialogs.ShowRoomEntryAsync(entry))
+        {
+            return;
+        }
+
+        try
+        {
+            var state = entry.IsJoin
+                ? await _hub.JoinRoomAsync(entry.InviteCode.Trim())
+                : await _hub.CreateRoomAsync(entry.Name.Trim(), entry.Color);
+            AddRoomState(state, select: true);
+            BannerMessage = null;
+        }
+        catch (Exception ex)
+        {
+            ShowBanner(entry.IsJoin ? $"Could not join the room: {Describe(ex)}" : $"Could not create the room: {Describe(ex)}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyInviteAsync(RoomViewModel? room)
+    {
+        room ??= SelectedRoom;
+        if (room is null || string.IsNullOrEmpty(room.InviteCode))
+        {
+            return;
+        }
+
+        var address = _session.Api.BaseAddress.ToString().TrimEnd('/');
+        await _dialogs.CopyTextAsync(RoomInvite.Text(room.Name, address, room.InviteCode));
+        ShowBanner($"Invite to {room.Name} copied. Send it to whoever you want to invite.", isError: false);
+    }
+
+    [RelayCommand]
+    private async Task OpenRoomSettingsAsync(RoomViewModel? room)
+    {
+        room ??= SelectedRoom;
+        if (room is null)
+        {
+            return;
+        }
+
+        using var settings = new RoomSettingsViewModel(room, _hub, _session.Api, _dialogs, _members, Me, message => ShowBanner(message));
+        await _dialogs.ShowRoomSettingsAsync(settings);
+    }
+
+    [RelayCommand]
+    private async Task LeaveRoomAsync(RoomViewModel? room)
+    {
+        room ??= SelectedRoom;
+        if (room is null)
+        {
+            return;
+        }
+
+        var last = room.MemberCount <= 1;
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Leave room",
+            last
+                ? $"You are the last person in {room.Name}. Leaving deletes it, with all of its messages."
+                : $"Leave {room.Name}? You will need a new invite to come back.",
+            last ? "Leave and delete" : "Leave room",
+            danger: true);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            await _hub.LeaveRoomAsync(room.Id);
+            RemoveRoom(room.Id, announce: false);
+        }
+        catch (Exception ex)
+        {
+            ShowBanner($"Could not leave the room: {Describe(ex)}");
+        }
+    }
+
+    [RelayCommand]
+    private void MoveRoomUp(RoomViewModel room) => MoveRoom(room, -1);
+
+    [RelayCommand]
+    private void MoveRoomDown(RoomViewModel room) => MoveRoom(room, +1);
+
+    /// <summary>Moves a room in the rail; the order is the user's own.</summary>
+    private void MoveRoom(RoomViewModel room, int offset)
+    {
+        var from = Rooms.IndexOf(room);
+        var to = from + offset;
+        if (from < 0 || to < 0 || to >= Rooms.Count)
+        {
+            return;
+        }
+
+        Rooms.Move(from, to);
+        _session.Settings.RoomOrder = Rooms.Select(r => r.Id).ToList();
+        _session.Settings.Save();
+    }
+
+    [RelayCommand]
+    private Task MoveChannelUpAsync(ChannelViewModel channel) =>
+        MoveChannelAsync(channel.Id, Channels.IndexOf(channel) - 1);
+
+    [RelayCommand]
+    private Task MoveChannelDownAsync(ChannelViewModel channel) =>
+        MoveChannelAsync(channel.Id, Channels.IndexOf(channel) + 1);
+
+    [RelayCommand]
+    private Task MoveVoiceChannelUpAsync(VoiceChannelViewModel channel) =>
+        MoveChannelAsync(channel.Id, VoiceChannels.IndexOf(channel) - 1);
+
+    [RelayCommand]
+    private Task MoveVoiceChannelDownAsync(VoiceChannelViewModel channel) =>
+        MoveChannelAsync(channel.Id, VoiceChannels.IndexOf(channel) + 1);
+
+    private Task MoveChannelAsync(long channelId, int position) =>
+        position < 0 ? Task.CompletedTask : SafeAsync(() => _hub.MoveChannelAsync(channelId, position), "Could not move the channel");
 
     // ---- Voice ----------------------------------------------------------------------------
 
@@ -1502,7 +1857,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             {
                 if (Connection == ConnectionState.Connected)
                 {
-                    if (VoiceChannels.FirstOrDefault(c => c.Id == target.Id) is not { } channel)
+                    if (FindVoiceChannel(target.Id) is not { } channel)
                     {
                         break;
                     }
@@ -1601,7 +1956,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private void SetConnectedVoice(VoiceChannelViewModel? channel)
     {
         ConnectedVoiceChannel = channel;
-        foreach (var voiceChannel in VoiceChannels)
+        foreach (var voiceChannel in AllVoiceChannels)
         {
             voiceChannel.IsConnected = voiceChannel == channel;
             foreach (var participant in voiceChannel.Participants)
@@ -1615,14 +1970,14 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void OnVoiceStateChanged(VoiceParticipantDto dto, bool announce)
     {
-        var target = VoiceChannels.FirstOrDefault(c => c.Id == dto.ChannelId);
+        var target = FindVoiceChannel(dto.ChannelId);
         if (target is null || !_members.TryGetValue(dto.UserId, out var member))
         {
             return;
         }
 
         // A user is in one voice channel at a time.
-        foreach (var other in VoiceChannels.Where(c => c != target))
+        foreach (var other in AllVoiceChannels.Where(c => c != target))
         {
             if (other.Find(dto.UserId) is { } moved)
             {
@@ -1657,7 +2012,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private void OnVoiceLeft(long channelId, long userId)
     {
-        var channel = VoiceChannels.FirstOrDefault(c => c.Id == channelId);
+        var channel = FindVoiceChannel(channelId);
         if (channel?.Find(userId) is { } participant)
         {
             channel.Participants.Remove(participant);

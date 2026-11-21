@@ -38,6 +38,27 @@ public sealed class DialogService(Window owner) : IDialogService
     public Task<bool> ConfirmAsync(string title, string message, string confirmText, bool danger) =>
         new ConfirmDialog(title, message, confirmText, danger).ShowDialog<bool>(owner);
 
+    public async Task<bool> ShowRoomEntryAsync(RoomEntryViewModel viewModel)
+    {
+        var accepted = await new RoomEntryDialog { DataContext = viewModel }.ShowDialog<bool>(owner);
+        return accepted && viewModel.CanConfirm;
+    }
+
+    public async Task ShowRoomSettingsAsync(RoomSettingsViewModel viewModel)
+    {
+        var dialog = new RoomSettingsDialog { DataContext = viewModel };
+        viewModel.CloseRequested += dialog.Close;
+        await dialog.ShowDialog(owner);
+    }
+
+    public async Task CopyTextAsync(string text)
+    {
+        if (owner.Clipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(text);
+        }
+    }
+
     public async Task<IReadOnlyList<IStorageFile>> PickFilesAsync()
     {
         var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
