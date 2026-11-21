@@ -8,6 +8,7 @@ using static Discagem.Tests.Media.AudioTestSignals;
 
 namespace Discagem.Tests.Server;
 
+[Collection(RealTimeCollection.Name)]
 public sealed class VoiceChannelTests(Xunit.Abstractions.ITestOutputHelper output) : IAsyncLifetime
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
