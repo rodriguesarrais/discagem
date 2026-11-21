@@ -16,6 +16,7 @@ public sealed class ChatHubTests : IAsyncLifetime
     private AuthResponse _bobAuth = null!;
     private HttpClient _aliceHttp = null!;
     private HttpClient _bobHttp = null!;
+    private RoomStateDto _room = null!;
 
     public async Task InitializeAsync()
     {
@@ -23,6 +24,7 @@ public sealed class ChatHubTests : IAsyncLifetime
         (_bobHttp, _bobAuth) = await _factory.RegisterAsync("bob", "Bob");
         _alice = await _factory.ConnectHubAsync(_aliceAuth.Token);
         _bob = await _factory.ConnectHubAsync(_bobAuth.Token);
+        _room = await DiscagemFactory.ShareRoomAsync(_alice, _bob);
     }
 
     public async Task DisposeAsync()
@@ -45,8 +47,12 @@ public sealed class ChatHubTests : IAsyncLifetime
         var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
         Assert.Equal(_aliceAuth.User.Id, state.Me.Id);
         Assert.Equal(2, state.Users.Count);
-        Assert.Contains(state.Channels, c => c.Name == "general" && c.Kind == ChannelKind.Text);
-        Assert.Contains(state.Channels, c => c.Name == "Lounge" && c.Kind == ChannelKind.Voice);
+        Assert.Contains(state.Channels, c => c.Name == "general" && c.Kind == ChannelKind.Text && c.RoomId == _room.Room.Id);
+        Assert.Contains(state.Channels, c => c.Name == "General" && c.Kind == ChannelKind.Voice && c.RoomId == _room.Room.Id);
+        var room = Assert.Single(state.Rooms!);
+        Assert.Equal("Test room", room.Name);
+        Assert.Equal(_aliceAuth.User.Id, room.OwnerId);
+        Assert.Equal([_aliceAuth.User.Id, _bobAuth.User.Id], room.MemberIds);
         Assert.Contains(_bobAuth.User.Id, state.OnlineUserIds);
         Assert.Empty(state.Streams);
         Assert.Empty(state.VoiceParticipants);
@@ -112,25 +118,25 @@ public sealed class ChatHubTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Channels_OnlyAdminsCanManage()
+    public async Task Channels_OnlyTheRoomOwnerCanManage()
     {
         var created = new TaskCompletionSource<ChannelDto>();
         _bob.On<ChannelDto>(nameof(IChatClient.ChannelCreated), c => created.TrySetResult(c));
 
-        await Assert.ThrowsAsync<HubException>(() => _bob.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "bob's channel", "", ChannelKind.Text));
+        await Assert.ThrowsAsync<HubException>(() => _bob.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), _room.Room.Id, "bob's channel", "", ChannelKind.Text));
 
-        var channel = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "  Game Night!! ", "Fridays", ChannelKind.Text);
+        var channel = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), _room.Room.Id, "  Game Night!! ", "Fridays", ChannelKind.Text);
         Assert.Equal("game-night", channel.Name);
         Assert.Equal("Fridays", channel.Topic);
         Assert.Equal(ChannelKind.Text, channel.Kind);
         Assert.Equal(channel.Id, (await WithTimeout(created.Task)).Id);
 
         // Voice channel names keep their spelling.
-        var voice = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "  Squad   Room ", "", ChannelKind.Voice);
+        var voice = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), _room.Room.Id, "  Squad   Room ", "", ChannelKind.Voice);
         Assert.Equal("Squad Room", voice.Name);
         Assert.Equal(ChannelKind.Voice, voice.Kind);
         await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<MessageDto>(nameof(IChatHub.SendMessage), voice.Id, "hello?", Array.Empty<long>()));
-        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "odd", "", (ChannelKind)7));
+        await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), _room.Room.Id, "odd", "", (ChannelKind)7));
 
         await _alice.InvokeAsync(nameof(IChatHub.UpdateChannel), channel.Id, "movies", "Sundays");
         await _alice.InvokeAsync(nameof(IChatHub.DeleteChannel), channel.Id);
@@ -148,8 +154,9 @@ public sealed class ChatHubTests : IAsyncLifetime
     {
         var typing = new TaskCompletionSource<(long, long)>();
         _bob.On<long, long>(nameof(IChatClient.UserTyping), (c, u) => typing.TrySetResult((c, u)));
-        await _alice.InvokeAsync(nameof(IChatHub.Typing), 42L);
-        Assert.Equal((42L, _aliceAuth.User.Id), await WithTimeout(typing.Task));
+        var general = _room.Channels.Single(c => c.Kind == ChannelKind.Text).Id;
+        await _alice.InvokeAsync(nameof(IChatHub.Typing), general);
+        Assert.Equal((general, _aliceAuth.User.Id), await WithTimeout(typing.Task));
 
         var offline = new TaskCompletionSource<(long, bool)>();
         _bob.On<long, bool>(nameof(IChatClient.PresenceChanged), (u, online) => offline.TrySetResult((u, online)));

@@ -10,7 +10,7 @@ using SIPSorcery.Net;
 namespace Discagem.Server.Media;
 
 /// <summary>A user connected to a voice channel.</summary>
-public sealed class VoiceParticipant(MediaSession session, long channelId)
+public sealed class VoiceParticipant(MediaSession session, long channelId, long roomId = 0)
 {
     /// <summary>A speaker sends 50 packets per second; anything well beyond that is dropped.</summary>
     private readonly PacketRateLimiter _limiter = new(packetsPerSecond: 100, burst: 50);
@@ -18,6 +18,9 @@ public sealed class VoiceParticipant(MediaSession session, long channelId)
     public MediaSession Session { get; } = session;
 
     public long ChannelId { get; } = channelId;
+
+    /// <summary>The room of the channel; voice events go to its members only.</summary>
+    public long RoomId { get; } = roomId;
 
     public long UserId => Session.UserId;
 
@@ -61,8 +64,9 @@ public sealed class VoiceService(
     private readonly ConcurrentDictionary<long, VoiceParticipant> _byUser = new();
     private readonly ConcurrentDictionary<string, VoiceParticipant> _bySession = new();
 
-    public IReadOnlyList<VoiceParticipantDto> GetParticipants() =>
-        _byUser.Values.OrderBy(p => p.ChannelId).ThenBy(p => p.Session.Id).Select(p => p.ToDto()).ToList();
+    /// <summary>Voice participants in the given rooms.</summary>
+    public IReadOnlyList<VoiceParticipantDto> GetParticipants(IReadOnlySet<long> roomIds) =>
+        _byUser.Values.Where(p => roomIds.Contains(p.RoomId)).OrderBy(p => p.ChannelId).ThenBy(p => p.Session.Id).Select(p => p.ToDto()).ToList();
 
     private ImmutableArray<VoiceParticipant> Room(long channelId)
     {
@@ -72,7 +76,8 @@ public sealed class VoiceService(
         }
     }
 
-    public async Task<MediaSessionAnswer> JoinAsync(long userId, string connectionId, long channelId, string offerSdp)
+    /// <summary>Joins a voice channel of a room (the caller checked that the user is a member).</summary>
+    public async Task<MediaSessionAnswer> JoinAsync(long userId, string connectionId, long channelId, long roomId, string offerSdp)
     {
         if (string.IsNullOrWhiteSpace(offerSdp))
         {
@@ -95,7 +100,7 @@ public sealed class VoiceService(
         var pc = factory.Create();
         pc.addTrack(DiscagemAudio.CreateTrack(MediaStreamStatusEnum.SendRecv));
         var session = new MediaSession(connectionId, userId, pc);
-        var participant = new VoiceParticipant(session, channelId);
+        var participant = new VoiceParticipant(session, channelId, roomId);
 
         pc.OnRtpPacketReceived += (_, media, packet) =>
         {
@@ -171,7 +176,7 @@ public sealed class VoiceService(
         }
 
         logger.LogInformation("User {UserId} joined voice channel {ChannelId}", userId, channelId);
-        await hub.Clients.All.VoiceStateChanged(participant.ToDto());
+        await hub.Clients.Group(RoomGroups.Name(participant.RoomId)).VoiceStateChanged(participant.ToDto());
         return new MediaSessionAnswer($"voice:{channelId}", session.Id, answer);
     }
 
@@ -208,7 +213,7 @@ public sealed class VoiceService(
         // Deafened users cannot speak either, as in Discord.
         participant.IsDeafened = deafened;
         participant.IsMuted = muted || deafened;
-        await hub.Clients.All.VoiceStateChanged(participant.ToDto());
+        await hub.Clients.Group(RoomGroups.Name(participant.RoomId)).VoiceStateChanged(participant.ToDto());
     }
 
     /// <summary>
@@ -259,6 +264,15 @@ public sealed class VoiceService(
         foreach (var participant in Room(channelId))
         {
             await LeaveAsync(participant, "channel deleted", notifyClient: true);
+        }
+    }
+
+    /// <summary>The user is no longer in the room: hangs up their call there, if any.</summary>
+    public async Task LeaveRoomAsync(long userId, long roomId)
+    {
+        if (_byUser.TryGetValue(userId, out var participant) && participant.RoomId == roomId)
+        {
+            await LeaveAsync(participant, "left the room", notifyClient: true);
         }
     }
 
@@ -339,6 +353,6 @@ public sealed class VoiceService(
 
         participant.Session.Close(reason);
         logger.LogInformation("User {UserId} left voice channel {ChannelId}: {Reason}", participant.UserId, participant.ChannelId, reason);
-        await hub.Clients.All.VoiceLeft(participant.ChannelId, participant.UserId);
+        await hub.Clients.Group(RoomGroups.Name(participant.RoomId)).VoiceLeft(participant.ChannelId, participant.UserId);
     }
 }

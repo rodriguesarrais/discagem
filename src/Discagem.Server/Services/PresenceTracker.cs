@@ -70,6 +70,15 @@ public sealed class PresenceTracker
         return contexts.Count;
     }
 
+    /// <summary>The user's open hub connections.</summary>
+    public IReadOnlyList<string> ConnectionIds(long userId)
+    {
+        lock (_sync)
+        {
+            return _connections.TryGetValue(userId, out var set) ? set.Keys.ToList() : [];
+        }
+    }
+
     public IReadOnlyList<long> OnlineUserIds()
     {
         lock (_sync)

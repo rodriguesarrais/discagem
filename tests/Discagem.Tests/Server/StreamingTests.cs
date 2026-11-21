@@ -66,12 +66,15 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
     private HubConnection _alice = null!;
     private HubConnection _bob = null!;
 
+    private RoomStateDto _room = null!;
+
     public async Task InitializeAsync()
     {
         var (_, alice) = await _factory.RegisterAsync("alice");
         var (_, bob) = await _factory.RegisterAsync("bob");
         _alice = await _factory.ConnectHubAsync(alice.Token);
         _bob = await _factory.ConnectHubAsync(bob.Token);
+        _room = await DiscagemFactory.ShareRoomAsync(_alice, _bob);
     }
 
     public async Task DisposeAsync()
@@ -210,6 +213,7 @@ public sealed class StreamingTests(Xunit.Abstractions.ITestOutputHelper output) 
         using var viewer = await WatchAsync(_bob, stream.StreamId);
         var carol = await _factory.ConnectHubAsync((await _factory.RegisterAsync("carol")).Auth.Token);
         await using var _ = carol;
+        await carol.InvokeAsync<RoomStateDto>(nameof(IChatHub.JoinRoom), _room.Room.InviteCode);
         using var legacyViewer = await WatchAsync(carol, stream.StreamId, withAudio: false);
 
         var received = new ConcurrentQueue<(ushort Sequence, byte[] Opus)>();

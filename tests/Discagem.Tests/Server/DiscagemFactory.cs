@@ -58,6 +58,21 @@ public sealed class DiscagemFactory : WebApplicationFactory<Program>
         return (client, auth);
     }
 
+    /// <summary>
+    /// Creates a room owned by <paramref name="owner"/> (with its default "general" text and "General"
+    /// voice channels) and has the others join it with its invite code.
+    /// </summary>
+    public static async Task<RoomStateDto> ShareRoomAsync(HubConnection owner, params HubConnection[] others)
+    {
+        var state = await owner.InvokeAsync<RoomStateDto>(nameof(IChatHub.CreateRoom), "Test room", "#5865F2");
+        foreach (var other in others)
+        {
+            await other.InvokeAsync<RoomStateDto>(nameof(IChatHub.JoinRoom), state.Room.InviteCode);
+        }
+
+        return state;
+    }
+
     public async Task<HubConnection> ConnectHubAsync(string token)
     {
         var connection = new HubConnectionBuilder()

@@ -2,6 +2,7 @@ using Discagem.Server.Auth;
 using Discagem.Server.Data;
 using Discagem.Server.Options;
 using Discagem.Shared;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Discagem.Server.Endpoints;
@@ -73,8 +74,16 @@ public static class AttachmentEndpoints
     {
         var attachment = await db.Attachments.FindAsync(id);
 
-        // Uploads that have not been posted yet are only visible to their uploader.
-        if (attachment is null || (attachment.MessageId is null && attachment.UploaderId != context.User.GetUserId()))
+        // Uploads that have not been posted yet are only visible to their uploader, posted ones to the
+        // members of the message's room.
+        var userId = context.User.GetUserId();
+        if (attachment is null || (attachment.MessageId is null && attachment.UploaderId != userId))
+        {
+            return Results.NotFound();
+        }
+
+        if (attachment.MessageId is { } messageId &&
+            !await db.Messages.AnyAsync(m => m.Id == messageId && m.Channel!.Room!.Members.Any(r => r.UserId == userId)))
         {
             return Results.NotFound();
         }

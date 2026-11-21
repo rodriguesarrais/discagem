@@ -150,6 +150,7 @@ app.MapGet("/api/server", async (IOptions<DiscagemOptions> options, AppDbContext
 app.MapAuthEndpoints();
 app.MapAttachmentEndpoints();
 app.MapAvatarEndpoints();
+app.MapRoomEndpoints();
 app.MapEmojiEndpoints();
 app.MapSoundEndpoints();
 app.MapClientDownloadEndpoints();

@@ -31,9 +31,53 @@ public sealed class User
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>A room: channels and members of their own; people join with its invite code.</summary>
+public sealed class Room
+{
+    public long Id { get; set; }
+
+    public required string Name { get; set; }
+
+    /// <summary>Null only for a room whose owner's account no longer exists; administrators manage it.</summary>
+    public long? OwnerId { get; set; }
+
+    /// <summary>Colour of the room's initials when it has no icon (#RRGGBB).</summary>
+    public required string Color { get; set; }
+
+    /// <summary>Whether an icon was uploaded (stored in the room-icons folder under the room id).</summary>
+    public bool HasIcon { get; set; }
+
+    /// <summary>Incremented whenever the icon changes, so that clients know to fetch it again.</summary>
+    public int IconVersion { get; set; }
+
+    /// <summary>Unique; replaced when the owner resets it.</summary>
+    public required string InviteCode { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public List<RoomMember> Members { get; set; } = [];
+
+    public List<Channel> Channels { get; set; } = [];
+}
+
+public sealed class RoomMember
+{
+    public long RoomId { get; set; }
+
+    public Room? Room { get; set; }
+
+    public long UserId { get; set; }
+
+    public DateTime JoinedAt { get; set; }
+}
+
 public sealed class Channel
 {
     public long Id { get; set; }
+
+    public long RoomId { get; set; }
+
+    public Room? Room { get; set; }
 
     public required string Name { get; set; }
 
