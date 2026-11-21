@@ -23,6 +23,13 @@ public static class DataPaths
         return path;
     }
 
+    public static string RoomIcons(DiscagemOptions options)
+    {
+        var path = Path.Combine(Root(options), "room-icons");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
     public static string Emojis(DiscagemOptions options)
     {
         var path = Path.Combine(Root(options), "emojis");

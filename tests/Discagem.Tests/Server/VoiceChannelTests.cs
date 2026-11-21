@@ -29,8 +29,8 @@ public sealed class VoiceChannelTests(Xunit.Abstractions.ITestOutputHelper outpu
         _alice = await _factory.ConnectHubAsync(_aliceAuth.Token);
         _bob = await _factory.ConnectHubAsync(_bobAuth.Token);
         _carol = await _factory.ConnectHubAsync(carol.Token);
-        var state = await _alice.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync));
-        _lounge = state.Channels.Single(c => c.Kind == ChannelKind.Voice).Id;
+        var room = await DiscagemFactory.ShareRoomAsync(_alice, _bob, _carol);
+        _lounge = room.Channels.Single(c => c.Kind == ChannelKind.Voice).Id;
     }
 
     public async Task DisposeAsync()
@@ -330,7 +330,7 @@ public sealed class VoiceChannelTests(Xunit.Abstractions.ITestOutputHelper outpu
         await Assert.ThrowsAsync<HubException>(() => _alice.InvokeAsync<MediaSessionAnswer>(nameof(IChatHub.JoinVoice), general, "v=0"));
 
         // Joining another channel moves Alice; her previous session is closed.
-        var second = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), "Second room", "", ChannelKind.Voice);
+        var second = await _alice.InvokeAsync<ChannelDto>(nameof(IChatHub.CreateChannel), state.Channels.First().RoomId, "Second room", "", ChannelKind.Voice);
         await JoinAsync(_alice, second.Id, null);
         Assert.Equal(alice.SessionId, await closed.Task.WaitAsync(Timeout));
 

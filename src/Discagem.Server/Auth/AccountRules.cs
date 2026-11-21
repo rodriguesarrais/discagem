@@ -54,6 +54,31 @@ public static partial class AccountRules
         return value.Length > Limits.MaxDisplayNameLength ? value[..Limits.MaxDisplayNameLength] : value;
     }
 
+    /// <summary>
+    /// Trims profile text, drops control characters (keeping line breaks in multi-line text, at most
+    /// two in a row) and cuts it to <paramref name="max"/> characters without splitting an emoji.
+    /// </summary>
+    public static string NormalizeProfileText(string text, int max, bool multiline)
+    {
+        var value = text.Replace("\r\n", "\n").Trim();
+        value = new string(value.Where(c => !char.IsControl(c) || (multiline && c == '\n')).ToArray());
+        if (multiline)
+        {
+            while (value.Contains("\n\n\n", StringComparison.Ordinal))
+            {
+                value = value.Replace("\n\n\n", "\n\n", StringComparison.Ordinal);
+            }
+        }
+
+        if (value.Length > max)
+        {
+            var length = char.IsHighSurrogate(value[max - 1]) ? max - 1 : max;
+            value = value[..length];
+        }
+
+        return value.Trim();
+    }
+
     public static bool IsValidColor(string? color) => color is not null && ColorPattern().IsMatch(color);
 
     public static string RandomAvatarColor() => AvatarPalette[Random.Shared.Next(AvatarPalette.Length)];

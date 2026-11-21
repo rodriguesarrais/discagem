@@ -12,12 +12,12 @@ public partial class MemberRow : UserControl
         InitializeComponent();
     }
 
+    /// <summary>Shows the member's profile card (with a button to watch their stream, if they are live).</summary>
     private void OnClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is MemberViewModel { IsLive: true, IsMe: false } member &&
-            this.FindAncestorOfType<ShellView>()?.DataContext is ShellViewModel shell)
+        if (DataContext is MemberViewModel member)
         {
-            shell.WatchMemberCommand.Execute(member);
+            ProfileCard.Show(this, member);
         }
     }
 }

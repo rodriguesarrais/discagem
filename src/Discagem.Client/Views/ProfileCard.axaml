@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Discagem.Client.ViewModels"
+             xmlns:c="using:Discagem.Client.Controls"
+             x:Class="Discagem.Client.Views.ProfileCard"
+             x:DataType="vm:MemberViewModel"
+             Width="300">
+  <Border CornerRadius="8" ClipToBounds="True" Background="{DynamicResource ElevatedBrush}">
+    <StackPanel>
+      <!-- Banner, with the avatar overlapping its lower edge -->
+      <Panel Height="104">
+        <Border Height="60" VerticalAlignment="Top" Background="{Binding BannerBrush}" />
+        <Border Width="84" Height="84" CornerRadius="42" Background="{DynamicResource ElevatedBrush}"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14,0,0,0">
+          <c:AvatarView Width="74" Height="74" DisplayName="{Binding DisplayName}" Color="{Binding AvatarColor}" Image="{Binding AvatarImage}"
+                        Status="{Binding Status}" RingBrush="{DynamicResource ElevatedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </Panel>
+      <StackPanel Margin="16,8,16,16" Spacing="10">
+        <StackPanel Spacing="1">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding DisplayName}" FontSize="19" FontWeight="Bold" Foreground="{Binding NameForeground}"
+                       TextTrimming="CharacterEllipsis" />
+            <c:Icon Data="{StaticResource IconCrown}" Width="15" Height="15" Foreground="{DynamicResource CrownBrush}" StrokeThickness="2.4"
+                    IsVisible="{Binding IsRoomOwner}" ToolTip.Tip="Room owner" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding Username, StringFormat='@{0}'}" Classes="secondary" />
+        </StackPanel>
+        <TextBlock Text="{Binding StatusLine}" IsVisible="{Binding HasStatus}" TextWrapping="Wrap" />
+        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+        <StackPanel Spacing="4" IsVisible="{Binding HasBio}">
+          <TextBlock Text="ABOUT ME" Classes="label" Margin="0" />
+          <TextBlock Text="{Binding Bio}" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="DISCAGEM" Classes="label" Margin="0" />
+          <TextBlock Text="{Binding MemberSince}" Classes="secondary" />
+          <TextBlock Text="Server administrator" Classes="secondary" IsVisible="{Binding IsAdmin}" />
+        </StackPanel>
+        <Button x:Name="WatchButton" Classes="live" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Click="OnWatch">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Data="{StaticResource IconMonitor}" Width="16" Height="16" />
+            <TextBlock Text="Watch stream" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

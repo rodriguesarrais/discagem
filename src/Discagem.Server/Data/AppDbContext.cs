@@ -1,3 +1,4 @@
+using Discagem.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -12,6 +13,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Message> Messages => Set<Message>();
 
     public DbSet<Attachment> Attachments => Set<Attachment>();
+
+    public DbSet<Room> Rooms => Set<Room>();
+
+    public DbSet<RoomMember> RoomMembers => Set<RoomMember>();
 
     public DbSet<CustomEmoji> Emojis => Set<CustomEmoji>();
 
@@ -54,6 +59,24 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             attachment.Property(a => a.FileName).HasMaxLength(256);
             attachment.Property(a => a.ContentType).HasMaxLength(128);
             attachment.Property(a => a.StorageName).HasMaxLength(128);
+        });
+
+        modelBuilder.Entity<Room>(room =>
+        {
+            room.Property(r => r.Name).HasMaxLength(Limits.MaxRoomNameLength);
+            room.Property(r => r.Color).HasMaxLength(16);
+            room.Property(r => r.InviteCode).HasMaxLength(32);
+            room.HasIndex(r => r.InviteCode).IsUnique();
+            room.HasOne<User>().WithMany().HasForeignKey(r => r.OwnerId).OnDelete(DeleteBehavior.SetNull);
+            room.HasMany(r => r.Channels).WithOne(c => c.Room).HasForeignKey(c => c.RoomId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RoomMember>(member =>
+        {
+            member.HasKey(m => new { m.RoomId, m.UserId });
+            member.HasIndex(m => m.UserId);
+            member.HasOne(m => m.Room).WithMany(r => r.Members).HasForeignKey(m => m.RoomId).OnDelete(DeleteBehavior.Cascade);
+            member.HasOne<User>().WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<CustomEmoji>(emoji =>

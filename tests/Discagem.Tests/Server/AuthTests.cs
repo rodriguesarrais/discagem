@@ -125,6 +125,43 @@ public sealed class AuthTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateProfile_SetsAndClearsTheProfile()
+    {
+        var (client, _) = await _factory.RegisterAsync("ivan");
+        var response = await client.PatchAsJsonAsync("/api/me", new UpdateProfileRequest(
+            null, null,
+            Bio: "  Drummer.\r\n\r\n\r\n\r\nCoffee \u0007first.  ",
+            StatusText: "Playing chess\n",
+            StatusEmoji: "♟️",
+            NameColor: "#ff00aa",
+            BannerColor: "#00aaff"));
+        response.EnsureSuccessStatusCode();
+        var user = (await response.Content.ReadFromJsonAsync<UserDto>())!;
+        Assert.Equal("Drummer.\n\nCoffee first.", user.Bio);
+        Assert.Equal("Playing chess", user.StatusText);
+        Assert.Equal("♟️", user.StatusEmoji);
+        Assert.Equal("#FF00AA", user.NameColor);
+        Assert.Equal("#00AAFF", user.BannerColor);
+
+        // Long text is cut, an emoji is never split, and fields left null stay as they are.
+        var longStatus = new string('x', Limits.MaxStatusLength - 1) + "😀";
+        user = (await (await client.PatchAsJsonAsync("/api/me", new UpdateProfileRequest(null, null, StatusText: longStatus)))
+            .Content.ReadFromJsonAsync<UserDto>())!;
+        Assert.Equal(new string('x', Limits.MaxStatusLength - 1), user.StatusText);
+        Assert.Equal("Drummer.\n\nCoffee first.", user.Bio);
+
+        // Empty strings clear; bad colours are refused.
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PatchAsJsonAsync("/api/me", new UpdateProfileRequest(null, null, NameColor: "pink"))).StatusCode);
+        user = (await (await client.PatchAsJsonAsync("/api/me", new UpdateProfileRequest(null, null, "", "", "", "", "")))
+            .Content.ReadFromJsonAsync<UserDto>())!;
+        Assert.Equal("", user.Bio);
+        Assert.Equal("", user.StatusText);
+        Assert.Equal("", user.StatusEmoji);
+        Assert.Null(user.NameColor);
+        Assert.Null(user.BannerColor);
+    }
+
+    [Fact]
     public async Task ServerInfo_IsPublic()
     {
         var info = await _factory.CreateClient().GetFromJsonAsync<ServerInfoDto>("/api/server");

@@ -201,7 +201,9 @@ public sealed class EmojiAndSoundTests : IDisposable
         await using var c = carolHub;
 
         var sound = (await (await alice.PostAsync("/api/sounds", Sound("ding", Wav(0.5)))).Content.ReadFromJsonAsync<SoundDto>())!;
-        var lounge = (await aliceHub.InvokeAsync<SyncStateDto>(nameof(IChatHub.Sync))).Channels.Single(ch => ch.Kind == ChannelKind.Voice).Id;
+        // Carol is in the room but not in the call, so she must not hear the sound.
+        var room = await DiscagemFactory.ShareRoomAsync(aliceHub, bobHub, carolHub);
+        var lounge = room.Channels.Single(ch => ch.Kind == ChannelKind.Voice).Id;
 
         // Outside a voice channel there is nobody to play to.
         var outside = await Assert.ThrowsAsync<HubException>(() => aliceHub.InvokeAsync(nameof(IChatHub.PlaySound), sound.Id));

@@ -26,7 +26,7 @@
           <TextBlock Text="{Binding Me.Username, StringFormat='@{0}'}" Classes="band-caption" TextTrimming="CharacterEllipsis" />
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock Text="{Binding ServerName}" Classes="band-server" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding RoomName}" Classes="band-server" VerticalAlignment="Center" />
           <Border Classes="brand-tile" Width="38" Height="38" CornerRadius="9">
             <Viewbox Margin="6">
               <Canvas Width="24" Height="24">
@@ -42,24 +42,83 @@
 
   <Grid ColumnDefinitions="72,248,*,Auto">
 
-    <!-- ========== Server rail ========== -->
+    <!-- ========== Room rail ========== -->
     <Border Grid.Column="0" Background="{DynamicResource RailBrush}">
-      <StackPanel Margin="0,12,0,0" Spacing="10">
-        <Panel HorizontalAlignment="Stretch">
-          <Border Classes="rail-indicator" Width="4" Height="40" CornerRadius="0,4,4,0" HorizontalAlignment="Left" />
-          <Border Classes="server-tile" Width="48" Height="48" CornerRadius="16" Background="{DynamicResource BrandGradient}" HorizontalAlignment="Center"
-                  ToolTip.Tip="{Binding ServerName}" ToolTip.Placement="Right">
-            <TextBlock Text="{Binding ServerInitials}" FontSize="17" FontWeight="Bold" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-        </Panel>
-        <Border Height="2" Width="32" CornerRadius="1" Background="{DynamicResource DividerBrush}" />
-        <Button Classes="icon go-live" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center"
-                Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource OnlineBrush}"
-                ToolTip.Tip="Share your screen" ToolTip.Placement="Right" Command="{Binding GoLiveCommand}">
-          <c:Icon Data="{StaticResource IconScreenShare}" Width="22" Height="22" />
-        </Button>
-      </StackPanel>
+      <ScrollViewer VerticalScrollBarVisibility="Hidden">
+        <StackPanel Margin="0,12,0,12" Spacing="10">
+          <ItemsControl ItemsSource="{Binding Rooms}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="10" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RoomViewModel">
+                <Panel HorizontalAlignment="Stretch">
+                  <Border Classes="rail-indicator" Width="4" Height="40" CornerRadius="0,4,4,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                          IsVisible="{Binding IsSelected}" />
+                  <Border Classes="rail-indicator" Width="4" Height="8" CornerRadius="0,4,4,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Border.IsVisible>
+                      <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="HasUnread" />
+                        <Binding Path="!IsSelected" />
+                      </MultiBinding>
+                    </Border.IsVisible>
+                  </Border>
+                  <Button Classes="bare room-tile" Classes.selected="{Binding IsSelected}" Width="48" Height="48" Padding="0" HorizontalAlignment="Center"
+                          Command="{Binding #Root.((vm:ShellViewModel)DataContext).SelectRoomCommand}" CommandParameter="{Binding}"
+                          ToolTip.Tip="{Binding Name}" ToolTip.Placement="Right">
+                    <Button.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Copy invite" Command="{Binding #Root.((vm:ShellViewModel)DataContext).CopyInviteCommand}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Room settings" Command="{Binding #Root.((vm:ShellViewModel)DataContext).OpenRoomSettingsCommand}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Notifications">
+                          <MenuItem Header="All messages" ToggleType="Radio" IsChecked="{Binding NotifiesAll, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomAllCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Only @mentions" ToggleType="Radio" IsChecked="{Binding NotifiesMentions, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomMentionsCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Nothing" ToggleType="Radio" IsChecked="{Binding NotifiesNothing, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomNothingCommand}" CommandParameter="{Binding}" />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="Move up" Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveRoomUpCommand}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Move down" Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveRoomDownCommand}" CommandParameter="{Binding}" />
+                        <Separator />
+                        <MenuItem Header="Leave room" Foreground="{DynamicResource ErrorTextBrush}"
+                                  Command="{Binding #Root.((vm:ShellViewModel)DataContext).LeaveRoomCommand}" CommandParameter="{Binding}" />
+                      </ContextMenu>
+                    </Button.ContextMenu>
+                    <Panel>
+                      <Border Classes="server-tile room-face" Background="{Binding ColorBrush}" IsVisible="{Binding !HasIcon}">
+                        <TextBlock Text="{Binding Initials}" FontSize="17" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <Border Classes="server-tile room-face" ClipToBounds="True" IsVisible="{Binding HasIcon}">
+                        <Image Source="{Binding Icon}" Stretch="UniformToFill" />
+                      </Border>
+                    </Panel>
+                  </Button>
+                  <Border Classes="count-badge" IsVisible="{Binding HasMentions}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                          Margin="0,0,8,-2" IsHitTestVisible="False">
+                    <TextBlock Text="{Binding MentionCount}" />
+                  </Border>
+                </Panel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Classes="icon rail-action" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center"
+                  Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource OnlineBrush}"
+                  ToolTip.Tip="Add a room" ToolTip.Placement="Right" Command="{Binding AddRoomCommand}" CommandParameter="create">
+            <c:Icon Data="{StaticResource IconPlus}" Width="22" Height="22" />
+          </Button>
+          <Border Height="2" Width="32" CornerRadius="1" Background="{DynamicResource DividerBrush}" />
+          <Button Classes="icon go-live" Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center"
+                  Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource OnlineBrush}" IsEnabled="{Binding HasRoom}"
+                  ToolTip.Tip="Share your screen" ToolTip.Placement="Right" Command="{Binding GoLiveCommand}">
+            <c:Icon Data="{StaticResource IconScreenShare}" Width="22" Height="22" />
+          </Button>
+        </StackPanel>
+      </ScrollViewer>
     </Border>
 
     <!-- ========== Channel sidebar ========== -->
@@ -69,13 +128,18 @@
         <!-- Server header -->
         <Border Classes="header sidebar-header">
           <Grid ColumnDefinitions="*,Auto" Margin="16,0,8,0">
-            <TextBlock Text="{Binding ServerName}" Classes="title" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-            <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Server options">
+            <TextBlock Text="{Binding RoomName}" Classes="title" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding HasRoom}" ToolTip.Tip="Room options">
               <c:Icon Data="{StaticResource IconChevronDown}" />
               <Button.Flyout>
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
-                  <MenuItem Header="Create text channel" Command="{Binding CreateChannelCommand}" />
-                  <MenuItem Header="Create voice channel" Command="{Binding CreateVoiceChannelCommand}" />
+                  <MenuItem Header="Invite people" Command="{Binding CopyInviteCommand}" CommandParameter="{x:Null}" />
+                  <MenuItem Header="Room settings" Command="{Binding OpenRoomSettingsCommand}" CommandParameter="{x:Null}" />
+                  <Separator IsVisible="{Binding CanManageRoom}" />
+                  <MenuItem Header="Create text channel" Command="{Binding CreateChannelCommand}" IsVisible="{Binding CanManageRoom}" />
+                  <MenuItem Header="Create voice channel" Command="{Binding CreateVoiceChannelCommand}" IsVisible="{Binding CanManageRoom}" />
+                  <Separator />
+                  <MenuItem Header="Leave room" Foreground="{DynamicResource ErrorTextBrush}" Command="{Binding LeaveRoomCommand}" CommandParameter="{x:Null}" />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
@@ -88,7 +152,7 @@
             <Grid ColumnDefinitions="*,Auto" Margin="16,4,10,4">
               <TextBlock Text="TEXT CHANNELS" Classes="section default-only" VerticalAlignment="Center" />
               <TextBlock Text="Text channels" Classes="section aero-only" VerticalAlignment="Center" />
-              <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Create channel"
+              <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding CanManageRoom}" ToolTip.Tip="Create channel"
                       Command="{Binding CreateChannelCommand}">
                 <c:Icon Data="{StaticResource IconPlus}" />
               </Button>
@@ -99,18 +163,36 @@
                 <DataTemplate x:DataType="vm:ChannelViewModel">
                   <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
                     <Grid.ContextMenu>
-                      <ContextMenu IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).IsAdmin}">
-                        <MenuItem Header="Edit channel"
+                      <ContextMenu>
+                        <MenuItem Header="Notifications">
+                          <MenuItem Header="As the room" ToggleType="Radio" IsChecked="{Binding FollowsRoom, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelDefaultCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="All messages" ToggleType="Radio" IsChecked="{Binding NotifiesAll, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelAllCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Only @mentions" ToggleType="Radio" IsChecked="{Binding NotifiesMentions, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelMentionsCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Nothing" ToggleType="Radio" IsChecked="{Binding NotifiesNothing, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelNothingCommand}" CommandParameter="{Binding}" />
+                        </MenuItem>
+                        <Separator IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}" />
+                        <MenuItem Header="Edit channel" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).EditChannelCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}"
+                        <MenuItem Header="Move up" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
+                                  Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveChannelUpCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Move down" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
+                                  Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveChannelDownCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteChannelCommand}"
                                   CommandParameter="{Binding}" />
                       </ContextMenu>
                     </Grid.ContextMenu>
                     <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Margin="0,0,8,0" StrokeThickness="2.2" />
                     <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" Classes="channel-name" Classes.unread="{Binding HasUnread}" />
+                               TextTrimming="CharacterEllipsis" Classes="channel-name" Classes.unread="{Binding HasUnread}"
+                               Classes.muted="{Binding IsMuted}" />
                     <Border Grid.Column="2" Classes="count-badge" IsVisible="{Binding HasMentions}">
                       <TextBlock Text="{Binding MentionCount}" />
                     </Border>
@@ -123,7 +205,7 @@
             <Grid ColumnDefinitions="*,Auto" Margin="16,18,10,4">
               <TextBlock Text="VOICE CHANNELS" Classes="section default-only" VerticalAlignment="Center" />
               <TextBlock Text="Voice channels" Classes="section aero-only" VerticalAlignment="Center" />
-              <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding IsAdmin}" ToolTip.Tip="Create voice channel"
+              <Button Grid.Column="1" Classes="icon small" IsVisible="{Binding CanManageRoom}" ToolTip.Tip="Create voice channel"
                       Command="{Binding CreateVoiceChannelCommand}">
                 <c:Icon Data="{StaticResource IconPlus}" />
               </Button>
@@ -137,9 +219,15 @@
                             CommandParameter="{Binding}" ToolTip.Tip="{Binding Topic}"
                             ToolTip.ServiceEnabled="{Binding Topic, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                       <Button.ContextMenu>
-                        <ContextMenu IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).IsAdmin}">
+                        <ContextMenu IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}">
                           <MenuItem Header="Edit channel"
                                     Command="{Binding #Root.((vm:ShellViewModel)DataContext).EditVoiceChannelCommand}"
+                                    CommandParameter="{Binding}" />
+                          <MenuItem Header="Move up"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveVoiceChannelUpCommand}"
+                                    CommandParameter="{Binding}" />
+                          <MenuItem Header="Move down"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveVoiceChannelDownCommand}"
                                     CommandParameter="{Binding}" />
                           <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}"
                                     Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteVoiceChannelCommand}"
@@ -418,7 +506,18 @@
     </Border>
 
     <!-- ========== Chat ========== -->
-    <views:ChatPanel Grid.Column="2" />
+    <views:ChatPanel Grid.Column="2" IsVisible="{Binding !HasNoRooms}" />
+    <Border Grid.Column="2" Grid.ColumnSpan="2" Background="{DynamicResource ChatBrush}" IsVisible="{Binding HasNoRooms}" ZIndex="1">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="420">
+        <TextBlock Text="You are not in any room yet" Classes="h2" HorizontalAlignment="Center" />
+        <TextBlock Classes="secondary" TextWrapping="Wrap" TextAlignment="Center"
+                   Text="Rooms are where people talk: each has its own text and voice channels. Create one for your group, or join one with an invite code." />
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+          <Button Classes="primary" Content="Create a room" Command="{Binding AddRoomCommand}" CommandParameter="create" />
+          <Button Content="Join with a code" Command="{Binding AddRoomCommand}" CommandParameter="join" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
 
     <!-- ========== Members ========== -->
     <Border Grid.Column="3" Width="244" Classes="members" Background="{DynamicResource SidebarBrush}" IsVisible="{Binding ShowMembers}">

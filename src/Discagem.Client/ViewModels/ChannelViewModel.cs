@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Discagem.Client.Services;
 using Discagem.Shared;
 
 namespace Discagem.Client.ViewModels;
@@ -12,10 +13,13 @@ public sealed partial class ChannelViewModel : ObservableObject
     public ChannelViewModel(ChannelDto channel)
     {
         Id = channel.Id;
+        RoomId = channel.RoomId;
         Update(channel);
     }
 
     public long Id { get; }
+
+    public long RoomId { get; }
 
     [ObservableProperty]
     private string _name = "";
@@ -37,6 +41,23 @@ public sealed partial class ChannelViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasMoreHistory = true;
+
+    /// <summary>What the channel notifies about (the user's choice; Default follows the room).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FollowsRoom), nameof(NotifiesAll), nameof(NotifiesMentions), nameof(NotifiesNothing))]
+    private NotificationLevel _notifications;
+
+    /// <summary>Whether the channel notifies about nothing (shown dimmed), from its own choice or its room's.</summary>
+    [ObservableProperty]
+    private bool _isMuted;
+
+    public bool FollowsRoom => Notifications == NotificationLevel.Default;
+
+    public bool NotifiesAll => Notifications == NotificationLevel.All;
+
+    public bool NotifiesMentions => Notifications == NotificationLevel.Mentions;
+
+    public bool NotifiesNothing => Notifications == NotificationLevel.Nothing;
 
     [ObservableProperty]
     private bool _isLoadingHistory;

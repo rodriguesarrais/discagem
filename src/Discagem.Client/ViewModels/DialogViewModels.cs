@@ -133,6 +133,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ServerName = serverName;
         _displayName = me.DisplayName;
         _avatarColor = me.AvatarColor;
+        _statusEmoji = me.StatusEmoji;
+        _statusText = me.StatusText;
+        _bio = me.Bio;
+        _nameColor = me.NameColor;
+        _bannerColor = me.BannerColor;
         _defaultQuality = StreamQuality.Presets[Math.Clamp(settings.StreamQualityIndex, 0, StreamQuality.Presets.Length - 1)];
 
         InputDevices = voice.Audio.InputDevices();
@@ -143,7 +148,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _outputVolumePercent = settings.VoiceOutputVolume * 100;
         _closeToTray = settings.CloseToTrayEnabled;
         _selectedTheme = Themes.FirstOrDefault(t => t.Theme == settings.ThemeValue) ?? Themes[0];
+        _accentColor = settings.AccentColor;
+        _messageFontSize = settings.MessageFontSize;
+        _compactMessages = settings.CompactMessages;
+        _zoomPercent = Math.Round(settings.Zoom * 100);
         _messageSounds = settings.MessageSounds;
+        _mentionSounds = settings.MentionSounds;
+        _callSounds = settings.CallSounds;
+        _taskbarAlerts = settings.TaskbarAlerts;
 
         // Show the microphone level live (in a call, or while testing), as a guide for the sensitivity slider.
         _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) =>
@@ -294,8 +306,90 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ThemeManager.Apply(value.Theme);
     }
 
+    /// <summary>Accent colour, or null for the theme's.</summary>
+    [ObservableProperty]
+    private string? _accentColor;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MessageFontSizeText))]
+    private double _messageFontSize;
+
+    [ObservableProperty]
+    private bool _compactMessages;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomText))]
+    private double _zoomPercent;
+
+    public string MessageFontSizeText => $"{MessageFontSize:0.#} pt";
+
+    public string ZoomText => $"{ZoomPercent:0} %";
+
+    public IReadOnlyList<string> AccentPalette { get; } =
+    [
+        "#7C6CFF", "#5865F2", "#3498DB", "#1ABC9C", "#3BA55C", "#F1C40F", "#E67E22", "#ED4245", "#EB459E", "#9B59B6",
+    ];
+
+    partial void OnAccentColorChanged(string? value) => SaveAppearance();
+
+    partial void OnMessageFontSizeChanged(double value) => SaveAppearance();
+
+    partial void OnCompactMessagesChanged(bool value) => SaveAppearance();
+
+    partial void OnZoomPercentChanged(double value) => SaveAppearance();
+
+    [RelayCommand]
+    private void PickAccent(string? color) => AccentColor = string.IsNullOrEmpty(color) ? null : color;
+
+    [RelayCommand]
+    private void ResetAppearance()
+    {
+        AccentColor = null;
+        MessageFontSize = AppearanceOptions.DefaultFontSize;
+        CompactMessages = false;
+        ZoomPercent = 100;
+    }
+
+    /// <summary>Appearance changes apply at once and are remembered.</summary>
+    private void SaveAppearance()
+    {
+        _settings.AccentColor = AccentColor;
+        _settings.MessageFontSize = MessageFontSize;
+        _settings.CompactMessages = CompactMessages;
+        _settings.Zoom = ZoomPercent / 100;
+        _settings.Save();
+        ThemeManager.ApplyAppearance(_settings.Appearance);
+    }
+
     [ObservableProperty]
     private bool _messageSounds;
+
+    [ObservableProperty]
+    private bool _mentionSounds;
+
+    [ObservableProperty]
+    private bool _callSounds;
+
+    [ObservableProperty]
+    private bool _taskbarAlerts;
+
+    partial void OnMentionSoundsChanged(bool value)
+    {
+        _settings.MentionSounds = value;
+        _settings.Save();
+    }
+
+    partial void OnCallSoundsChanged(bool value)
+    {
+        _settings.CallSounds = value;
+        _settings.Save();
+    }
+
+    partial void OnTaskbarAlertsChanged(bool value)
+    {
+        _settings.TaskbarAlerts = value;
+        _settings.Save();
+    }
 
     partial void OnMessageSoundsChanged(bool value)
     {
@@ -366,7 +460,49 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private string _displayName;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BannerPreview))]
     private string _avatarColor;
+
+    [ObservableProperty]
+    private string _statusEmoji;
+
+    [ObservableProperty]
+    private string _statusText;
+
+    [ObservableProperty]
+    private string _bio;
+
+    /// <summary>#RRGGBB, or null for the theme's colour.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NamePreview))]
+    private string? _nameColor;
+
+    /// <summary>#RRGGBB, or null for the avatar colour.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BannerPreview))]
+    private string? _bannerColor;
+
+    public object NamePreview =>
+        NameColor is not null && Avalonia.Media.Color.TryParse(NameColor, out var color)
+            ? new Avalonia.Media.SolidColorBrush(color)
+            : Avalonia.AvaloniaProperty.UnsetValue;
+
+    public Avalonia.Media.IBrush BannerPreview =>
+        Avalonia.Media.Color.TryParse(BannerColor ?? AvatarColor, out var color)
+            ? new Avalonia.Media.SolidColorBrush(color)
+            : Avalonia.Media.Brushes.SlateBlue;
+
+    /// <summary>Colours offered for names: readable on both light and dark themes.</summary>
+    public IReadOnlyList<string> NamePalette { get; } =
+    [
+        "#E74C3C", "#E67E22", "#F1C40F", "#2ECC71", "#1ABC9C", "#3498DB", "#5865F2", "#9B59B6", "#E91E63", "#95A5A6",
+    ];
+
+    [RelayCommand]
+    private void PickNameColor(string? color) => NameColor = string.IsNullOrEmpty(color) ? null : color;
+
+    [RelayCommand]
+    private void PickBannerColor(string? color) => BannerColor = string.IsNullOrEmpty(color) ? null : color;
 
     [ObservableProperty]
     private string _currentPassword = "";
@@ -411,7 +547,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ProfileMessage = null;
         try
         {
-            var updated = await _api.UpdateProfileAsync(DisplayName.Trim(), AvatarColor);
+            var updated = await _api.UpdateProfileAsync(new UpdateProfileRequest(
+                DisplayName.Trim(),
+                AvatarColor,
+                Bio,
+                StatusText,
+                StatusEmoji,
+                NameColor ?? "",
+                BannerColor ?? ""));
             Me.Update(updated);
             ProfileError = false;
             ProfileMessage = "Profile saved.";

@@ -3,7 +3,12 @@ namespace Discagem.Shared;
 /// <summary>
 /// Public representation of a user account. <c>AvatarVersion</c> is null without a profile photo;
 /// otherwise the photo is at <c>/api/users/{id}/avatar</c>, and the number changes with every new photo.
+/// The profile fields are empty (or null for the colours) when not set, and from older servers.
 /// </summary>
+/// <param name="StatusText">Custom status shown under the name, such as "Playing Minecraft".</param>
+/// <param name="StatusEmoji">An emoji shown before the custom status.</param>
+/// <param name="NameColor">Colour of the display name in messages and lists (#RRGGBB), or null for the theme's.</param>
+/// <param name="BannerColor">Colour of the profile card's banner (#RRGGBB), or null for the avatar colour.</param>
 public sealed record UserDto(
     long Id,
     string Username,
@@ -11,7 +16,12 @@ public sealed record UserDto(
     string AvatarColor,
     bool IsAdmin,
     DateTimeOffset CreatedAt,
-    int? AvatarVersion = null);
+    int? AvatarVersion = null,
+    string Bio = "",
+    string StatusText = "",
+    string StatusEmoji = "",
+    string? NameColor = null,
+    string? BannerColor = null);
 
 public enum ChannelKind
 {
@@ -19,14 +29,37 @@ public enum ChannelKind
     Voice = 1,
 }
 
-/// <summary>A text or voice channel.</summary>
+/// <summary>A text or voice channel of a room.</summary>
 public sealed record ChannelDto(
     long Id,
     string Name,
     string Topic,
     int Position,
     DateTimeOffset CreatedAt,
-    ChannelKind Kind = ChannelKind.Text);
+    ChannelKind Kind = ChannelKind.Text,
+    long RoomId = 0);
+
+/// <summary>
+/// A room: a space with its own channels and members, which people join with its invite code. The
+/// owner and server administrators manage it. <c>IconVersion</c> is null without an icon; otherwise
+/// the icon is at <c>/api/rooms/{id}/icon</c>, and the number changes with every new icon.
+/// </summary>
+public sealed record RoomDto(
+    long Id,
+    string Name,
+    long? OwnerId,
+    string Color,
+    int? IconVersion,
+    string InviteCode,
+    IReadOnlyList<long> MemberIds,
+    DateTimeOffset CreatedAt);
+
+/// <summary>A room with what a member needs to show it: its channels, voice participants and streams.</summary>
+public sealed record RoomStateDto(
+    RoomDto Room,
+    IReadOnlyList<ChannelDto> Channels,
+    IReadOnlyList<VoiceParticipantDto> VoiceParticipants,
+    IReadOnlyList<StreamInfoDto> Streams);
 
 /// <summary>A user connected to a voice channel.</summary>
 public sealed record VoiceParticipantDto(
@@ -65,7 +98,8 @@ public sealed record StreamInfoDto(
     int FrameRate,
     DateTimeOffset StartedAt,
     IReadOnlyList<long> ViewerIds,
-    bool HasAudio = false);
+    bool HasAudio = false,
+    long RoomId = 0);
 
 public enum EmojiKind
 {
@@ -99,8 +133,9 @@ public sealed record SoundDto(
     DateTimeOffset CreatedAt);
 
 /// <summary>
-/// Snapshot of the server state sent to a client right after it connects. <c>Emojis</c> and
-/// <c>Sounds</c> are null from servers that predate them.
+/// Snapshot of the server state sent to a client right after it connects: the rooms the user is a
+/// member of, with their channels, voice participants and streams. <c>Emojis</c>, <c>Sounds</c> and
+/// <c>Rooms</c> are null from servers that predate them.
 /// </summary>
 public sealed record SyncStateDto(
     UserDto Me,
@@ -110,7 +145,8 @@ public sealed record SyncStateDto(
     IReadOnlyList<StreamInfoDto> Streams,
     IReadOnlyList<VoiceParticipantDto> VoiceParticipants,
     IReadOnlyList<EmojiDto>? Emojis = null,
-    IReadOnlyList<SoundDto>? Sounds = null);
+    IReadOnlyList<SoundDto>? Sounds = null,
+    IReadOnlyList<RoomDto>? Rooms = null);
 
 /// <summary>A trickled ICE candidate for a media session.</summary>
 public sealed record IceCandidateDto(
@@ -119,13 +155,17 @@ public sealed record IceCandidateDto(
     string? SdpMid,
     int? SdpMLineIndex);
 
-/// <summary>Request sent by a client that wants to go live.</summary>
+/// <summary>
+/// Request sent by a client that wants to go live, in a room it is a member of (older clients send
+/// no room; their stream goes to their first room).
+/// </summary>
 public sealed record StartStreamRequest(
     string OfferSdp,
     string Title,
     int Width,
     int Height,
-    int FrameRate);
+    int FrameRate,
+    long? RoomId = null);
 
 /// <summary>Server answer for a publish or watch request.</summary>
 public sealed record MediaSessionAnswer(
@@ -171,7 +211,18 @@ public sealed record RegisterRequest(string Username, string DisplayName, string
 
 public sealed record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
 
-public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarColor);
+/// <summary>
+/// Profile changes: null leaves a field as it is; an empty string clears the text fields and resets the
+/// name and banner colours to the default.
+/// </summary>
+public sealed record UpdateProfileRequest(
+    string? DisplayName,
+    string? AvatarColor,
+    string? Bio = null,
+    string? StatusText = null,
+    string? StatusEmoji = null,
+    string? NameColor = null,
+    string? BannerColor = null);
 
 /// <param name="KeepConnectionId">The caller's own hub connection, which stays open; all other connections of the user are closed.</param>
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword, string? KeepConnectionId = null);

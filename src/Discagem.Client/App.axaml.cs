@@ -22,6 +22,7 @@ public sealed class App : Application
         {
             var settings = ClientSettings.Load();
             ThemeManager.Apply(settings.ThemeValue);
+            ThemeManager.ApplyAppearance(settings.Appearance);
             var window = new MainWindow();
             var dialogs = new DialogService(window);
             var viewModel = new MainWindowViewModel(settings, dialogs);

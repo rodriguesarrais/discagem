@@ -8,10 +8,15 @@ public static class Mapping
 
     public static UserDto ToDto(this User user) =>
         new(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.IsAdmin, user.CreatedAt.ToOffset(),
-            user.HasAvatar ? user.AvatarVersion : null);
+            user.HasAvatar ? user.AvatarVersion : null, user.Bio, user.StatusText, user.StatusEmoji, user.NameColor, user.BannerColor);
 
     public static ChannelDto ToDto(this Channel channel) =>
-        new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset(), channel.Kind);
+        new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset(), channel.Kind, channel.RoomId);
+
+    /// <summary>A room with its member ids (<see cref="Room.Members"/> must be loaded).</summary>
+    public static RoomDto ToDto(this Room room) =>
+        new(room.Id, room.Name, room.OwnerId, room.Color, room.HasIcon ? room.IconVersion : null, room.InviteCode,
+            room.Members.Select(m => m.UserId).OrderBy(id => id).ToList(), room.CreatedAt.ToOffset());
 
     public static AttachmentDto ToDto(this Attachment attachment) =>
         new(attachment.Id, attachment.FileName, attachment.ContentType, attachment.Size);

@@ -131,8 +131,8 @@ public sealed class MessageContentView : StackPanel
         var block = new LinkTextBlock
         {
             TextWrapping = TextWrapping.Wrap,
-            FontSize = emojiOnly ? 34 : 14.5,
-            LineHeight = emojiOnly ? 42 : 21,
+            FontSize = emojiOnly ? 34 : ThemeManager.Appearance.MessageFontSize,
+            LineHeight = emojiOnly ? 42 : Math.Round(ThemeManager.Appearance.MessageFontSize * 1.45),
             Foreground = Resource("TextPrimaryBrush", "#ECEDF1"),
         };
 

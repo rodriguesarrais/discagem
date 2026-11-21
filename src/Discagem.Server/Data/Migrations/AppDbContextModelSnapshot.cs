@@ -77,12 +77,17 @@ namespace Discagem.Server.Data.Migrations
                     b.Property<int>("Position")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("RoomId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Topic")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Channels");
                 });
@@ -148,6 +153,67 @@ namespace Discagem.Server.Data.Migrations
                     b.ToTable("Messages");
                 });
 
+            modelBuilder.Entity("Discagem.Server.Data.Room", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasIcon")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IconVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("OwnerId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique();
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.RoomMember", b =>
+                {
+                    b.Property<long>("RoomId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RoomId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RoomMembers");
+                });
+
             modelBuilder.Entity("Discagem.Server.Data.Sound", b =>
                 {
                     b.Property<long>("Id")
@@ -189,6 +255,13 @@ namespace Discagem.Server.Data.Migrations
                     b.Property<int>("AvatarVersion")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BannerColor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -203,12 +276,23 @@ namespace Discagem.Server.Data.Migrations
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("NameColor")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NormalizedUsername")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StatusEmoji")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StatusText")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -236,6 +320,17 @@ namespace Discagem.Server.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Message");
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.Channel", b =>
+                {
+                    b.HasOne("Discagem.Server.Data.Room", "Room")
+                        .WithMany("Channels")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Discagem.Server.Data.CustomEmoji", b =>
@@ -266,6 +361,31 @@ namespace Discagem.Server.Data.Migrations
                     b.Navigation("Channel");
                 });
 
+            modelBuilder.Entity("Discagem.Server.Data.Room", b =>
+                {
+                    b.HasOne("Discagem.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.RoomMember", b =>
+                {
+                    b.HasOne("Discagem.Server.Data.Room", "Room")
+                        .WithMany("Members")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Discagem.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+                });
+
             modelBuilder.Entity("Discagem.Server.Data.Sound", b =>
                 {
                     b.HasOne("Discagem.Server.Data.User", null)
@@ -283,6 +403,13 @@ namespace Discagem.Server.Data.Migrations
             modelBuilder.Entity("Discagem.Server.Data.Message", b =>
                 {
                     b.Navigation("Attachments");
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.Room", b =>
+                {
+                    b.Navigation("Channels");
+
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

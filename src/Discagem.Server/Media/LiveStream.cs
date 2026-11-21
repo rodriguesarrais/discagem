@@ -27,9 +27,10 @@ public sealed class LiveStream
     private long _lastKeyFrameRequestMs = -KeyFrameRequestMinIntervalMs;
     private int _ended;
 
-    public LiveStream(string id, MediaSession publisher, string title, int width, int height, int frameRate, DateTimeOffset startedAt, bool hasAudio = false)
+    public LiveStream(string id, MediaSession publisher, string title, int width, int height, int frameRate, DateTimeOffset startedAt, bool hasAudio = false, long roomId = 0)
     {
         Id = id;
+        RoomId = roomId;
         HasAudio = hasAudio;
         Publisher = publisher;
         Title = title;
@@ -200,6 +201,9 @@ public sealed class LiveStream
         }
     }
 
+    /// <summary>The room the stream is shown in; only its members can watch.</summary>
+    public long RoomId { get; }
+
     public StreamInfoDto ToDto() =>
-        new(Id, UserId, Title, Width, Height, FrameRate, StartedAt, _viewers.Select(v => v.UserId).Distinct().ToList(), HasAudio);
+        new(Id, UserId, Title, Width, Height, FrameRate, StartedAt, _viewers.Select(v => v.UserId).Distinct().ToList(), HasAudio, RoomId);
 }

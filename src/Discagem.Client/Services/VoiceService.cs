@@ -140,7 +140,10 @@ public sealed class VoiceService : IAsyncDisposable
 
             OpenMicrophone(call, attempt: 0);
             OpenSpeakers(call, attempt: 0);
-            engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
+            if (_settings.CallSounds)
+            {
+                engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
+            }
         }
         finally
         {
@@ -254,14 +257,17 @@ public sealed class VoiceService : IAsyncDisposable
         if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
         {
             call.Engine.Mixer.RemoveSpeaker((uint)userId);
-            call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Leave);
+            if (_settings.CallSounds)
+            {
+                call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Leave);
+            }
         }
     }
 
     /// <summary>Someone joined the call: play the join cue.</summary>
     public void OnParticipantJoined(long channelId, long userId)
     {
-        if (_call is { } call && call.ChannelId == channelId && userId != _myUserId)
+        if (_call is { } call && call.ChannelId == channelId && userId != _myUserId && _settings.CallSounds)
         {
             call.Engine.Mixer.PlayCue(ThemeManager.Sounds.Join);
         }
@@ -429,6 +435,7 @@ public sealed class VoiceService : IAsyncDisposable
         _call = null;
         var cue = ThemeManager.Sounds.Leave;
         var cueStarted = Environment.TickCount64;
+        playCue &= _settings.CallSounds;
         if (playCue)
         {
             call.Engine.Mixer.PlayCue(cue);

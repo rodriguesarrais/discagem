@@ -14,6 +14,18 @@ public interface IChatClient
     Task ChannelUpdated(ChannelDto channel);
     Task ChannelDeleted(long channelId);
 
+    /// <summary>A room the user is a member of changed (name, colour, icon, owner, invite code or members).</summary>
+    Task RoomUpdated(RoomDto room);
+
+    /// <summary>
+    /// The user joined a room from another of their connections, or was added to one: everything
+    /// needed to show it.
+    /// </summary>
+    Task RoomAdded(RoomStateDto room);
+
+    /// <summary>The user is no longer in the room: they left it, were removed from it, or it was deleted.</summary>
+    Task RoomRemoved(long roomId);
+
     Task UserCreated(UserDto user);
     Task UserUpdated(UserDto user);
     Task PresenceChanged(long userId, bool online);
@@ -66,9 +78,26 @@ public interface IChatHub
     Task DeleteMessage(long messageId);
     Task Typing(long channelId);
 
-    Task<ChannelDto> CreateChannel(string name, string topic, ChannelKind kind);
+    Task<ChannelDto> CreateChannel(long roomId, string name, string topic, ChannelKind kind);
     Task UpdateChannel(long channelId, string name, string topic);
     Task DeleteChannel(long channelId);
+
+    /// <summary>Moves a channel to a new position among its room's channels of the same kind.</summary>
+    Task MoveChannel(long channelId, int position);
+
+    /// <summary>Creates a room owned by the caller, with a text and a voice channel.</summary>
+    Task<RoomStateDto> CreateRoom(string name, string color);
+
+    /// <summary>Joins a room with its invite code (or a link that ends in it).</summary>
+    Task<RoomStateDto> JoinRoom(string inviteCode);
+    Task LeaveRoom(long roomId);
+    Task UpdateRoom(long roomId, string name, string color);
+
+    /// <summary>Replaces the room's invite code; the old one stops working.</summary>
+    Task<string> ResetRoomInvite(long roomId);
+    Task RemoveRoomMember(long roomId, long userId);
+    Task TransferRoom(long roomId, long userId);
+    Task DeleteRoom(long roomId);
 
     Task<MediaSessionAnswer> StartStream(StartStreamRequest request);
     Task StopStream();
@@ -113,4 +142,12 @@ public static class Limits
     public const int MaxSounds = 100;
     public const int MaxSoundMilliseconds = 5000;
     public const int MaxSoundBytes = 1024 * 1024;
+    public const int MaxRoomNameLength = 32;
+    public const int MaxBioLength = 190;
+    public const int MaxStatusLength = 64;
+    public const int MaxStatusEmojiLength = 16;
+    public const int MaxRoomsPerUser = 50;
+    public const int MaxChannelsPerRoom = 100;
+    public const int MaxRoomIconBytes = 1024 * 1024;
+    public const int InviteCodeLength = 8;
 }

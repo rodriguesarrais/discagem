@@ -43,12 +43,14 @@ public sealed class SfuService : IHostedService
         _logger = logger;
     }
 
-    public IReadOnlyList<StreamInfoDto> GetStreams() =>
-        _streams.Values.Where(s => !s.HasEnded).OrderBy(s => s.StartedAt).Select(s => s.ToDto()).ToList();
+    /// <summary>Live streams in the given rooms.</summary>
+    public IReadOnlyList<StreamInfoDto> GetStreams(IReadOnlySet<long> roomIds) =>
+        _streams.Values.Where(s => !s.HasEnded && roomIds.Contains(s.RoomId)).OrderBy(s => s.StartedAt).Select(s => s.ToDto()).ToList();
 
     public LiveStream? FindStream(string streamId) => _streams.TryGetValue(streamId, out var stream) ? stream : null;
 
-    public async Task<MediaSessionAnswer> StartStreamAsync(long userId, string connectionId, StartStreamRequest request)
+    /// <summary>Starts a stream in a room (the caller checked that the user is a member).</summary>
+    public async Task<MediaSessionAnswer> StartStreamAsync(long userId, string connectionId, StartStreamRequest request, long roomId)
     {
         var title = (request.Title ?? "").Trim();
         if (title.Length > Limits.MaxStreamTitleLength)
@@ -90,7 +92,8 @@ public sealed class SfuService : IHostedService
             request.Height,
             request.FrameRate,
             _time.GetUtcNow(),
-            hasAudio);
+            hasAudio,
+            roomId);
         session.Stream = stream;
 
         pc.OnRtpPacketReceived += (_, media, packet) =>
@@ -128,7 +131,7 @@ public sealed class SfuService : IHostedService
         _sessions[session.Id] = session;
         _streams[stream.Id] = stream;
         _logger.LogInformation("User {UserId} started stream {StreamId} ({Width}x{Height}@{Fps}, audio: {HasAudio})", userId, stream.Id, request.Width, request.Height, request.FrameRate, hasAudio);
-        await _hub.Clients.All.StreamStarted(stream.ToDto());
+        await Group(stream).StreamStarted(stream.ToDto());
         return new MediaSessionAnswer(stream.Id, session.Id, answer);
     }
 
@@ -209,7 +212,7 @@ public sealed class SfuService : IHostedService
             throw new MediaException("That stream is no longer live.");
         }
         _logger.LogInformation("User {UserId} is watching stream {StreamId}", userId, stream.Id);
-        await _hub.Clients.All.StreamUpdated(stream.ToDto());
+        await Group(stream).StreamUpdated(stream.ToDto());
         return new MediaSessionAnswer(stream.Id, session.Id, answer);
     }
 
@@ -228,6 +231,34 @@ public sealed class SfuService : IHostedService
             await EndStreamAsync(stream, "stopped by publisher");
         }
     }
+
+    /// <summary>
+    /// The user is no longer in the room: ends their streams there and stops them watching the
+    /// room's streams.
+    /// </summary>
+    public async Task LeaveRoomAsync(long userId, long roomId)
+    {
+        foreach (var stream in _streams.Values.Where(s => s.RoomId == roomId && s.UserId == userId).ToList())
+        {
+            await EndStreamAsync(stream, "left the room");
+        }
+
+        foreach (var session in _sessions.Values.Where(s => !s.IsPublisher && s.UserId == userId && s.Stream?.RoomId == roomId).ToList())
+        {
+            await RemoveViewerAsync(session, "left the room", notifyClient: true);
+        }
+    }
+
+    /// <summary>Ends every stream of a room that is being deleted.</summary>
+    public async Task CloseRoomAsync(long roomId)
+    {
+        foreach (var stream in _streams.Values.Where(s => s.RoomId == roomId).ToList())
+        {
+            await EndStreamAsync(stream, "room deleted");
+        }
+    }
+
+    private IChatClient Group(LiveStream stream) => _hub.Clients.Group(RoomGroups.Name(stream.RoomId));
 
     public async Task OnConnectionClosedAsync(string connectionId)
     {
@@ -325,7 +356,7 @@ public sealed class SfuService : IHostedService
         var stream = session.Stream;
         if (stream is not null && stream.RemoveViewer(session) && !stream.HasEnded)
         {
-            await _hub.Clients.All.StreamUpdated(stream.ToDto());
+            await Group(stream).StreamUpdated(stream.ToDto());
         }
 
         if (closed && notifyClient)
@@ -353,7 +384,7 @@ public sealed class SfuService : IHostedService
         }
 
         _logger.LogInformation("Stream {StreamId} ended: {Reason}", stream.Id, reason);
-        await _hub.Clients.All.StreamEnded(stream.Id);
+        await Group(stream).StreamEnded(stream.Id);
     }
 
     public Task StartAsync(CancellationToken cancellationToken)

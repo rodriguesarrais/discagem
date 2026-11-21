@@ -9,11 +9,14 @@ public sealed partial class LiveStreamViewModel : ObservableObject
     public LiveStreamViewModel(StreamInfoDto stream, MemberViewModel streamer)
     {
         StreamId = stream.StreamId;
+        RoomId = stream.RoomId;
         Streamer = streamer;
         Update(stream);
     }
 
     public string StreamId { get; }
+
+    public long RoomId { get; }
 
     public MemberViewModel Streamer { get; }
 

@@ -88,6 +88,25 @@
     <Setter Property="Foreground" Value="White" />
   </Style>
 
+  <!-- Channels that notify about nothing -->
+  <Style Selector="TextBlock.channel-name.muted">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+
+  <!-- Profile cards draw their own background -->
+  <Style Selector="FlyoutPresenter.profile">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <!-- Smaller buttons for rows in lists (members in room settings, say). -->
+  <Style Selector="Button.compact">
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+
   <Style Selector="Button.live">
     <Setter Property="Background" Value="{DynamicResource LiveBrush}" />
     <Setter Property="Foreground" Value="White" />
@@ -337,6 +356,7 @@
   <!-- Message rows -->
   <Style Selector="Border.message">
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="16,2,16,2" />
   </Style>
   <Style Selector="Border.message:pointerover">
     <Setter Property="Background" Value="{DynamicResource MessageHoverBrush}" />
@@ -585,6 +605,23 @@
     <Setter Property="BoxShadow" Value="0 8 30 0 #667C6CFF" />
   </Style>
   <!-- Message layout -->
+  <Style Selector="Panel.message-gutter c|AvatarView">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+  </Style>
+
+  <!-- Compact messages (an appearance setting): smaller avatars, less space between messages -->
+  <Style Selector="Window.compact Panel.message-gutter">
+    <Setter Property="Width" Value="40" />
+  </Style>
+  <Style Selector="Window.compact Panel.message-gutter c|AvatarView">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+  </Style>
+  <Style Selector="Window.compact Border.message">
+    <Setter Property="Padding" Value="16,0,16,0" />
+  </Style>
+
   <Style Selector="Panel.message-gutter">
     <Setter Property="Width" Value="56" />
   </Style>
@@ -599,6 +636,14 @@
     <Setter Property="Margin" Value="16,0,16,0" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+  </Style>
+
+  <!-- Room tiles in the rail: round, and a rounded square when selected or hovered -->
+  <Style Selector="Border.room-face">
+    <Setter Property="CornerRadius" Value="24" />
+  </Style>
+  <Style Selector="Button.room-tile.selected Border.room-face, Button.room-tile:pointerover Border.room-face">
+    <Setter Property="CornerRadius" Value="16" />
   </Style>
 
   <Style Selector="Border.rail-indicator">
