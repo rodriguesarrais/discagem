@@ -34,6 +34,22 @@ public interface IChatClient
 
     /// <summary>The server closed one of the client's media sessions (e.g. the stream ended).</summary>
     Task MediaSessionClosed(string sessionId, string reason);
+
+    /// <summary>Someone uploaded a custom emoji or sticker.</summary>
+    Task EmojiCreated(EmojiDto emoji);
+
+    Task EmojiDeleted(long emojiId);
+
+    /// <summary>Someone uploaded a soundboard sound.</summary>
+    Task SoundCreated(SoundDto sound);
+
+    Task SoundDeleted(long soundId);
+
+    /// <summary>
+    /// Someone in the receiving client's voice channel played a soundboard sound; every client plays
+    /// it locally. Sent only to the people in that channel, including the one who played it.
+    /// </summary>
+    Task SoundPlayed(long channelId, long userId, long soundId);
 }
 
 /// <summary>
@@ -64,6 +80,9 @@ public interface IChatHub
     Task<MediaSessionAnswer> JoinVoice(long channelId, string offerSdp);
     Task LeaveVoice();
     Task SetVoiceState(bool muted, bool deafened);
+
+    /// <summary>Plays a soundboard sound to everyone in the caller's voice channel.</summary>
+    Task PlaySound(long soundId);
 }
 
 public static class HubPaths
@@ -84,4 +103,14 @@ public static class Limits
     public const int MaxStreamTitleLength = 64;
     public const int MessagePageSize = 50;
     public const int MaxVoiceParticipants = 25;
+    public const int MinEmojiNameLength = 2;
+    public const int MaxEmojiNameLength = 32;
+    public const int MaxEmojis = 200;
+    public const int MaxStickers = 100;
+    public const int MaxEmojiBytes = 256 * 1024;
+    public const int MaxStickerBytes = 512 * 1024;
+    public const int MaxSoundNameLength = 32;
+    public const int MaxSounds = 100;
+    public const int MaxSoundMilliseconds = 5000;
+    public const int MaxSoundBytes = 1024 * 1024;
 }

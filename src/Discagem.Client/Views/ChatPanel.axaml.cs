@@ -69,6 +69,65 @@ public partial class ChatPanel : UserControl
         }
     }
 
+    // ---- Emoji picker ---------------------------------------------------------------------------
+
+    private void OnEmojiPickerOpened(object? sender, EventArgs e) => _viewModel?.Emojis.OnOpened();
+
+    private void OnCustomEmojiClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: EmojiItemViewModel emoji })
+        {
+            InsertIntoComposer(emoji.Token);
+        }
+    }
+
+    private void OnStandardEmojiClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: string emoji })
+        {
+            InsertIntoComposer(emoji);
+        }
+    }
+
+    /// <summary>
+    /// Adding an emoji or sending a sticker: the picker has done its job. Closed once the button's
+    /// command has run, since Click comes first and closing detaches the command's parameter.
+    /// </summary>
+    private void OnPickerActionClick(object? sender, RoutedEventArgs e) =>
+        Dispatcher.UIThread.Post(() => EmojiButton.Flyout?.Hide());
+
+    /// <summary>
+    /// Inserts an emoji at the caret. Custom emojis are kept apart from the surrounding words, since
+    /// <c>word:name:</c> would not be recognised.
+    /// </summary>
+    private void InsertIntoComposer(string emoji)
+    {
+        var text = Composer.Text ?? "";
+        var caret = Math.Clamp(Composer.CaretIndex, 0, text.Length);
+        var isCustom = emoji.StartsWith(':');
+        var before = text[..caret];
+        var after = text[caret..];
+        var insert = emoji;
+        if (isCustom && before.Length > 0 && !char.IsWhiteSpace(before[^1]))
+        {
+            insert = " " + insert;
+        }
+
+        if (isCustom && (after.Length == 0 || !char.IsWhiteSpace(after[0])))
+        {
+            insert += " ";
+        }
+
+        if (text.Length + insert.Length > Composer.MaxLength)
+        {
+            return;
+        }
+
+        Composer.Text = before + insert + after;
+        Composer.CaretIndex = caret + insert.Length;
+        Composer.Focus();
+    }
+
     // ---- Messages and scrolling ---------------------------------------------------------------
 
     private void AttachChannel(ChannelViewModel? channel)

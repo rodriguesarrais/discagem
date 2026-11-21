@@ -36,6 +36,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
     private long _lastMessageSound = long.MinValue / 2;
     private readonly AvatarCache _avatars;
     private readonly ImageCache _images;
+    private readonly EmojiCatalog _emojiCatalog;
     private readonly Dictionary<long, MemberViewModel> _members = new();
     private readonly Dictionary<(long Channel, long User), DateTime> _typing = new();
     private readonly DispatcherTimer _typingTimer;
@@ -65,6 +66,10 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
             key => StreamMixerViewModel.InitialVolume(session.Settings, key));
         StreamMixer = new StreamMixerViewModel(session.Settings);
         _voice = new VoiceService(_hub, iceServers, session.Settings, audio, session.User.Id);
+        _emojiCatalog = new EmojiCatalog(session.Api);
+        EmojiCatalog.Current = _emojiCatalog;
+        Emojis = new EmojiPickerViewModel(session.Api, _emojiCatalog, dialogs, () => Me, SendStickerAsync, message => ShowBanner(message));
+        Soundboard = new SoundboardViewModel(session.Api, _hub, _voice, session.Settings, dialogs, () => Me, message => ShowBanner(message));
         _isMuted = session.Settings.VoiceMuted;
         _isDeafened = session.Settings.VoiceDeafened;
         _typingTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateTypingText());
@@ -113,6 +118,12 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     /// <summary>The applications in the sound of your live stream, with their volumes.</summary>
     public StreamMixerViewModel StreamMixer { get; }
+
+    /// <summary>The composer's emoji and sticker picker, with the server's custom emojis.</summary>
+    public EmojiPickerViewModel Emojis { get; }
+
+    /// <summary>The voice card's soundboard.</summary>
+    public SoundboardViewModel Soundboard { get; }
 
     partial void OnIsLiveChanged(bool value)
     {
@@ -373,6 +384,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _hub.StreamEnded += id => Dispatcher.UIThread.Post(() => OnStreamEnded(id));
         _hub.VoiceStateChanged += p => Dispatcher.UIThread.Post(() => OnVoiceStateChanged(p, announce: true));
         _hub.VoiceLeft += (c, u) => Dispatcher.UIThread.Post(() => OnVoiceLeft(c, u));
+        _hub.EmojiCreated += e => Dispatcher.UIThread.Post(() => Emojis.Add(e));
+        _hub.EmojiDeleted += id => Dispatcher.UIThread.Post(() => Emojis.Remove(id));
+        _hub.SoundCreated += s => Dispatcher.UIThread.Post(() => Soundboard.Add(s));
+        _hub.SoundDeleted += id => Dispatcher.UIThread.Post(() => Soundboard.Remove(id));
+        _hub.SoundPlayed += (c, u, s) => Dispatcher.UIThread.Post(() => Soundboard.OnSoundPlayed(c, u, s));
         _hub.Reconnecting += error => Dispatcher.UIThread.Post(() =>
         {
             Connection = ConnectionState.Reconnecting;
@@ -437,6 +453,8 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         SortMembers();
+        Emojis.Reset(state.Emojis ?? []);
+        Soundboard.Reset(state.Sounds);
 
         foreach (var channel in state.Channels)
         {
@@ -863,6 +881,29 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         finally
         {
             IsSending = false;
+        }
+    }
+
+    /// <summary>Sends a sticker (a message holding nothing but its <c>:name:</c>) to the selected channel.</summary>
+    private async Task SendStickerAsync(string token)
+    {
+        var channel = SelectedChannel;
+        if (channel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var sent = await _hub.SendMessageAsync(channel.Id, token, []);
+            if (channel.IsLoaded && channel.Insert(CreateMessage(sent)))
+            {
+                channel.RecomputeGrouping();
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowBanner($"Sticker not sent: {Describe(ex)}");
         }
     }
 
@@ -1544,8 +1585,13 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         await _voice.SetDeafenedAsync(IsDeafened);
     }
 
+    partial void OnConnectedVoiceChannelChanged(VoiceChannelViewModel? value) => Soundboard.UpdateState(value is not null, IsMicrophoneOff);
+
+    partial void OnIsMutedChanged(bool value) => Soundboard.UpdateState(IsInVoice, IsMicrophoneOff);
+
     partial void OnIsDeafenedChanged(bool value)
     {
+        Soundboard.UpdateState(IsInVoice, IsMicrophoneOff);
         if (ActiveStream is { } viewer)
         {
             viewer.IsDeafened = value;
@@ -1656,24 +1702,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    private static string Describe(Exception ex)
-    {
-        var message = ex switch
-        {
-            HubException hub => StripHubPrefix(hub.Message),
-            ApiException api => api.Message,
-            InvalidOperationException op => op.Message,
-            _ => ex.Message,
-        };
-        return message.TrimEnd('.') + ".";
-
-        static string StripHubPrefix(string text)
-        {
-            const string marker = "HubException: ";
-            var index = text.IndexOf(marker, StringComparison.Ordinal);
-            return index >= 0 ? text[(index + marker.Length)..] : text;
-        }
-    }
+    private static string Describe(Exception ex) => HubErrors.Describe(ex);
 
     public async ValueTask DisposeAsync()
     {
@@ -1685,6 +1714,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         _disposed = true;
         Dispatcher.UIThread.Post(() =>
         {
+            if (EmojiCatalog.Current == _emojiCatalog)
+            {
+                EmojiCatalog.Current = null;
+            }
+
             _typingTimer.Stop();
             _tokenRefreshTimer.Stop();
             _updateTimer.Stop();

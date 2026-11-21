@@ -35,6 +35,9 @@ public sealed class ClientSettings
     /// <summary>Playback volume, 1 = 100 %.</summary>
     public float VoiceOutputVolume { get; set; } = 1f;
 
+    /// <summary>Volume of soundboard sounds (1 = as uploaded).</summary>
+    public float SoundboardVolume { get; set; } = 0.5f;
+
     public bool VoiceMuted { get; set; }
 
     public bool VoiceDeafened { get; set; }

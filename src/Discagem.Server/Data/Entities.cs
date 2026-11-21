@@ -90,3 +90,32 @@ public sealed class Attachment
 
     public DateTime CreatedAt { get; set; }
 }
+
+/// <summary>A custom emoji or sticker; the picture is stored in the emojis folder under its id.</summary>
+public sealed class CustomEmoji
+{
+    public long Id { get; set; }
+
+    /// <summary>Unique among emojis and stickers, lowercase (see <see cref="Discagem.Shared.Text.EmojiNames"/>).</summary>
+    public required string Name { get; set; }
+
+    public EmojiKind Kind { get; set; }
+
+    public long UploaderId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>A soundboard sound; the WAV file is stored in the sounds folder under its id.</summary>
+public sealed class Sound
+{
+    public long Id { get; set; }
+
+    public required string Name { get; set; }
+
+    public long UploaderId { get; set; }
+
+    public int DurationMs { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}

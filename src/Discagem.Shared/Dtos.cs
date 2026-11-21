@@ -67,14 +67,50 @@ public sealed record StreamInfoDto(
     IReadOnlyList<long> ViewerIds,
     bool HasAudio = false);
 
-/// <summary>Snapshot of the server state sent to a client right after it connects.</summary>
+public enum EmojiKind
+{
+    /// <summary>A small picture used inline in messages as <c>:name:</c>.</summary>
+    Emoji = 0,
+
+    /// <summary>A larger picture sent on its own as a message.</summary>
+    Sticker = 1,
+}
+
+/// <summary>
+/// A custom emoji or sticker uploaded by a member. Messages refer to it as <c>:name:</c>; the picture
+/// is at <c>/api/emojis/{id}/image</c> and never changes.
+/// </summary>
+public sealed record EmojiDto(
+    long Id,
+    string Name,
+    EmojiKind Kind,
+    long UploaderId,
+    DateTimeOffset CreatedAt);
+
+/// <summary>
+/// A soundboard sound uploaded by a member: a short 48 kHz WAV file at <c>/api/sounds/{id}/audio</c>,
+/// which never changes.
+/// </summary>
+public sealed record SoundDto(
+    long Id,
+    string Name,
+    long UploaderId,
+    int DurationMs,
+    DateTimeOffset CreatedAt);
+
+/// <summary>
+/// Snapshot of the server state sent to a client right after it connects. <c>Emojis</c> and
+/// <c>Sounds</c> are null from servers that predate them.
+/// </summary>
 public sealed record SyncStateDto(
     UserDto Me,
     IReadOnlyList<UserDto> Users,
     IReadOnlyList<ChannelDto> Channels,
     IReadOnlyList<long> OnlineUserIds,
     IReadOnlyList<StreamInfoDto> Streams,
-    IReadOnlyList<VoiceParticipantDto> VoiceParticipants);
+    IReadOnlyList<VoiceParticipantDto> VoiceParticipants,
+    IReadOnlyList<EmojiDto>? Emojis = null,
+    IReadOnlyList<SoundDto>? Sounds = null);
 
 /// <summary>A trickled ICE candidate for a media session.</summary>
 public sealed record IceCandidateDto(

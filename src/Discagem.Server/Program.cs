@@ -150,6 +150,8 @@ app.MapGet("/api/server", async (IOptions<DiscagemOptions> options, AppDbContext
 app.MapAuthEndpoints();
 app.MapAttachmentEndpoints();
 app.MapAvatarEndpoints();
+app.MapEmojiEndpoints();
+app.MapSoundEndpoints();
 app.MapClientDownloadEndpoints();
 app.MapHub<ChatHub>(HubPaths.Chat, o => o.CloseOnAuthenticationExpiration = true);
 

@@ -13,6 +13,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Attachment> Attachments => Set<Attachment>();
 
+    public DbSet<CustomEmoji> Emojis => Set<CustomEmoji>();
+
+    public DbSet<Sound> Sounds => Set<Sound>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // SQLite has no time zone support: store UTC and restore DateTimeKind.Utc when reading.
@@ -50,6 +54,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             attachment.Property(a => a.FileName).HasMaxLength(256);
             attachment.Property(a => a.ContentType).HasMaxLength(128);
             attachment.Property(a => a.StorageName).HasMaxLength(128);
+        });
+
+        modelBuilder.Entity<CustomEmoji>(emoji =>
+        {
+            emoji.ToTable("Emojis");
+            emoji.HasIndex(e => e.Name).IsUnique();
+            emoji.Property(e => e.Name).HasMaxLength(32);
+            emoji.HasOne<User>().WithMany().HasForeignKey(e => e.UploaderId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Sound>(sound =>
+        {
+            sound.Property(s => s.Name).HasMaxLength(32);
+            sound.HasOne<User>().WithMany().HasForeignKey(s => s.UploaderId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

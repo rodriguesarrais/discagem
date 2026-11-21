@@ -287,6 +287,31 @@ public sealed class VoiceService : IAsyncDisposable
         _cues.Play(sound);
     }
 
+    /// <summary>
+    /// Plays a soundboard sound at the soundboard volume: mixed into the call when there is one (where
+    /// deafening silences it), otherwise, as a preview, on the voice output device. Nothing plays while
+    /// deafened.
+    /// </summary>
+    public void PlaySound(float[] samples)
+    {
+        var volume = Math.Clamp(_settings.SoundboardVolume, 0f, 1f);
+        if (_settings.VoiceDeafened || volume <= 0f)
+        {
+            return;
+        }
+
+        if (_call is { } call)
+        {
+            call.Engine.Mixer.PlaySound(samples, volume);
+            return;
+        }
+
+        _cues.Play(volume >= 0.999f ? samples : samples.Select(s => s * volume).ToArray());
+    }
+
+    /// <summary>Stops every soundboard sound playing in the call.</summary>
+    public void StopSounds() => _call?.Engine.Mixer.StopSounds();
+
     /// <summary>Opens the microphone outside a call so the settings dialog can show its level.</summary>
     public void StartMicrophoneTest()
     {

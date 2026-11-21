@@ -66,6 +66,30 @@ public sealed class DialogService(Window owner) : IDialogService
         return files.FirstOrDefault();
     }
 
+    public async Task<IStorageFile?> PickSoundAsync()
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a sound",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Sounds")
+                {
+                    Patterns = [.. Discagem.Media.Audio.SoundClips.Extensions.Select(e => "*" + e)],
+                    MimeTypes = ["audio/wav", "audio/x-wav", "audio/mpeg", "audio/ogg"],
+                },
+            ],
+        });
+        return files.FirstOrDefault();
+    }
+
+    public async Task<bool> ShowUploadExpressionAsync(UploadExpressionViewModel viewModel)
+    {
+        var dialog = new UploadExpressionDialog { DataContext = viewModel };
+        return await dialog.ShowDialog<bool>(owner) && viewModel.CanConfirm;
+    }
+
     public Task<IStorageFile?> SaveFileAsync(string suggestedName) =>
         owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {

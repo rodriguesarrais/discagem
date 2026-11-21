@@ -16,6 +16,12 @@ public static class Mapping
     public static AttachmentDto ToDto(this Attachment attachment) =>
         new(attachment.Id, attachment.FileName, attachment.ContentType, attachment.Size);
 
+    public static EmojiDto ToDto(this CustomEmoji emoji) =>
+        new(emoji.Id, emoji.Name, emoji.Kind, emoji.UploaderId, emoji.CreatedAt.ToOffset());
+
+    public static SoundDto ToDto(this Sound sound) =>
+        new(sound.Id, sound.Name, sound.UploaderId, sound.DurationMs, sound.CreatedAt.ToOffset());
+
     public static MessageDto ToDto(this Message message) =>
         new(
             message.Id,
