@@ -14,15 +14,28 @@ native Avalonia application for Windows (and Linux/X11).
 
 ## Features
 
+**Rooms**
+- Rooms are where people talk: each has its own text and voice channels, members and live streams,
+  and shows up as a tile in the rail on the left. Anyone can create a room (with a name, a colour and
+  an icon) and invite people with its invite code; the code can be reset at any time.
+- A room's owner (and the server administrators) manage it: rename it, change its colour and icon,
+  create, rename, reorder and delete channels, remove members, hand the room over or delete it.
+  When the owner leaves, the longest-standing member takes over; the last one to leave deletes it.
+- Messages, typing, voice, streams and attachments only reach the room's members.
+- Each person orders their rooms as they like and chooses what each room and channel notifies them
+  about: every message, only @mentions, or nothing (right-click it).
+
 **Text chat**
-- Text channels (created, renamed and deleted by the administrator), with unread and mention badges.
+- Text channels, with unread and mention badges.
 - Messages grouped by author and day, Discord-like markdown (`**bold**`, `*italic*`, `__underline__`,
   `~~strike~~`, `` `code` ``, fenced code blocks, quotes), clickable links and `@mentions`.
-- Edit (`↑` edits your last message) and delete; administrators can delete any message.
+- Edit (`↑` edits your last message) and delete; a room's owner can delete any message in it.
 - Image previews and file attachments (button, drag and drop, or paste a screenshot or copied files
   with Ctrl+V), up to 25 MB by default.
 - Profile photos, cropped to a square and shown in messages, the member list, voice channels and
   streams (*Settings → My account → Change photo*); without one, the initials on a colour.
+- Profiles: a custom status (emoji and text) shown under the name, a bio, a name colour used in
+  messages and lists, and a banner colour. Clicking someone opens their profile card.
 - Custom emojis and stickers, added by any member from the emoji picker next to the composer (any
   picture: the client scales it down and uploads a PNG). Emojis are written `:name:` and shown inline,
   or larger in messages of emoji only; stickers are sent as a message of their own. The uploader and
@@ -60,8 +73,12 @@ native Avalonia application for Windows (and Linux/X11).
   framed pictures coloured by presence, "Alice says:" above messages) and **Aero Dark** (the same on
   dark glass). The Aero themes also bring their own sounds for people joining and leaving a call and
   for new messages.
-- A sound when a message arrives in another channel or while the window is in the background (an
-  option in *Settings → Appearance*; silent while deafened).
+- Appearance options on top of the theme: an accent colour, the size of message text, compact
+  messages and zoom for the whole window.
+- Notifications: a sound when a message arrives in another channel or while the window is in the
+  background, the sound for @mentions even when message sounds are off, taskbar alerts and the
+  call's join and leave sounds, each an option in *Settings → Notifications* (silent while
+  deafened); per room and per channel, every message, only @mentions or nothing.
 - Keeps running in the notification area when its window is closed (on by default on Windows, an
   option in *Settings → App*); launching it again brings the window back instead of a second copy.
 - Checks for new versions at start-up and every six hours, asking the server it is signed in to:
@@ -74,7 +91,8 @@ native Avalonia application for Windows (and Linux/X11).
   members, with installation steps.
 
 **Private by design**
-- Accounts require an invite code; the first account becomes the administrator.
+- Accounts require the server's invite code; the first account becomes the administrator. Rooms
+  have invite codes of their own.
 - Everything runs on your server: no third-party STUN/TURN or media services are involved.
 
 ## Architecture
@@ -217,6 +235,9 @@ the server (for example `chat.example.com`).
    token signing key) lives in the `discagem-data` volume; back it up to keep your history.
 4. **Create the administrator.** Open the client, choose *Register*, enter your domain, the invite code
    and your details. The first account is the administrator; share the invite code with your friends.
+   Then create a room (the **+** in the rail) and send them its invite (the room's menu, *Invite
+   people*). Servers from before rooms keep their channels and members in a room called
+   "Discagem", owned by the first administrator.
 
 ### Automatic updates
 
