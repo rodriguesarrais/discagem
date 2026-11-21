@@ -140,6 +140,73 @@ public sealed class ApiClient : IDisposable
         }
     }
 
+    /// <summary>Adds a custom emoji or sticker (a prepared PNG, see <see cref="EmojiImages"/>).</summary>
+    public async Task<EmojiDto> UploadEmojiAsync(string name, EmojiKind kind, byte[] png, CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(name), "name");
+        form.Add(new StringContent(kind.ToString()), "kind");
+        var file = new ByteArrayContent(png);
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        form.Add(file, "file", "emoji.png");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/emojis") { Content = form };
+        return await SendCoreAsync<EmojiDto>(request, cancellationToken, TimeSpan.FromMinutes(2));
+    }
+
+    public Task<byte[]> DownloadEmojiAsync(long id, CancellationToken cancellationToken = default) =>
+        DownloadAsync($"api/emojis/{id}/image", cancellationToken);
+
+    public Task DeleteEmojiAsync(long id) => SendWithoutResultAsync(HttpMethod.Delete, $"api/emojis/{id}");
+
+    /// <summary>Adds a soundboard sound (a prepared WAV file, see <see cref="Discagem.Media.Audio.SoundClips"/>).</summary>
+    public async Task<SoundDto> UploadSoundAsync(string name, byte[] wav, CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(name), "name");
+        var file = new ByteArrayContent(wav);
+        file.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+        form.Add(file, "file", "sound.wav");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/sounds") { Content = form };
+        return await SendCoreAsync<SoundDto>(request, cancellationToken, TimeSpan.FromMinutes(2));
+    }
+
+    public Task<byte[]> DownloadSoundAsync(long id, CancellationToken cancellationToken = default) =>
+        DownloadAsync($"api/sounds/{id}/audio", cancellationToken);
+
+    public Task DeleteSoundAsync(long id) => SendWithoutResultAsync(HttpMethod.Delete, $"api/sounds/{id}");
+
+    private async Task<byte[]> DownloadAsync(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await _http.GetAsync(path, cancellationToken);
+            await EnsureSuccessAsync(response);
+            return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiException("Could not reach the server.", ex.StatusCode, ex);
+        }
+    }
+
+    private async Task SendWithoutResultAsync(HttpMethod method, string path)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(method, path);
+            using var response = await _http.SendAsync(request);
+            await EnsureSuccessAsync(response);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiException($"Could not reach the server ({ex.Message.TrimEnd('.')}).", ex.StatusCode, ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new ApiException("The server did not respond in time.", null, ex);
+        }
+    }
+
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(method, path);

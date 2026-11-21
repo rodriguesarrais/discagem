@@ -249,10 +249,75 @@
               </StackPanel>
               <TextBlock Grid.Row="1" Text="{Binding ConnectedVoiceChannel.Name, FallbackValue=''}" Classes="caption"
                          Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
-              <Button Grid.Column="1" Grid.RowSpan="2" Classes="icon danger-hover" ToolTip.Tip="Disconnect"
-                      Command="{Binding LeaveVoiceCommand}" VerticalAlignment="Center">
-                <c:Icon Data="{StaticResource IconPhoneOff}" />
-              </Button>
+              <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <Button x:Name="SoundboardButton" Classes="icon" ToolTip.Tip="Soundboard" IsVisible="{Binding Soundboard.IsAvailable}">
+                  <c:Icon Data="{StaticResource IconMusic}" />
+                  <Button.Flyout>
+                    <Flyout Placement="TopEdgeAlignedLeft" Opened="OnSoundboardOpened">
+                      <StackPanel Width="400" Spacing="10" Margin="4">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <TextBlock Text="SOUNDBOARD" Classes="label" VerticalAlignment="Center" Margin="0" />
+                          <Button Grid.Column="1" Classes="icon small" ToolTip.Tip="Stop all sounds" Command="{Binding Soundboard.StopCommand}">
+                            <c:Icon Data="{StaticResource IconStop}" />
+                          </Button>
+                          <Button Grid.Column="2" Classes="icon small" ToolTip.Tip="Add a sound" Command="{Binding Soundboard.AddCommand}"
+                                  Click="OnSoundboardActionClick">
+                            <c:Icon Data="{StaticResource IconPlus}" />
+                          </Button>
+                        </Grid>
+                        <TextBlock Text="No sounds yet. Add a short WAV, MP3 or Ogg file with +; everyone in your voice channel hears it when you play it."
+                                   Classes="secondary" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding Soundboard.HasNoSounds}" />
+                        <TextBlock Text="{Binding Soundboard.StatusText}" Classes="secondary" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource WarningBrush}" IsVisible="{Binding Soundboard.HasStatus}" />
+                        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                          <ItemsControl ItemsSource="{Binding Soundboard.Sounds}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:SoundItemViewModel">
+                                <Button Classes="sound" ToolTip.Tip="{Binding Name}"
+                                        Command="{Binding #Root.((vm:ShellViewModel)DataContext).Soundboard.PlayCommand}" CommandParameter="{Binding}">
+                                  <Grid ColumnDefinitions="Auto,*">
+                                    <c:Icon Data="{StaticResource IconVolume}" Width="16" Height="16" Margin="0,0,6,0"
+                                            Foreground="{DynamicResource TextMutedBrush}" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                      <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                      <TextBlock Text="{Binding DurationText}" Classes="caption" FontSize="10.5" />
+                                    </StackPanel>
+                                  </Grid>
+                                  <Button.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="Preview (only you hear it)"
+                                                Command="{Binding #Root.((vm:ShellViewModel)DataContext).Soundboard.PreviewCommand}" CommandParameter="{Binding}" />
+                                      <MenuItem Header="Remove sound" IsEnabled="{Binding CanDelete}"
+                                                Command="{Binding #Root.((vm:ShellViewModel)DataContext).Soundboard.DeleteCommand}" CommandParameter="{Binding}" />
+                                    </ContextMenu>
+                                  </Button.ContextMenu>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </ScrollViewer>
+                        <StackPanel Spacing="0">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="SOUNDBOARD VOLUME" Classes="label" Margin="0" />
+                            <TextBlock Grid.Column="1" Text="{Binding Soundboard.VolumeText}" Classes="caption" />
+                          </Grid>
+                          <Slider Minimum="0" Maximum="100" Value="{Binding Soundboard.VolumePercent}" TickFrequency="5" IsSnapToTickEnabled="True" />
+                          <TextBlock Text="How loud soundboard sounds are for you. Right-click a sound to preview or remove it."
+                                     Classes="secondary" FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+                <Button Classes="icon danger-hover" ToolTip.Tip="Disconnect" Command="{Binding LeaveVoiceCommand}">
+                  <c:Icon Data="{StaticResource IconPhoneOff}" />
+                </Button>
+              </StackPanel>
             </Grid>
           </Border>
 

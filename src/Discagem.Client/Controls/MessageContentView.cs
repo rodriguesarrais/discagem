@@ -6,11 +6,15 @@ using Avalonia.Media.TextFormatting;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Discagem.Client.Services;
+using Discagem.Shared;
 using Discagem.Shared.Text;
 
 namespace Discagem.Client.Controls;
 
-/// <summary>Renders chat markup (see <see cref="MessageMarkup"/>) as selectable text blocks.</summary>
+/// <summary>
+/// Renders chat markup (see <see cref="MessageMarkup"/>) as selectable text blocks, with the custom
+/// emojis of <see cref="EmojiCatalog.Current"/> as pictures and stickers on their own.
+/// </summary>
 public sealed class MessageContentView : StackPanel
 {
     public static readonly StyledProperty<string?> TextProperty =
@@ -20,6 +24,10 @@ public sealed class MessageContentView : StackPanel
         AvaloniaProperty.Register<MessageContentView, bool>(nameof(IsEdited));
 
     private static readonly FontFamily MonoFont = new("Cascadia Mono, Consolas, DejaVu Sans Mono, Menlo, monospace");
+
+    private const double InlineEmojiSize = 20;
+    private const double JumboEmojiSize = 48;
+    private const double StickerSize = 160;
 
     static MessageContentView()
     {
@@ -49,12 +57,23 @@ public sealed class MessageContentView : StackPanel
     {
         base.OnAttachedToVisualTree(e);
         ThemeManager.Changed += Rebuild;
+        EmojiCatalog.Changed += OnEmojisChanged;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         ThemeManager.Changed -= Rebuild;
+        EmojiCatalog.Changed -= OnEmojisChanged;
         base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <summary>Only messages that may refer to a custom emoji need rendering again.</summary>
+    private void OnEmojisChanged()
+    {
+        if (Text?.Contains(':') == true)
+        {
+            Rebuild();
+        }
     }
 
     private IBrush Resource(string key, string fallback) =>
@@ -74,8 +93,20 @@ public sealed class MessageContentView : StackPanel
             return;
         }
 
+        var catalog = EmojiCatalog.Current;
+        if (catalog?.Find(MessageMarkup.SingleEmojiName(text)) is { Kind: EmojiKind.Sticker } sticker)
+        {
+            Children.Add(CreatePicture(catalog, sticker, StickerSize));
+            if (IsEdited)
+            {
+                Children.Add(CreateParagraph([], isQuote: false, emojiOnly: false));
+            }
+
+            return;
+        }
+
         var blocks = MessageMarkup.Parse(text);
-        var emojiOnly = MessageMarkup.IsEmojiOnly(text);
+        var emojiOnly = MessageMarkup.IsEmojiOnly(text, name => catalog?.Find(name) is not null);
         for (var i = 0; i < blocks.Count; i++)
         {
             var isLast = i == blocks.Count - 1;
@@ -107,8 +138,23 @@ public sealed class MessageContentView : StackPanel
 
         var inlines = block.Inlines ??= [];
         var offset = 0;
+        var catalog = EmojiCatalog.Current;
         foreach (var span in spans)
         {
+            if (span.Kind == SpanKind.Emoji && catalog?.Find(span.Text[1..^1]) is { } emoji)
+            {
+                // A picture takes one text position (see Avalonia's EmbeddedControlRun).
+                inlines.Add(new InlineUIContainer(CreatePicture(catalog, emoji, emojiOnly ? JumboEmojiSize : InlineEmojiSize))
+                {
+                    BaselineAlignment = BaselineAlignment.Center,
+                });
+                offset += 1;
+
+                // Lines are a fixed height: make room for the pictures.
+                block.LineHeight = emojiOnly ? JumboEmojiSize + 6 : 24;
+                continue;
+            }
+
             var run = CreateRun(span);
             if (span.Kind == SpanKind.Link)
             {
@@ -129,6 +175,27 @@ public sealed class MessageContentView : StackPanel
         }
 
         return block;
+    }
+
+    /// <summary>A custom emoji or sticker, shown once its picture has loaded.</summary>
+    private static Image CreatePicture(EmojiCatalog catalog, EmojiDto emoji, double size)
+    {
+        var image = new Image
+        {
+            Width = size,
+            Height = size,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Left,
+        };
+        RenderOptions.SetBitmapInterpolationMode(image, Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+        ToolTip.SetTip(image, $":{emoji.Name}:");
+        LoadPicture(catalog, emoji, image);
+        return image;
+    }
+
+    private static async void LoadPicture(EmojiCatalog catalog, EmojiDto emoji, Image image)
+    {
+        image.Source = await catalog.GetImageAsync(emoji);
     }
 
     private Control CreateQuote(IReadOnlyList<MarkupSpan> spans, bool isLast)

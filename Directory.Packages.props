@@ -10,6 +10,8 @@
     <PackageVersion Include="SIPSorceryMedia.Encoders" Version="10.0.4" />
     <PackageVersion Include="Concentus" Version="2.2.2" />
     <PackageVersion Include="NAudio.Wasapi" Version="3.3.0" />
+    <PackageVersion Include="NLayer" Version="3.0.1" />
+    <PackageVersion Include="NVorbis" Version="0.10.5" />
     <!-- Client -->
     <PackageVersion Include="Avalonia" Version="11.3.22" />
     <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />

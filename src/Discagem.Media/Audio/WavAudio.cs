@@ -84,7 +84,7 @@ public static class WavAudio
         return rate == DiscagemAudio.SampleRate ? mono : Resample(mono, rate, DiscagemAudio.SampleRate);
     }
 
-    private static float[] Resample(float[] input, int from, int to)
+    internal static float[] Resample(float[] input, int from, int to)
     {
         if (input.Length == 0)
         {

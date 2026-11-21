@@ -13,7 +13,8 @@ using Microsoft.Extensions.Options;
 namespace Discagem.Server.Hubs;
 
 /// <summary>
-/// Real-time hub: chat, presence, typing indicators and WebRTC signalling for screen shares.
+/// Real-time hub: chat, presence, typing indicators, the soundboard and WebRTC signalling for screen
+/// shares and voice.
 /// </summary>
 [Authorize]
 public sealed class ChatHub(
@@ -55,13 +56,17 @@ public sealed class ChatHub(
         var me = await db.Users.FindAsync(UserId) ?? throw new HubException("Your account no longer exists.");
         var users = await db.Users.OrderBy(u => u.Id).ToListAsync();
         var channels = await db.Channels.OrderBy(c => c.Position).ThenBy(c => c.Id).ToListAsync();
+        var emojis = await db.Emojis.AsNoTracking().OrderBy(e => e.Name).ToListAsync();
+        var sounds = await db.Sounds.AsNoTracking().OrderBy(s => s.Id).ToListAsync();
         return new SyncStateDto(
             me.ToDto(),
             users.Select(u => u.ToDto()).ToList(),
             channels.Select(c => c.ToDto()).ToList(),
             presence.OnlineUserIds(),
             sfu.GetStreams(),
-            voice.GetParticipants());
+            voice.GetParticipants(),
+            emojis.Select(e => e.ToDto()).ToList(),
+            sounds.Select(s => s.ToDto()).ToList());
     }
 
     public async Task<IReadOnlyList<MessageDto>> GetMessages(long channelId, long? before, int limit)
@@ -295,6 +300,23 @@ public sealed class ChatHub(
     public Task LeaveVoice() => voice.LeaveAsync(UserId, Context.ConnectionId);
 
     public Task SetVoiceState(bool muted, bool deafened) => voice.SetStateAsync(UserId, Context.ConnectionId, muted, deafened);
+
+    public async Task PlaySound(long soundId)
+    {
+        if (!await db.Sounds.AnyAsync(s => s.Id == soundId))
+        {
+            throw new HubException("That sound no longer exists.");
+        }
+
+        try
+        {
+            await voice.PlaySoundAsync(UserId, Context.ConnectionId, soundId);
+        }
+        catch (MediaException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+    }
 
     private void RequireAdmin()
     {

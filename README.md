@@ -23,6 +23,11 @@ native Avalonia application for Windows (and Linux/X11).
   with Ctrl+V), up to 25 MB by default.
 - Profile photos, cropped to a square and shown in messages, the member list, voice channels and
   streams (*Settings → My account → Change photo*); without one, the initials on a colour.
+- Custom emojis and stickers, added by any member from the emoji picker next to the composer (any
+  picture: the client scales it down and uploads a PNG). Emojis are written `:name:` and shown inline,
+  or larger in messages of emoji only; stickers are sent as a message of their own. The uploader and
+  administrators can remove them (right-click in the picker). The picker also offers common standard
+  emoji. Animated GIFs show their first frame.
 - Typing indicators, online/offline presence, history paging and automatic reconnection.
 
 **Voice chat**
@@ -34,6 +39,9 @@ native Avalonia application for Windows (and Linux/X11).
 - On Windows the microphone uses the system's communications processing (echo cancellation, noise
   suppression, automatic gain) where the device supports it.
 - Rejoins automatically after a dropped connection.
+- A soundboard on the voice card: short sounds (WAV, MP3 or Ogg Vorbis, cut to 5 seconds) that
+  anyone in a voice channel can play for everybody in it, with a soundboard volume of its own and a
+  preview that only you hear. Sounds cannot be played while muted, and deafening silences them.
 
 **Screen sharing**
 - Share a whole monitor or a single application window, with live thumbnails in the picker.
@@ -147,6 +155,13 @@ The server never decodes or mixes audio, so it stays cheap; it simply skips mute
 
 Mouth-to-ear latency is roughly the network round trip to the server and back, plus 60-100 ms of
 framing, jitter buffering and device buffers.
+
+Soundboard sounds do not travel as audio. The client decodes the chosen file, trims silence, keeps at
+most five seconds and uploads a 48 kHz mono WAV file (`src/Discagem.Media/Audio/SoundClips.cs`).
+Playing a sound only sends its id through the hub; the server checks that the player is in a voice
+channel and unmuted, limits how often they can play (three in a row, then one every two seconds) and
+tells the people in that channel, who download each sound once and mix it locally at their own
+soundboard volume.
 
 ## Releases
 
@@ -405,6 +420,9 @@ they are applied automatically on start-up.
   common image types are served inline.
 - Profile photos are only served to signed-in users; the server accepts PNG and JPEG files of at most
   1 MB (the client uploads a 256 × 256 PNG) and serves them with the type their contents show.
+- Custom emojis and stickers follow the same rules (PNG or JPEG, at most 256 KB for emojis and 512 KB
+  for stickers); soundboard sounds must be WAV files of at most 5 seconds and 1 MB. A server holds
+  at most 200 emojis, 100 stickers and 100 sounds.
 - Clients take updates from the server they are signed in to (only from that server's own address,
   verified against the SHA-256 it publishes, and only when the user clicks *Update now*). Whoever
   runs a server can therefore ship its members an installer: sign in only to servers whose owner you

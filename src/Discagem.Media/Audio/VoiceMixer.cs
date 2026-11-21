@@ -4,8 +4,8 @@ using Discagem.Media.WebRtc;
 namespace Discagem.Media.Audio;
 
 /// <summary>
-/// Mixes every remote speaker (and notification cues) into a single 48 kHz mono signal, pulled by
-/// the playback device in blocks of any size.
+/// Mixes every remote speaker, soundboard sounds and notification cues into a single 48 kHz mono
+/// signal, pulled by the playback device in blocks of any size.
 /// </summary>
 /// <remarks>
 /// <see cref="Push"/> is called from the network thread, <see cref="Read"/> from the audio thread
@@ -15,6 +15,7 @@ public sealed class VoiceMixer : IDisposable
 {
     private const int FrameSamples = DiscagemAudio.FrameSamples;
     private const int MaxSpeakers = 64;
+    private const int MaxSounds = 6;
 
     private readonly object _sync = new();
     private readonly Func<long> _clock;
@@ -22,6 +23,7 @@ public sealed class VoiceMixer : IDisposable
     private readonly Dictionary<uint, float> _gains = new();
     private readonly HashSet<uint> _speaking = new();
     private readonly List<Cue> _cues = new();
+    private readonly List<Cue> _sounds = new();
     private readonly float[] _mix = new float[FrameSamples];
     private readonly float[] _frame = new float[FrameSamples];
     private SpeakerStream[] _snapshot = [];
@@ -42,7 +44,7 @@ public sealed class VoiceMixer : IDisposable
     /// <summary>Master playback volume (1 = unchanged).</summary>
     public float Volume { get; set; } = 1f;
 
-    /// <summary>Silences every speaker (deafened) while still playing notification cues.</summary>
+    /// <summary>Silences every speaker and soundboard sound (deafened) while still playing notification cues.</summary>
     public bool MuteVoices { get; set; }
 
     /// <summary>Raised on the audio thread when a speaker starts or stops being audible.</summary>
@@ -143,6 +145,38 @@ public sealed class VoiceMixer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Plays a soundboard sound at <paramref name="gain"/>, mixed like a speaker: scaled by
+    /// <see cref="Volume"/> and silenced by <see cref="MuteVoices"/>. When too many are playing, the
+    /// oldest one stops.
+    /// </summary>
+    public void PlaySound(float[] samples, float gain)
+    {
+        if (samples.Length == 0)
+        {
+            return;
+        }
+
+        lock (_sync)
+        {
+            if (_sounds.Count >= MaxSounds)
+            {
+                _sounds.RemoveAt(0);
+            }
+
+            _sounds.Add(new Cue(samples) { Gain = Math.Clamp(gain, 0f, 2f) });
+        }
+    }
+
+    /// <summary>Stops every soundboard sound that is playing.</summary>
+    public void StopSounds()
+    {
+        lock (_sync)
+        {
+            _sounds.Clear();
+        }
+    }
+
     /// <summary>Fills <paramref name="output"/> with the next samples of the mix.</summary>
     public void Read(Span<float> output)
     {
@@ -201,6 +235,29 @@ public sealed class VoiceMixer : IDisposable
             }
         }
 
+        lock (_sync)
+        {
+            // Like the voices, sounds keep their pace while deafened: they simply are not heard.
+            for (var c = _sounds.Count - 1; c >= 0; c--)
+            {
+                var sound = _sounds[c];
+                var count = Math.Min(FrameSamples, sound.Samples.Length - sound.Position);
+                if (!muteVoices)
+                {
+                    for (var i = 0; i < count; i++)
+                    {
+                        _mix[i] += sound.Samples[sound.Position + i] * sound.Gain;
+                    }
+                }
+
+                sound.Position += count;
+                if (sound.Position >= sound.Samples.Length)
+                {
+                    _sounds.RemoveAt(c);
+                }
+            }
+        }
+
         var volume = Volume;
         for (var i = 0; i < FrameSamples; i++)
         {
@@ -252,6 +309,7 @@ public sealed class VoiceMixer : IDisposable
             _speakers.Clear();
             _snapshot = [];
             _speaking.Clear();
+            _sounds.Clear();
         }
     }
 
@@ -260,5 +318,7 @@ public sealed class VoiceMixer : IDisposable
         public float[] Samples { get; } = samples;
 
         public int Position { get; set; }
+
+        public float Gain { get; init; } = 1f;
     }
 }

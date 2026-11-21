@@ -39,6 +39,11 @@ public sealed class ChatConnection : IAsyncDisposable
         _hub.On<string, string>(nameof(IChatClient.MediaSessionClosed), (s, r) => MediaSessionClosed?.Invoke(s, r));
         _hub.On<VoiceParticipantDto>(nameof(IChatClient.VoiceStateChanged), p => VoiceStateChanged?.Invoke(p));
         _hub.On<long, long>(nameof(IChatClient.VoiceLeft), (c, u) => VoiceLeft?.Invoke(c, u));
+        _hub.On<EmojiDto>(nameof(IChatClient.EmojiCreated), e => EmojiCreated?.Invoke(e));
+        _hub.On<long>(nameof(IChatClient.EmojiDeleted), id => EmojiDeleted?.Invoke(id));
+        _hub.On<SoundDto>(nameof(IChatClient.SoundCreated), s => SoundCreated?.Invoke(s));
+        _hub.On<long>(nameof(IChatClient.SoundDeleted), id => SoundDeleted?.Invoke(id));
+        _hub.On<long, long, long>(nameof(IChatClient.SoundPlayed), (c, u, s) => SoundPlayed?.Invoke(c, u, s));
 
         _hub.Reconnecting += ex =>
         {
@@ -74,6 +79,13 @@ public sealed class ChatConnection : IAsyncDisposable
     public event Action<string, string>? MediaSessionClosed;
     public event Action<VoiceParticipantDto>? VoiceStateChanged;
     public event Action<long, long>? VoiceLeft;
+    public event Action<EmojiDto>? EmojiCreated;
+    public event Action<long>? EmojiDeleted;
+    public event Action<SoundDto>? SoundCreated;
+    public event Action<long>? SoundDeleted;
+
+    /// <summary>Someone in the voice channel played a sound: channel, user and sound ids.</summary>
+    public event Action<long, long, long>? SoundPlayed;
     public event Action<Exception?>? Reconnecting;
     public event Action? Reconnected;
     public event Action<Exception?>? Closed;
@@ -127,6 +139,8 @@ public sealed class ChatConnection : IAsyncDisposable
     public Task LeaveVoiceAsync() => _hub.InvokeAsync(nameof(IChatHub.LeaveVoice));
 
     public Task SetVoiceStateAsync(bool muted, bool deafened) => _hub.InvokeAsync(nameof(IChatHub.SetVoiceState), muted, deafened);
+
+    public Task PlaySoundAsync(long soundId) => _hub.InvokeAsync(nameof(IChatHub.PlaySound), soundId);
 
     public ValueTask DisposeAsync() => _hub.DisposeAsync();
 

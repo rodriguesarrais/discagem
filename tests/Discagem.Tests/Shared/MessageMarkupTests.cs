@@ -72,4 +72,47 @@ public sealed class MessageMarkupTests
     [InlineData("", false)]
     public void DetectsEmojiOnlyMessages(string content, bool expected) =>
         Assert.Equal(expected, MessageMarkup.IsEmojiOnly(content));
+
+    [Fact]
+    public void ParsesCustomEmojiReferences()
+    {
+        var spans = MessageMarkup.ParseInline("hi :wave::party_parrot: at 12:30:45, see:this: and `:code:`");
+        Assert.Equal(
+            [(SpanKind.Emoji, ":wave:"), (SpanKind.Emoji, ":party_parrot:"), (SpanKind.Code, ":code:")],
+            spans.Where(s => s.Kind != SpanKind.Text).Select(s => (s.Kind, s.Text)));
+    }
+
+    [Theory]
+    [InlineData(":wave:", true)]
+    [InlineData(":wave: :blob: 🎉", true)]
+    [InlineData(":wave: hello", false)]
+    [InlineData(":unknown:", false)]
+    [InlineData(":wave: :unknown:", false)]
+    public void DetectsCustomEmojiOnlyMessages(string content, bool expected) =>
+        Assert.Equal(expected, MessageMarkup.IsEmojiOnly(content, name => name is "wave" or "blob"));
+
+    [Theory]
+    [InlineData(" :wave: ", "wave")]
+    [InlineData(":wave::wave:", null)]
+    [InlineData("hi :wave:", null)]
+    [InlineData("wave", null)]
+    public void FindsSingleEmojiMessages(string content, string? expected) =>
+        Assert.Equal(expected, MessageMarkup.SingleEmojiName(content));
+
+    [Theory]
+    [InlineData("Party Parrot", "party_parrot")]
+    [InlineData(":blob-cat:", "blob_cat")]
+    [InlineData("ÉLAN__vital!!", "elan_vital")]
+    [InlineData("coração", "coracao")]
+    [InlineData("x", null)]
+    [InlineData("   ", null)]
+    public void NormalizesEmojiNames(string input, string? expected)
+    {
+        var valid = EmojiNames.TryNormalize(input, out var name);
+        Assert.Equal(expected is not null, valid);
+        if (expected is not null)
+        {
+            Assert.Equal(expected, name);
+        }
+    }
 }

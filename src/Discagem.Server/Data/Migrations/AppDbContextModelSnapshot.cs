@@ -87,6 +87,36 @@ namespace Discagem.Server.Data.Migrations
                     b.ToTable("Channels");
                 });
 
+            modelBuilder.Entity("Discagem.Server.Data.CustomEmoji", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UploaderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UploaderId");
+
+                    b.ToTable("Emojis", (string)null);
+                });
+
             modelBuilder.Entity("Discagem.Server.Data.Message", b =>
                 {
                     b.Property<long>("Id")
@@ -116,6 +146,33 @@ namespace Discagem.Server.Data.Migrations
                     b.HasIndex("ChannelId", "Id");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.Sound", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UploaderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploaderId");
+
+                    b.ToTable("Sounds");
                 });
 
             modelBuilder.Entity("Discagem.Server.Data.User", b =>
@@ -181,6 +238,15 @@ namespace Discagem.Server.Data.Migrations
                     b.Navigation("Message");
                 });
 
+            modelBuilder.Entity("Discagem.Server.Data.CustomEmoji", b =>
+                {
+                    b.HasOne("Discagem.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploaderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Discagem.Server.Data.Message", b =>
                 {
                     b.HasOne("Discagem.Server.Data.User", "Author")
@@ -198,6 +264,15 @@ namespace Discagem.Server.Data.Migrations
                     b.Navigation("Author");
 
                     b.Navigation("Channel");
+                });
+
+            modelBuilder.Entity("Discagem.Server.Data.Sound", b =>
+                {
+                    b.HasOne("Discagem.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploaderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Discagem.Server.Data.Channel", b =>

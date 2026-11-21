@@ -234,7 +234,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <Grid ColumnDefinitions="Auto,*,Auto" Margin="6,0">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="6,0">
             <Button Classes="icon" VerticalAlignment="Top" Margin="0,5,2,0" ToolTip.Tip="Upload a file"
                     Command="{Binding AttachFilesCommand}">
               <c:Icon Data="{StaticResource IconPlusCircle}" Width="22" Height="22" />
@@ -242,7 +242,106 @@
             <TextBox Grid.Column="1" x:Name="Composer" Classes="composer" Text="{Binding ComposerText}"
                      Watermark="{Binding SelectedChannel.Placeholder, FallbackValue=''}"
                      MaxLength="4000" />
-            <Panel Grid.Column="2">
+            <Button Grid.Column="2" x:Name="EmojiButton" Classes="icon" VerticalAlignment="Top" Margin="2,5,0,0"
+                    ToolTip.Tip="Emoji and stickers">
+              <c:Icon Data="{StaticResource IconSmile}" Width="22" Height="22" />
+              <Button.Flyout>
+                <Flyout Placement="TopEdgeAlignedRight" Opened="OnEmojiPickerOpened">
+                  <TabControl Width="380" Height="400" Padding="0,6,0,0">
+                    <TabItem Header="Emoji">
+                      <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="2,0,8,4">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="SERVER EMOJI" Classes="label" VerticalAlignment="Center" Margin="0" />
+                            <Button Grid.Column="1" Classes="icon small" ToolTip.Tip="Add an emoji"
+                                    Command="{Binding Emojis.AddEmojiCommand}" Click="OnPickerActionClick">
+                              <c:Icon Data="{StaticResource IconPlus}" />
+                            </Button>
+                          </Grid>
+                          <TextBlock Text="No custom emoji yet. Add a picture with + and use it as :name: in messages."
+                                     Classes="caption" TextWrapping="Wrap" IsVisible="{Binding Emojis.HasNoEmojis}" />
+                          <ItemsControl ItemsSource="{Binding Emojis.Emojis}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:EmojiItemViewModel">
+                                <Button Classes="cell" Width="42" Height="42" ToolTip.Tip="{Binding Token}" Click="OnCustomEmojiClick">
+                                  <Image Source="{Binding Image}" Width="30" Height="30" Stretch="Uniform"
+                                         RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                  <Button.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="Remove emoji" IsEnabled="{Binding CanDelete}"
+                                                Command="{Binding #Root.((vm:ShellViewModel)DataContext).Emojis.DeleteCommand}" CommandParameter="{Binding}" />
+                                    </ContextMenu>
+                                  </Button.ContextMenu>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock Text="STANDARD" Classes="label" Margin="0,8,0,0" />
+                          <ItemsControl ItemsSource="{Binding Emojis.StandardEmojis}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="x:String">
+                                <Button Classes="cell" Width="42" Height="42" Click="OnStandardEmojiClick">
+                                  <TextBlock Text="{Binding}" FontSize="22" />
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="Stickers">
+                      <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="2,0,8,4">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="SERVER STICKERS" Classes="label" VerticalAlignment="Center" Margin="0" />
+                            <Button Grid.Column="1" Classes="icon small" ToolTip.Tip="Add a sticker"
+                                    Command="{Binding Emojis.AddStickerCommand}" Click="OnPickerActionClick">
+                              <c:Icon Data="{StaticResource IconPlus}" />
+                            </Button>
+                          </Grid>
+                          <TextBlock Text="No stickers yet. Add a picture with + and click it to send it."
+                                     Classes="caption" TextWrapping="Wrap" IsVisible="{Binding Emojis.HasNoStickers}" />
+                          <ItemsControl ItemsSource="{Binding Emojis.Stickers}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:EmojiItemViewModel">
+                                <Button Classes="cell" Width="88" Height="88" ToolTip.Tip="{Binding Token}"
+                                        Command="{Binding #Root.((vm:ShellViewModel)DataContext).Emojis.SendStickerCommand}" CommandParameter="{Binding}"
+                                        Click="OnPickerActionClick">
+                                  <Image Source="{Binding Image}" Width="78" Height="78" Stretch="Uniform"
+                                         RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                  <Button.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="Remove sticker" IsEnabled="{Binding CanDelete}"
+                                                Command="{Binding #Root.((vm:ShellViewModel)DataContext).Emojis.DeleteCommand}" CommandParameter="{Binding}" />
+                                    </ContextMenu>
+                                  </Button.ContextMenu>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </ScrollViewer>
+                    </TabItem>
+                  </TabControl>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <Panel Grid.Column="3">
               <Button Classes="icon default-only" VerticalAlignment="Top" Margin="2,5,0,0" ToolTip.Tip="Send"
                       Command="{Binding SendCommand}" IsEnabled="{Binding !IsSending}">
                 <c:Icon Data="{StaticResource IconSend}" />

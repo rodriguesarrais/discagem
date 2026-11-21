@@ -20,6 +20,12 @@ public interface IDialogService
     /// <summary>Asks for one image file (PNG, JPEG, GIF, WebP or BMP).</summary>
     Task<IStorageFile?> PickImageAsync(string title);
 
+    /// <summary>Asks for one sound file (WAV, MP3 or Ogg Vorbis) for the soundboard.</summary>
+    Task<IStorageFile?> PickSoundAsync();
+
+    /// <summary>Asks for the name of a new emoji, sticker or sound. True when the user confirmed.</summary>
+    Task<bool> ShowUploadExpressionAsync(UploadExpressionViewModel viewModel);
+
     Task<IStorageFile?> SaveFileAsync(string suggestedName);
 
     void ShowImage(Bitmap bitmap, string title);

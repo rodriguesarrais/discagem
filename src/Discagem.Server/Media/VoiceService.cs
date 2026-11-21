@@ -27,11 +27,23 @@ public sealed class VoiceParticipant(MediaSession session, long channelId)
 
     public VoiceParticipantDto ToDto() => new(ChannelId, UserId, IsMuted, IsDeafened);
 
+    /// <summary>Soundboard sounds: a few in a row, then one every two seconds.</summary>
+    private readonly PacketRateLimiter _soundLimiter = new(packetsPerSecond: 0.5, burst: 3);
+
     /// <summary>
     /// Token bucket limiting how many packets this speaker can make the server fan out. Called only
     /// from the session's receive thread.
     /// </summary>
     public bool TryConsumePacket() => _limiter.TryConsume();
+
+    /// <summary>Limits how often this participant can play soundboard sounds. Thread-safe.</summary>
+    public bool TryConsumeSound()
+    {
+        lock (_soundLimiter)
+        {
+            return _soundLimiter.TryConsume();
+        }
+    }
 }
 
 /// <summary>
@@ -197,6 +209,31 @@ public sealed class VoiceService(
         participant.IsDeafened = deafened;
         participant.IsMuted = muted || deafened;
         await hub.Clients.All.VoiceStateChanged(participant.ToDto());
+    }
+
+    /// <summary>
+    /// Tells everyone in the user's voice channel (the user included) to play a soundboard sound. Only
+    /// the connection that is in the call can play sounds, and not while muted or deafened.
+    /// </summary>
+    public async Task PlaySoundAsync(long userId, string connectionId, long soundId)
+    {
+        if (!_byUser.TryGetValue(userId, out var participant) || participant.Session.ConnectionId != connectionId)
+        {
+            throw new MediaException("Join a voice channel to play sounds.");
+        }
+
+        if (participant.IsMuted)
+        {
+            throw new MediaException("Unmute yourself to play sounds.");
+        }
+
+        if (!participant.TryConsumeSound())
+        {
+            throw new MediaException("You are playing sounds too quickly. Wait a moment.");
+        }
+
+        var listeners = Room(participant.ChannelId).Select(p => p.Session.ConnectionId).ToList();
+        await hub.Clients.Clients(listeners).SoundPlayed(participant.ChannelId, userId, soundId);
     }
 
     /// <summary>Leaves voice, if the user's voice session belongs to this connection.</summary>

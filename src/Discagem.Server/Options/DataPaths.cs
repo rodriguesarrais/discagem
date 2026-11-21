@@ -23,5 +23,19 @@ public static class DataPaths
         return path;
     }
 
+    public static string Emojis(DiscagemOptions options)
+    {
+        var path = Path.Combine(Root(options), "emojis");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    public static string Sounds(DiscagemOptions options)
+    {
+        var path = Path.Combine(Root(options), "sounds");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
     public static string Database(DiscagemOptions options) => Path.Combine(Root(options), "discagem.db");
 }

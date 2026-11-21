@@ -13,6 +13,9 @@ public enum SpanKind
     Code,
     Link,
     Mention,
+
+    /// <summary>A custom emoji reference, <c>:name:</c> (the span's text includes the colons).</summary>
+    Emoji,
 }
 
 /// <summary>A run of inline text with a single style.</summary>
@@ -31,12 +34,16 @@ public sealed record QuoteBlock(IReadOnlyList<MarkupSpan> Spans) : MarkupBlock;
 
 /// <summary>
 /// A small, forgiving subset of Markdown as used in chat apps:
-/// **bold**, *italic*, __underline__, ~~strike~~, `code`, ```code blocks```, &gt; quotes, links and @mentions.
+/// **bold**, *italic*, __underline__, ~~strike~~, `code`, ```code blocks```, &gt; quotes, links, @mentions
+/// and custom emojis (<c>:name:</c>).
 /// </summary>
 public static partial class MessageMarkup
 {
-    [GeneratedRegex(@"(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|((?<!\w)__[^_\n]+?__(?!\w))|(~~[^~\n]+?~~)|(\*[^*\s][^*\n]*?\*)|((?<!\w)_[^_\s][^_\n]*?_(?!\w))|(https?://[^\s<>""]+[^\s<>"".,;:!?)\]}'])|((?<![\w@])@[A-Za-z0-9_.]{2,24})")]
+    [GeneratedRegex(@"(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|((?<!\w)__[^_\n]+?__(?!\w))|(~~[^~\n]+?~~)|(\*[^*\s][^*\n]*?\*)|((?<!\w)_[^_\s][^_\n]*?_(?!\w))|(https?://[^\s<>""]+[^\s<>"".,;:!?)\]}'])|((?<![\w@])@[A-Za-z0-9_.]{2,24})|((?<!\w):[a-z0-9_]{2,32}:(?!\w))")]
     private static partial Regex InlinePattern();
+
+    [GeneratedRegex(@"(?<!\w):([a-z0-9_]{2,32}):(?!\w)")]
+    private static partial Regex EmojiPattern();
 
     public static IReadOnlyList<MarkupBlock> Parse(string? content)
     {
@@ -149,7 +156,8 @@ public static partial class MessageMarkup
                 var g when g[5].Success => new MarkupSpan(SpanKind.Italic, value[1..^1]),
                 var g when g[6].Success => new MarkupSpan(SpanKind.Italic, value[1..^1]),
                 var g when g[7].Success => new MarkupSpan(SpanKind.Link, value),
-                _ => new MarkupSpan(SpanKind.Mention, value),
+                var g when g[8].Success => new MarkupSpan(SpanKind.Mention, value),
+                _ => new MarkupSpan(SpanKind.Emoji, value),
             };
             spans.Add(span);
             last = match.Index + match.Length;
@@ -191,15 +199,45 @@ public static partial class MessageMarkup
         return false;
     }
 
-    /// <summary>True for short messages that consist only of emoji (rendered larger, like other chat apps).</summary>
-    public static bool IsEmojiOnly(string? content)
+    /// <summary>
+    /// True for short messages that consist only of emoji (rendered larger, like other chat apps): up
+    /// to six standard emoji and custom emojis, the latter recognised by <paramref name="isCustomEmoji"/>.
+    /// </summary>
+    public static bool IsEmojiOnly(string? content, Func<string, bool>? isCustomEmoji = null)
     {
-        if (string.IsNullOrWhiteSpace(content) || content.Length > 32)
+        if (string.IsNullOrWhiteSpace(content))
         {
             return false;
         }
 
         var emoji = 0;
+        if (isCustomEmoji is not null)
+        {
+            var unknown = false;
+            content = EmojiPattern().Replace(content, match =>
+            {
+                if (isCustomEmoji(match.Groups[1].Value))
+                {
+                    emoji++;
+                }
+                else
+                {
+                    unknown = true;
+                }
+
+                return " ";
+            });
+            if (unknown)
+            {
+                return false;
+            }
+        }
+
+        if (content.Length > 32)
+        {
+            return false;
+        }
+
         foreach (var rune in content.EnumerateRunes())
         {
             if (Rune.IsWhiteSpace(rune) || rune.Value is 0x200D or 0xFE0F || rune.Value is >= 0x1F3FB and <= 0x1F3FF)
@@ -217,5 +255,16 @@ public static partial class MessageMarkup
         }
 
         return emoji is > 0 and <= 6;
+    }
+
+    /// <summary>
+    /// The name in a message that is nothing but one <c>:name:</c> reference (how stickers are sent),
+    /// or null.
+    /// </summary>
+    public static string? SingleEmojiName(string? content)
+    {
+        var value = (content ?? "").Trim();
+        var match = EmojiPattern().Match(value);
+        return match.Success && match.Index == 0 && match.Length == value.Length ? match.Groups[1].Value : null;
     }
 }
