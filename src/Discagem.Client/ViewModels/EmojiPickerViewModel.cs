@@ -59,18 +59,24 @@ public sealed partial class EmojiPickerViewModel : ObservableObject
 
     public void Reset(IReadOnlyList<EmojiDto> emojis)
     {
+        // One catalog change for the whole list: each change makes messages render again.
         _catalog.Reset(emojis);
         Emojis.Clear();
         Stickers.Clear();
         foreach (var emoji in emojis)
         {
-            Add(emoji);
+            AddItem(emoji);
         }
     }
 
     public void Add(EmojiDto emoji)
     {
         _catalog.Add(emoji);
+        AddItem(emoji);
+    }
+
+    private void AddItem(EmojiDto emoji)
+    {
         var list = emoji.Kind == EmojiKind.Sticker ? Stickers : Emojis;
         if (list.Any(e => e.Id == emoji.Id))
         {

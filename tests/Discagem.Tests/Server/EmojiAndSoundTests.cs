@@ -228,6 +228,9 @@ public sealed class EmojiAndSoundTests : IDisposable
         await aliceHub.InvokeAsync(nameof(IChatHub.SetVoiceState), true, false);
         var muted = await Assert.ThrowsAsync<HubException>(() => aliceHub.InvokeAsync(nameof(IChatHub.PlaySound), sound.Id));
         Assert.Contains("Unmute", muted.Message);
+        await aliceHub.InvokeAsync(nameof(IChatHub.SetVoiceState), false, true);
+        var deafened = await Assert.ThrowsAsync<HubException>(() => aliceHub.InvokeAsync(nameof(IChatHub.PlaySound), sound.Id));
+        Assert.Contains("Unmute", deafened.Message);
 
         var refused = false;
         for (var i = 0; i < 5 && !refused; i++)

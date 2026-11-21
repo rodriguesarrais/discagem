@@ -187,6 +187,11 @@ public sealed class ApiClient : IDisposable
         {
             throw new ApiException("Could not reach the server.", ex.StatusCode, ex);
         }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The client's timeout, not the caller's cancellation: callers only expect ApiException.
+            throw new ApiException("The server did not respond in time.", null, ex);
+        }
     }
 
     private async Task SendWithoutResultAsync(HttpMethod method, string path)
