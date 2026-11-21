@@ -702,25 +702,39 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         var visible = channel == SelectedChannel && _dialogs.IsWindowActive;
-        if (!visible)
+        var level = EffectiveNotifications(channel);
+        if (visible || level == NotificationLevel.Nothing)
         {
-            PlayMessageSound();
-            channel.UnreadCount++;
-            if (item.MentionsMe)
-            {
-                channel.MentionCount++;
-                OnPropertyChanged(nameof(WindowTitle));
-            }
+            return;
+        }
 
-            _dialogs.RequestAttention();
+        channel.UnreadCount++;
+        if (item.MentionsMe)
+        {
+            channel.MentionCount++;
+            OnPropertyChanged(nameof(WindowTitle));
+        }
+
+        // "Only @mentions" still marks the channel unread, quietly.
+        if (level == NotificationLevel.All || item.MentionsMe)
+        {
+            PlayMessageSound(item.MentionsMe);
+            if (_session.Settings.TaskbarAlerts)
+            {
+                _dialogs.RequestAttention();
+            }
         }
     }
 
-    /// <summary>The theme's message sound, at most once a second however fast messages come in.</summary>
-    private void PlayMessageSound()
+    /// <summary>
+    /// The theme's message sound, at most once a second however fast messages come in. @mentions play
+    /// it even with message sounds off, unless mention sounds are off too.
+    /// </summary>
+    private void PlayMessageSound(bool mention)
     {
         var now = Environment.TickCount64;
-        if (!_session.Settings.MessageSounds || now - _lastMessageSound < 1000)
+        var wanted = _session.Settings.MessageSounds || (mention && _session.Settings.MentionSounds);
+        if (!wanted || now - _lastMessageSound < 1000)
         {
             return;
         }
@@ -767,7 +781,11 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
         else
         {
-            existing = new ChannelViewModel(dto);
+            existing = new ChannelViewModel(dto)
+            {
+                Notifications = _session.Settings.ChannelNotifications.GetValueOrDefault(dto.Id),
+            };
+            existing.IsMuted = EffectiveNotifications(existing) == NotificationLevel.Nothing;
             channels.Add(existing);
         }
 
@@ -1579,7 +1597,7 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
         }
 
         // Rooms go where the user put them; new ones at the end.
-        var room = new RoomViewModel(dto, _roomIcons);
+        var room = new RoomViewModel(dto, _roomIcons) { Notifications = _session.Settings.RoomNotifications.GetValueOrDefault(dto.Id) };
         var order = _session.Settings.RoomOrder;
         int Rank(RoomViewModel r) => order.IndexOf(r.Id) is var i and >= 0 ? i : int.MaxValue;
         var index = 0;
@@ -1801,6 +1819,97 @@ public sealed partial class ShellViewModel : ObservableObject, IAsyncDisposable
 
     private Task MoveChannelAsync(long channelId, int position) =>
         position < 0 ? Task.CompletedTask : SafeAsync(() => _hub.MoveChannelAsync(channelId, position), "Could not move the channel");
+
+    // ---- Notifications ----------------------------------------------------------------------
+
+    /// <summary>A channel's own choice, or its room's.</summary>
+    private NotificationLevel EffectiveNotifications(ChannelViewModel channel)
+    {
+        if (channel.Notifications != NotificationLevel.Default)
+        {
+            return channel.Notifications;
+        }
+
+        var room = FindRoom(channel.RoomId);
+        return room?.Notifications is { } level and not NotificationLevel.Default ? level : NotificationLevel.All;
+    }
+
+    /// <summary>Loads the user's choices into a room and its channels, and dims muted channels.</summary>
+    private void ApplyNotificationSettings(RoomViewModel room)
+    {
+        room.Notifications = _session.Settings.RoomNotifications.GetValueOrDefault(room.Id);
+        foreach (var channel in room.Channels)
+        {
+            channel.Notifications = _session.Settings.ChannelNotifications.GetValueOrDefault(channel.Id);
+            channel.IsMuted = EffectiveNotifications(channel) == NotificationLevel.Nothing;
+        }
+    }
+
+    private void SetRoomNotifications(RoomViewModel room, NotificationLevel level)
+    {
+        if (level == NotificationLevel.Default || level == NotificationLevel.All)
+        {
+            _session.Settings.RoomNotifications.Remove(room.Id);
+        }
+        else
+        {
+            _session.Settings.RoomNotifications[room.Id] = level;
+        }
+
+        _session.Settings.Save();
+        ApplyNotificationSettings(room);
+        if (level == NotificationLevel.Nothing)
+        {
+            foreach (var channel in room.Channels.Where(c => c.IsMuted))
+            {
+                channel.MarkRead();
+            }
+        }
+    }
+
+    private void SetChannelNotifications(ChannelViewModel channel, NotificationLevel level)
+    {
+        if (level == NotificationLevel.Default)
+        {
+            _session.Settings.ChannelNotifications.Remove(channel.Id);
+        }
+        else
+        {
+            _session.Settings.ChannelNotifications[channel.Id] = level;
+        }
+
+        _session.Settings.Save();
+        if (FindRoom(channel.RoomId) is { } room)
+        {
+            ApplyNotificationSettings(room);
+        }
+
+        if (channel.IsMuted)
+        {
+            channel.MarkRead();
+        }
+    }
+
+    [RelayCommand]
+    private void NotifyRoomAll(RoomViewModel room) => SetRoomNotifications(room, NotificationLevel.All);
+
+    [RelayCommand]
+    private void NotifyRoomMentions(RoomViewModel room) => SetRoomNotifications(room, NotificationLevel.Mentions);
+
+    [RelayCommand]
+    private void NotifyRoomNothing(RoomViewModel room) => SetRoomNotifications(room, NotificationLevel.Nothing);
+
+    [RelayCommand]
+    private void NotifyChannelDefault(ChannelViewModel channel) => SetChannelNotifications(channel, NotificationLevel.Default);
+
+    [RelayCommand]
+    private void NotifyChannelAll(ChannelViewModel channel) => SetChannelNotifications(channel, NotificationLevel.All);
+
+    [RelayCommand]
+    private void NotifyChannelMentions(ChannelViewModel channel) => SetChannelNotifications(channel, NotificationLevel.Mentions);
+
+    [RelayCommand]
+    private void NotifyChannelNothing(ChannelViewModel channel) => SetChannelNotifications(channel, NotificationLevel.Nothing);
 
     // ---- Voice ----------------------------------------------------------------------------
 

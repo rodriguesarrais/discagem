@@ -143,6 +143,9 @@ public static class Limits
     public const int MaxSoundMilliseconds = 5000;
     public const int MaxSoundBytes = 1024 * 1024;
     public const int MaxRoomNameLength = 32;
+    public const int MaxBioLength = 190;
+    public const int MaxStatusLength = 64;
+    public const int MaxStatusEmojiLength = 16;
     public const int MaxRoomsPerUser = 50;
     public const int MaxChannelsPerRoom = 100;
     public const int MaxRoomIconBytes = 1024 * 1024;

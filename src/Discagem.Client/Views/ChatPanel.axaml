@@ -95,14 +95,14 @@
                     <Border Grid.Column="2" Height="1" Background="{DynamicResource DividerBrush}" VerticalAlignment="Center" />
                   </Grid>
 
-                  <Border Classes="message" Classes.mention="{Binding MentionsMe}" Padding="16,2,16,2"
+                  <Border Classes="message" Classes.mention="{Binding MentionsMe}"
                           Margin="{Binding IsGroupStart, Converter={x:Static views:Converters.GroupMargin}}">
                     <Panel>
                       <Grid ColumnDefinitions="Auto,*">
                         <Panel Classes="message-gutter">
-                          <c:AvatarView Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
+                          <c:AvatarView VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,2,0,0"
                                         DisplayName="{Binding Author.DisplayName}" Color="{Binding Author.AvatarColor}" Image="{Binding Author.AvatarImage}"
-                                        IsVisible="{Binding IsGroupStart}" />
+                                        IsVisible="{Binding IsGroupStart}" Cursor="Hand" PointerPressed="OnAuthorPressed" />
                           <Panel IsVisible="{Binding IsContinuation}">
                             <TextBlock Classes="caption hover-only" Text="{Binding ShortTime}" FontSize="10.5"
                                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,4,0,0"
@@ -112,7 +112,8 @@
 
                         <StackPanel Grid.Column="1" Spacing="2" Classes="message-body">
                           <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGroupStart}" Classes="message-header">
-                            <TextBlock Classes="author" Text="{Binding Author.DisplayName}" />
+                            <TextBlock Classes="author" Text="{Binding Author.DisplayName}" Foreground="{Binding Author.NameForeground}"
+                                       Cursor="Hand" PointerPressed="OnAuthorPressed" />
                             <c:Icon Data="{StaticResource IconCrown}" Width="12" Height="12" Foreground="{DynamicResource CrownBrush}" StrokeThickness="2.4"
                                     IsVisible="{Binding Author.IsRoomOwner}" ToolTip.Tip="Room owner" VerticalAlignment="Center" />
                             <TextBlock Classes="author says aero-only" Text="says:" Margin="-4,0,0,0" />

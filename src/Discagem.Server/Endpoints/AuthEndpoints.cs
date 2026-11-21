@@ -198,6 +198,40 @@ public static class AuthEndpoints
             user.AvatarColor = request.AvatarColor.ToUpperInvariant();
         }
 
+        if (request.Bio is not null)
+        {
+            user.Bio = AccountRules.NormalizeProfileText(request.Bio, Limits.MaxBioLength, multiline: true);
+        }
+
+        if (request.StatusText is not null)
+        {
+            user.StatusText = AccountRules.NormalizeProfileText(request.StatusText, Limits.MaxStatusLength, multiline: false);
+        }
+
+        if (request.StatusEmoji is not null)
+        {
+            user.StatusEmoji = AccountRules.NormalizeProfileText(request.StatusEmoji, Limits.MaxStatusEmojiLength, multiline: false);
+        }
+
+        foreach (var (value, apply, label) in new (string?, Action<string?>, string)[]
+        {
+            (request.NameColor, c => user.NameColor = c, "Name colour"),
+            (request.BannerColor, c => user.BannerColor = c, "Banner colour"),
+        })
+        {
+            if (value is null)
+            {
+                continue;
+            }
+
+            if (value.Length > 0 && !AccountRules.IsValidColor(value))
+            {
+                return Results.BadRequest(new ApiError($"{label} must be in #RRGGBB format."));
+            }
+
+            apply(value.Length == 0 ? null : value.ToUpperInvariant());
+        }
+
         await db.SaveChangesAsync();
         var dto = user.ToDto();
         await hub.Clients.All.UserUpdated(dto);

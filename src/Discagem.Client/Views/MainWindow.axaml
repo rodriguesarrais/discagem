@@ -24,5 +24,8 @@
     </DataTemplate>
   </Window.DataTemplates>
 
-  <ContentControl Content="{Binding CurrentView}" />
+  <!-- Scaled by the zoom setting (see MainWindow.ApplyAppearance). -->
+  <LayoutTransformControl x:Name="Zoom">
+    <ContentControl Content="{Binding CurrentView}" />
+  </LayoutTransformControl>
 </Window>

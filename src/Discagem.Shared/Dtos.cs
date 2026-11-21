@@ -3,7 +3,12 @@ namespace Discagem.Shared;
 /// <summary>
 /// Public representation of a user account. <c>AvatarVersion</c> is null without a profile photo;
 /// otherwise the photo is at <c>/api/users/{id}/avatar</c>, and the number changes with every new photo.
+/// The profile fields are empty (or null for the colours) when not set, and from older servers.
 /// </summary>
+/// <param name="StatusText">Custom status shown under the name, such as "Playing Minecraft".</param>
+/// <param name="StatusEmoji">An emoji shown before the custom status.</param>
+/// <param name="NameColor">Colour of the display name in messages and lists (#RRGGBB), or null for the theme's.</param>
+/// <param name="BannerColor">Colour of the profile card's banner (#RRGGBB), or null for the avatar colour.</param>
 public sealed record UserDto(
     long Id,
     string Username,
@@ -11,7 +16,12 @@ public sealed record UserDto(
     string AvatarColor,
     bool IsAdmin,
     DateTimeOffset CreatedAt,
-    int? AvatarVersion = null);
+    int? AvatarVersion = null,
+    string Bio = "",
+    string StatusText = "",
+    string StatusEmoji = "",
+    string? NameColor = null,
+    string? BannerColor = null);
 
 public enum ChannelKind
 {
@@ -201,7 +211,18 @@ public sealed record RegisterRequest(string Username, string DisplayName, string
 
 public sealed record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
 
-public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarColor);
+/// <summary>
+/// Profile changes: null leaves a field as it is; an empty string clears the text fields and resets the
+/// name and banner colours to the default.
+/// </summary>
+public sealed record UpdateProfileRequest(
+    string? DisplayName,
+    string? AvatarColor,
+    string? Bio = null,
+    string? StatusText = null,
+    string? StatusEmoji = null,
+    string? NameColor = null,
+    string? BannerColor = null);
 
 /// <param name="KeepConnectionId">The caller's own hub connection, which stays open; all other connections of the user are closed.</param>
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword, string? KeepConnectionId = null);

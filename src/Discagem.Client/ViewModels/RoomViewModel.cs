@@ -62,6 +62,17 @@ public sealed partial class RoomViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>What the room notifies about (the user's choice; Default means every message).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NotifiesAll), nameof(NotifiesMentions), nameof(NotifiesNothing))]
+    private NotificationLevel _notifications;
+
+    public bool NotifiesAll => Notifications is NotificationLevel.All or NotificationLevel.Default;
+
+    public bool NotifiesMentions => Notifications == NotificationLevel.Mentions;
+
+    public bool NotifiesNothing => Notifications == NotificationLevel.Nothing;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMentions))]
     private int _mentionCount;

@@ -48,6 +48,20 @@ public sealed class ClientSettings
     /// <summary>Whether to send the computer's sound (or the shared window's) with a screen share.</summary>
     public bool StreamShareAudio { get; set; } = true;
 
+    /// <summary>Accent colour (#RRGGBB) used instead of the theme's, or null.</summary>
+    public string? AccentColor { get; set; }
+
+    /// <summary>Size of message text, in points.</summary>
+    public double MessageFontSize { get; set; } = AppearanceOptions.DefaultFontSize;
+
+    /// <summary>Smaller avatars and less space between messages.</summary>
+    public bool CompactMessages { get; set; }
+
+    /// <summary>Scale of the whole window (1 = 100 %).</summary>
+    public double Zoom { get; set; } = 1.0;
+
+    public AppearanceOptions Appearance => new(AccentColor, MessageFontSize, CompactMessages, Zoom);
+
     /// <summary>The room shown last.</summary>
     public long? LastRoomId { get; set; }
 
@@ -93,6 +107,21 @@ public sealed class ClientSettings
 
     /// <summary>Play a sound when a message arrives that is not in view.</summary>
     public bool MessageSounds { get; set; } = true;
+
+    /// <summary>Play the message sound for @mentions even when message sounds are off.</summary>
+    public bool MentionSounds { get; set; } = true;
+
+    /// <summary>Sounds when people join or leave the call.</summary>
+    public bool CallSounds { get; set; } = true;
+
+    /// <summary>Flash the taskbar entry when a message arrives in the background.</summary>
+    public bool TaskbarAlerts { get; set; } = true;
+
+    /// <summary>Notification level of each room (room id to level); rooms not listed get every message.</summary>
+    public Dictionary<long, NotificationLevel> RoomNotifications { get; set; } = [];
+
+    /// <summary>Notification level of channels that do not follow their room's (channel id to level).</summary>
+    public Dictionary<long, NotificationLevel> ChannelNotifications { get; set; } = [];
 
     public double WindowWidth { get; set; } = 1280;
 
@@ -209,4 +238,20 @@ public sealed class ClientSettings
     }
 
     private static readonly byte[] Entropy = "Discagem.Token.v1"u8.ToArray();
+}
+
+/// <summary>What a room or channel notifies about.</summary>
+public enum NotificationLevel
+{
+    /// <summary>For a channel: as its room. For a room: every message.</summary>
+    Default = 0,
+
+    /// <summary>Every message marks the channel unread, plays the sound and flashes the taskbar.</summary>
+    All = 1,
+
+    /// <summary>Messages mark the channel unread, but only @mentions play the sound and flash the taskbar.</summary>
+    Mentions = 2,
+
+    /// <summary>Nothing: no unread mark, no sound, no alert, even for @mentions.</summary>
+    Nothing = 3,
 }

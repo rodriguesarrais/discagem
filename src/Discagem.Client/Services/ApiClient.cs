@@ -83,8 +83,8 @@ public sealed class ApiClient : IDisposable
 
     public Task<AuthResponse> RefreshTokenAsync() => SendAsync<AuthResponse>(HttpMethod.Post, "api/me/token", null);
 
-    public Task<UserDto> UpdateProfileAsync(string? displayName, string? avatarColor) =>
-        SendAsync<UserDto>(HttpMethod.Patch, "api/me", new UpdateProfileRequest(displayName, avatarColor));
+    public Task<UserDto> UpdateProfileAsync(UpdateProfileRequest request) =>
+        SendAsync<UserDto>(HttpMethod.Patch, "api/me", request);
 
     public Task<AuthResponse> ChangePasswordAsync(string currentPassword, string newPassword, string? keepConnectionId) =>
         SendAsync<AuthResponse>(HttpMethod.Post, "api/me/password", new ChangePasswordRequest(currentPassword, newPassword, keepConnectionId));

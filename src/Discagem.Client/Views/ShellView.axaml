@@ -72,6 +72,14 @@
                       <ContextMenu>
                         <MenuItem Header="Copy invite" Command="{Binding #Root.((vm:ShellViewModel)DataContext).CopyInviteCommand}" CommandParameter="{Binding}" />
                         <MenuItem Header="Room settings" Command="{Binding #Root.((vm:ShellViewModel)DataContext).OpenRoomSettingsCommand}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Notifications">
+                          <MenuItem Header="All messages" ToggleType="Radio" IsChecked="{Binding NotifiesAll, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomAllCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Only @mentions" ToggleType="Radio" IsChecked="{Binding NotifiesMentions, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomMentionsCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Nothing" ToggleType="Radio" IsChecked="{Binding NotifiesNothing, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyRoomNothingCommand}" CommandParameter="{Binding}" />
+                        </MenuItem>
                         <Separator />
                         <MenuItem Header="Move up" Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveRoomUpCommand}" CommandParameter="{Binding}" />
                         <MenuItem Header="Move down" Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveRoomDownCommand}" CommandParameter="{Binding}" />
@@ -155,24 +163,36 @@
                 <DataTemplate x:DataType="vm:ChannelViewModel">
                   <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
                     <Grid.ContextMenu>
-                      <ContextMenu IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}">
-                        <MenuItem Header="Edit channel"
+                      <ContextMenu>
+                        <MenuItem Header="Notifications">
+                          <MenuItem Header="As the room" ToggleType="Radio" IsChecked="{Binding FollowsRoom, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelDefaultCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="All messages" ToggleType="Radio" IsChecked="{Binding NotifiesAll, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelAllCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Only @mentions" ToggleType="Radio" IsChecked="{Binding NotifiesMentions, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelMentionsCommand}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Nothing" ToggleType="Radio" IsChecked="{Binding NotifiesNothing, Mode=OneWay}"
+                                    Command="{Binding #Root.((vm:ShellViewModel)DataContext).NotifyChannelNothingCommand}" CommandParameter="{Binding}" />
+                        </MenuItem>
+                        <Separator IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}" />
+                        <MenuItem Header="Edit channel" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).EditChannelCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Move up"
+                        <MenuItem Header="Move up" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveChannelUpCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Move down"
+                        <MenuItem Header="Move down" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).MoveChannelDownCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}"
+                        <MenuItem Header="Delete channel" Foreground="{DynamicResource ErrorTextBrush}" IsVisible="{Binding #Root.((vm:ShellViewModel)DataContext).CanManageRoom}"
                                   Command="{Binding #Root.((vm:ShellViewModel)DataContext).DeleteChannelCommand}"
                                   CommandParameter="{Binding}" />
                       </ContextMenu>
                     </Grid.ContextMenu>
                     <c:Icon Data="{StaticResource IconHash}" Width="18" Height="18" Margin="0,0,8,0" StrokeThickness="2.2" />
                     <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" Classes="channel-name" Classes.unread="{Binding HasUnread}" />
+                               TextTrimming="CharacterEllipsis" Classes="channel-name" Classes.unread="{Binding HasUnread}"
+                               Classes.muted="{Binding IsMuted}" />
                     <Border Grid.Column="2" Classes="count-badge" IsVisible="{Binding HasMentions}">
                       <TextBlock Text="{Binding MentionCount}" />
                     </Border>

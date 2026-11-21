@@ -61,6 +61,74 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </StackPanel>
+              <StackPanel>
+                <TextBlock Text="CUSTOM STATUS" Classes="label" />
+                <Grid ColumnDefinitions="64,*">
+                  <TextBox Text="{Binding StatusEmoji}" MaxLength="16" Watermark="😀" HorizontalContentAlignment="Center"
+                           ToolTip.Tip="An emoji shown before your status" />
+                  <TextBox Grid.Column="1" Text="{Binding StatusText}" MaxLength="64" Margin="8,0,0,0" Watermark="What are you up to?" />
+                </Grid>
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Text="ABOUT ME" Classes="label" />
+                <TextBox Text="{Binding Bio}" MaxLength="190" AcceptsReturn="True" TextWrapping="Wrap" Height="76"
+                         Watermark="A few words about you, shown on your profile card" />
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Text="NAME COLOUR" Classes="label" />
+                <WrapPanel>
+                  <Button Classes="bare" Margin="0,0,8,8" Command="{Binding PickNameColorCommand}" CommandParameter="{x:Null}"
+                          ToolTip.Tip="The theme's colour">
+                    <Border Width="30" Height="30" CornerRadius="15" BorderThickness="2" BorderBrush="{DynamicResource TextMutedBrush}">
+                      <TextBlock Text="A" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                  </Button>
+                  <ItemsControl ItemsSource="{Binding NamePalette}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).PickNameColorCommand}"
+                                CommandParameter="{Binding}">
+                          <Ellipse Width="30" Height="30" Fill="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </WrapPanel>
+                <TextBlock Text="{Binding DisplayName}" Foreground="{Binding NamePreview}" FontWeight="SemiBold" FontSize="15" />
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Text="PROFILE BANNER" Classes="label" />
+                <WrapPanel>
+                  <Button Classes="bare" Margin="0,0,8,8" Command="{Binding PickBannerColorCommand}" CommandParameter="{x:Null}"
+                          ToolTip.Tip="Same as the avatar colour">
+                    <Border Width="30" Height="30" CornerRadius="6" BorderThickness="2" BorderBrush="{DynamicResource TextMutedBrush}"
+                            Background="{Binding AvatarColor, Converter={x:Static views:Converters.ColorToBrush}}" />
+                  </Button>
+                  <ItemsControl ItemsSource="{Binding Palette}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).PickBannerColorCommand}"
+                                CommandParameter="{Binding}">
+                          <Border Width="30" Height="30" CornerRadius="6" Background="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </WrapPanel>
+                <Border Height="18" CornerRadius="4" Background="{Binding BannerPreview}" />
+              </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Classes="primary" Content="Save profile" Command="{Binding SaveProfileCommand}" IsEnabled="{Binding !IsBusy}" />
                 <TextBlock Text="{Binding ProfileMessage}" VerticalAlignment="Center"
@@ -103,9 +171,58 @@
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
+              <TextBlock Text="ACCENT COLOUR" Classes="label" Margin="0,6,0,0" />
+              <WrapPanel>
+                <Button Classes="bare" Margin="0,0,8,8" Command="{Binding PickAccentCommand}" CommandParameter="{x:Null}"
+                        ToolTip.Tip="The theme's colour">
+                  <Border Width="30" Height="30" CornerRadius="15" BorderThickness="2" BorderBrush="{DynamicResource TextMutedBrush}">
+                    <TextBlock Text="A" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Button>
+                <ItemsControl ItemsSource="{Binding AccentPalette}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Button Classes="bare" Margin="0,0,8,8" Cursor="Hand"
+                              Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).PickAccentCommand}"
+                              CommandParameter="{Binding}">
+                        <Ellipse Width="30" Height="30" Fill="{Binding Converter={x:Static views:Converters.ColorToBrush}}" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </WrapPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="MESSAGE TEXT SIZE" Classes="label" Margin="0" />
+                <TextBlock Grid.Column="1" Text="{Binding MessageFontSizeText}" Classes="secondary" FontSize="12" />
+              </Grid>
+              <Slider Minimum="12" Maximum="20" Value="{Binding MessageFontSize}" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="ZOOM" Classes="label" Margin="0" />
+                <TextBlock Grid.Column="1" Text="{Binding ZoomText}" Classes="secondary" FontSize="12" />
+              </Grid>
+              <Slider Minimum="80" Maximum="150" Value="{Binding ZoomPercent}" TickFrequency="10" IsSnapToTickEnabled="True" />
+              <CheckBox IsChecked="{Binding CompactMessages}" Content="Compact messages (smaller avatars, less space)" />
+              <Button Classes="link" Content="Reset appearance" Command="{Binding ResetAppearanceCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Notifications -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="Notifications" Classes="h2" />
+          <Border Classes="section-card">
+            <StackPanel Spacing="10">
               <CheckBox IsChecked="{Binding MessageSounds}" Content="Play a sound when a message arrives" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,-6,0,0"
-                         Text="When Discagem is in the background or the message is in another channel. Not while deafened." />
+              <CheckBox IsChecked="{Binding MentionSounds}" Content="Always play it when someone @mentions me" />
+              <CheckBox IsChecked="{Binding TaskbarAlerts}" Content="Flash the taskbar when a message arrives" />
+              <CheckBox IsChecked="{Binding CallSounds}" Content="Play sounds when people join or leave the call" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Message sounds and alerts come when Discagem is in the background or the message is in another channel, never while deafened. To hear less from a room or a channel, right-click it and choose Notifications." />
             </StackPanel>
           </Border>
         </StackPanel>

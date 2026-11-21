@@ -255,6 +255,13 @@ namespace Discagem.Server.Data.Migrations
                     b.Property<int>("AvatarVersion")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BannerColor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -269,12 +276,23 @@ namespace Discagem.Server.Data.Migrations
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("NameColor")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NormalizedUsername")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StatusEmoji")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StatusText")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

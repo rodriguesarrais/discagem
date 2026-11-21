@@ -25,6 +25,19 @@ public sealed class User
 
     public bool IsAdmin { get; set; }
 
+    /// <summary>A few lines about the user, shown on their profile card.</summary>
+    public string Bio { get; set; } = "";
+
+    public string StatusText { get; set; } = "";
+
+    public string StatusEmoji { get; set; } = "";
+
+    /// <summary>#RRGGBB, or null for the theme's colour.</summary>
+    public string? NameColor { get; set; }
+
+    /// <summary>#RRGGBB, or null for the avatar colour.</summary>
+    public string? BannerColor { get; set; }
+
     /// <summary>Incremented to invalidate previously issued tokens (e.g. after a password change).</summary>
     public int TokenVersion { get; set; }
 

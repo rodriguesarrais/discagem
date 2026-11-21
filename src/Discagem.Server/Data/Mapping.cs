@@ -8,7 +8,7 @@ public static class Mapping
 
     public static UserDto ToDto(this User user) =>
         new(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.IsAdmin, user.CreatedAt.ToOffset(),
-            user.HasAvatar ? user.AvatarVersion : null);
+            user.HasAvatar ? user.AvatarVersion : null, user.Bio, user.StatusText, user.StatusEmoji, user.NameColor, user.BannerColor);
 
     public static ChannelDto ToDto(this Channel channel) =>
         new(channel.Id, channel.Name, channel.Topic, channel.Position, channel.CreatedAt.ToOffset(), channel.Kind, channel.RoomId);

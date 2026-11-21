@@ -399,4 +399,15 @@ public partial class ChatPanel : UserControl
 
         public void OnNext(T value) => onNext(value);
     }
+
+    /// <summary>Clicking a message's author shows their profile card.</summary>
+    private void OnAuthorPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (sender is Control { DataContext: MessageItemViewModel message } control &&
+            e.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
+        {
+            ProfileCard.Show(control, message.Author, Avalonia.Controls.PlacementMode.RightEdgeAlignedTop);
+            e.Handled = true;
+        }
+    }
 }
